@@ -5,6 +5,15 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON;
 const supabase = (SUPABASE_URL && SUPABASE_ANON) ? createClient(SUPABASE_URL, SUPABASE_ANON) : null;
 
+const ANTHROPIC_KEY = import.meta.env.VITE_ANTHROPIC_KEY;
+
+// ── VIP accounts — always Pro, always unlimited ───────────────────────────────
+const VIP_EMAILS = [
+  "insuredbyjacek@msn.com",
+  "zuzia.starz@gmail.com",
+  "stefka992001@gmail.com"
+];
+
 const STYLE_OPTIONS = ["Minimalist","Streetwear","Classic","Bohemian","Sporty","Romantic","Edgy","Business"];
 const COLOR_OPTIONS = ["Neutrals","Earth Tones","Bold Colors","Pastels","Monochrome","Black & White","Warm Tones","Cool Tones"];
 const WEATHER_OPTIONS = ["Sunny & Hot","Warm & Breezy","Mild & Cloudy","Cold & Dry","Rainy","Snowy"];
@@ -112,7 +121,8 @@ async function loadCloset(userId) {
   return null;
 }
 
-function makeOutfits(closet, context) {
+// ── Fallback rule-based outfits (used if AI fails) ───────────────────────────
+function makeOutfitsFallback(closet, context) {
   const by = cat => closet.filter(c => c.category === cat);
   const tops=by("Tops"), bottoms=by("Bottoms"), dresses=by("Dresses");
   const outer=by("Outerwear"), shoes=by("Shoes"), acc=by("Accessories");
@@ -140,6 +150,109 @@ function makeOutfits(closet, context) {
     });
   }
   return results;
+}
+
+// ── AI-powered outfit generation ──────────────────────────────────────────────
+async function makeOutfitsAI(closet, context, profile, learnings) {
+  if (!ANTHROPIC_KEY) return makeOutfitsFallback(closet, context);
+
+  const closetList = closet.map(item =>
+    `- ${item.name} (${item.category}${item.color ? ", " + item.color : ""}${item.description ? ", " + item.description : ""})`
+  ).join("\n");
+
+  const styleProfile = profile.styles.length > 0
+    ? `Style preferences: ${profile.styles.join(", ")}`
+    : "No style preferences set yet";
+
+  const colorProfile = profile.colors.length > 0
+    ? `Colour palette: ${profile.colors.join(", ")}`
+    : "";
+
+  const dislikes = profile.dislikes
+    ? `Never wants to wear: ${profile.dislikes}`
+    : "";
+
+  const recentLearnings = learnings.slice(-8).join("\n");
+
+  const prompt = `You are Clozie, a personal AI stylist. Create 3 outfit suggestions from the wardrobe below.
+
+WARDROBE:
+${closetList}
+
+STYLE PROFILE:
+${styleProfile}
+${colorProfile}
+${dislikes}
+
+TODAY'S CONTEXT:
+Weather: ${context.weather}
+Occasion: ${context.occasion}
+${context.extraNote ? "Extra note: " + context.extraNote : ""}
+
+${recentLearnings ? `PAST RATINGS TO LEARN FROM:\n${recentLearnings}` : ""}
+
+RULES:
+- Only use items from the wardrobe list above - use exact names
+- Each outfit must suit the weather and occasion
+- Make outfits feel genuinely stylish and cohesive
+- Each outfit needs at least a top+bottom OR a dress
+- Add shoes if available, accessories if they work
+- Give each outfit a creative name and a vibe word (one word like: Chic, Bold, Relaxed, Elegant, Edgy)
+- Write a short 1-2 sentence styling description that feels personal and warm
+
+Respond ONLY with valid JSON, no markdown, no explanation:
+{
+  "outfits": [
+    {
+      "name": "outfit name",
+      "vibe": "one word",
+      "items": ["exact item name from wardrobe", "exact item name"],
+      "description": "personal styling description"
+    }
+  ]
+}`;
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text || "";
+    const clean = text.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(clean);
+
+    return parsed.outfits.map((o, i) => {
+      const itemObjects = (o.items || []).map(name =>
+        closet.find(c => c.name.toLowerCase() === name.toLowerCase()) ||
+        closet.find(c => c.name.toLowerCase().includes(name.toLowerCase())) ||
+        { name, category: "Unknown" }
+      ).filter(Boolean);
+
+      return {
+        id: Date.now() + i,
+        name: o.name || "Outfit " + (i + 1),
+        vibe: o.vibe || "Stylish",
+        items: o.items || [],
+        itemObjects,
+        description: o.description || ""
+      };
+    });
+  } catch (e) {
+    console.error("AI outfit generation failed, using fallback:", e);
+    return makeOutfitsFallback(closet, context);
+  }
 }
 
 function Splash({onDone}) {
@@ -740,15 +853,18 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
     setAddingItem(false);
   };
 
-  const doGenerate=()=>{
+  const doGenerate=async()=>{
     setLoading(true);
     setOutfits([]);
     setFeedback({});
     setStep("outfits");
-    setTimeout(()=>{
-      setOutfits(makeOutfits(closet,context));
-      setLoading(false);
-    },1200);
+    try {
+      const generated = await makeOutfitsAI(closet, context, profile, learnings);
+      setOutfits(generated);
+    } catch(e) {
+      setOutfits(makeOutfitsFallback(closet, context));
+    }
+    setLoading(false);
   };
 
   const saveFeedback=()=>{
@@ -1119,7 +1235,8 @@ export default function Root() {
 
   const handleAuth=({email,name,mode})=>{
     if(mode==="forgot"){ setForgotSent(true); return; }
-    setUser({email,name:name||email.split("@")[0],pro:false});
+    const isVip = VIP_EMAILS.includes(email.trim().toLowerCase());
+    setUser({email,name:name||email.split("@")[0],pro:isVip,vip:isVip});
     setPage("app");
   };
 
