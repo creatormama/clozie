@@ -191,8 +191,9 @@ ${context.extraNote ? "Extra note: " + context.extraNote : ""}
 
 ${recentLearnings ? `PAST RATINGS TO LEARN FROM:\n${recentLearnings}` : ""}
 
-RULES:
-- Only use items from the wardrobe list above - use exact names
+CRITICAL RULES:
+- Use ONLY items from the wardrobe list above
+- In the "items" array, copy the item name EXACTLY as written in the wardrobe list - do not paraphrase or shorten
 - Each outfit must suit the weather and occasion
 - Make outfits feel genuinely stylish and cohesive
 - Each outfit needs at least a top+bottom OR a dress
@@ -206,7 +207,7 @@ Respond ONLY with valid JSON, no markdown, no explanation:
     {
       "name": "outfit name",
       "vibe": "one word",
-      "items": ["exact item name from wardrobe", "exact item name"],
+      "items": ["EXACT item name copied from wardrobe list", "EXACT item name"],
       "description": "personal styling description"
     }
   ]
@@ -234,11 +235,17 @@ Respond ONLY with valid JSON, no markdown, no explanation:
     const parsed = JSON.parse(clean);
 
     return parsed.outfits.map((o, i) => {
-      const itemObjects = (o.items || []).map(name =>
-        closet.find(c => c.name.toLowerCase() === name.toLowerCase()) ||
-        closet.find(c => c.name.toLowerCase().includes(name.toLowerCase())) ||
-        { name, category: "Unknown" }
-      ).filter(Boolean);
+      const itemObjects = (o.items || []).map(name => {
+        const n = name.toLowerCase().trim();
+        let found = closet.find(c => c.name.toLowerCase().trim() === n);
+        if (!found) found = closet.find(c => c.name.toLowerCase().includes(n));
+        if (!found) found = closet.find(c => n.includes(c.name.toLowerCase().trim()));
+        if (!found) {
+          const words = n.split(" ").filter(w => w.length > 2);
+          found = closet.find(c => words.some(w => c.name.toLowerCase().includes(w)));
+        }
+        return found || null;
+      }).filter(Boolean);
 
       return {
         id: Date.now() + i,
