@@ -1,4 +1,9 @@
 import { useState, useRef, useEffect } from "react";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON;
+const supabase = (SUPABASE_URL && SUPABASE_ANON) ? createClient(SUPABASE_URL, SUPABASE_ANON) : null;
 
 const STYLE_OPTIONS = ["Minimalist","Streetwear","Classic","Bohemian","Sporty","Romantic","Edgy","Business"];
 const COLOR_OPTIONS = ["Neutrals","Earth Tones","Bold Colors","Pastels","Monochrome","Black & White","Warm Tones","Cool Tones"];
@@ -49,73 +54,62 @@ const Label = ({text}) => (
   <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.12em",marginBottom:14}}>{text}</div>
 );
 
-async function storageGet(key) {
-  // Try artifact storage first, fall back to sessionStorage
+// ── Supabase helpers ──────────────────────────────────────────────────────────
+async function sbGet(table, userId) {
+  if (!supabase || !userId) return null;
   try {
-    if (window.storage) {
-      const r = await window.storage.get(key);
-      if (r && r.value !== undefined && r.value !== null) return JSON.parse(r.value);
-    }
-  } catch(e) {}
-  // Fallback: sessionStorage (persists within tab session)
-  try {
-    const v = sessionStorage.getItem(key);
-    return v ? JSON.parse(v) : null;
+    const { data } = await supabase.from(table).select("data").eq("user_id", userId).single();
+    return data ? JSON.parse(data.data) : null;
   } catch(e) { return null; }
 }
-async function storageSet(key, val) {
-  const str = JSON.stringify(val);
-  // Try artifact storage
+async function sbSet(table, userId, val) {
+  if (!supabase || !userId) return false;
   try {
-    if (window.storage) await window.storage.set(key, str);
-  } catch(e) {}
-  // Always also save to sessionStorage as backup
-  try {
-    sessionStorage.setItem(key, str);
+    await supabase.from(table).upsert({ user_id: userId, data: JSON.stringify(val) }, { onConflict: "user_id" });
     return true;
   } catch(e) { return false; }
 }
 
-// Save closet items one by one so large images don't bust the 5MB limit
-async function saveCloset(closet) {
-  // Save entire closet as one JSON blob (sessionStorage handles large data fine)
-  try { sessionStorage.setItem("clozie-closet", JSON.stringify(closet)); } catch(e) {}
-  // Also try artifact storage per-item
-  try {
-    if (window.storage) {
-      const ids = closet.map(i => i.id);
-      await window.storage.set("clozie-closet-index", JSON.stringify(ids));
-      for (const item of closet) {
-        // Strip image for artifact storage (too large), keep in sessionStorage
-        const {image, ...rest} = item;
-        await window.storage.set("clozie-item-"+item.id, JSON.stringify(rest));
-      }
-    }
-  } catch(e) {}
+async function storageGet(key, userId) {
+  // Try Supabase first
+  const tableMap = { "clozie-profile": "profiles", "clozie-learnings": "profiles", "clozie-favs": "favorites" };
+  if (supabase && userId && tableMap[key]) {
+    const d = await sbGet(tableMap[key], userId + "-" + key);
+    if (d !== null) return d;
+  }
+  // Fallback: localStorage
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return null; }
+}
+async function storageSet(key, val, userId) {
+  const tableMap = { "clozie-profile": "profiles", "clozie-learnings": "profiles", "clozie-favs": "favorites" };
+  if (supabase && userId && tableMap[key]) {
+    await sbSet(tableMap[key], userId + "-" + key, val);
+  }
+  try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch(e) { return false; }
+}
+
+async function saveCloset(closet, userId) {
+  try { localStorage.setItem("clozie-closet", JSON.stringify(closet)); } catch(e) {}
+  if (supabase && userId) {
+    // Store without images for DB (images stay in localStorage)
+    const slim = closet.map(({image, ...rest}) => rest);
+    await sbSet("closet", userId, slim);
+  }
   return true;
 }
 
-async function loadCloset() {
-  // Try sessionStorage first (has images, full data)
+async function loadCloset(userId) {
+  // Try localStorage first (has full images)
   try {
-    const v = sessionStorage.getItem("clozie-closet");
-    if (v) { const parsed = JSON.parse(v); if (Array.isArray(parsed) && parsed.length>0) return parsed; }
+    const v = localStorage.getItem("clozie-closet");
+    if (v) { const p = JSON.parse(v); if (Array.isArray(p) && p.length > 0) return p; }
   } catch(e) {}
-  // Fall back to artifact storage (no images but persists longer)
-  try {
-    if (!window.storage) return null;
-    const idxRaw = await window.storage.get("clozie-closet-index");
-    if (!idxRaw || !idxRaw.value) return null;
-    const ids = JSON.parse(idxRaw.value);
-    const items = [];
-    for (const id of ids) {
-      try {
-        const r = await window.storage.get("clozie-item-"+id);
-        if (r && r.value) items.push(JSON.parse(r.value));
-      } catch(e) {}
-    }
-    return items.length > 0 ? items : null;
-  } catch(e) { return null; }
+  // Try Supabase (no images but persistent)
+  if (supabase && userId) {
+    const d = await sbGet("closet", userId);
+    if (Array.isArray(d) && d.length > 0) return d;
+  }
+  return null;
 }
 
 function makeOutfits(closet, context) {
@@ -1091,10 +1085,11 @@ export default function Root() {
   // Load once on mount
   useEffect(()=>{
     (async()=>{
-      const sc=await loadCloset();
-      const sp=await storageGet("clozie-profile");
-      const sl=await storageGet("clozie-learnings");
-      const sf=await storageGet("clozie-favs");
+      const uid = user?.email || null;
+      const sc=await loadCloset(uid);
+      const sp=await storageGet("clozie-profile", uid);
+      const sl=await storageGet("clozie-learnings", uid);
+      const sf=await storageGet("clozie-favs", uid);
       if(sc&&Array.isArray(sc)) setCloset(sc);
       if(sp&&sp.styles) setProfile(sp);
       if(sl&&Array.isArray(sl)) setLearnings(sl);
@@ -1106,16 +1101,17 @@ export default function Root() {
   // Save whenever data changes
   useEffect(()=>{
     if(!ready) return;
+    const uid = user?.email || null;
     (async()=>{
-      const ok1=await saveCloset(closet);
+      const ok1=await saveCloset(closet, uid);
       const favsToSave=favOutfits.map(o=>({
         id:o.id,name:o.name,vibe:o.vibe,
         items:o.items||[],description:o.description||"",
         itemObjects:(o.itemObjects||[]).map(it=>({name:it.name,image:it.image||null,category:it.category||""}))
       }));
-      const ok2=await storageSet("clozie-profile",profile);
-      await storageSet("clozie-learnings",learnings);
-      await storageSet("clozie-favs",favsToSave);
+      const ok2=await storageSet("clozie-profile",profile, uid);
+      await storageSet("clozie-learnings",learnings, uid);
+      await storageSet("clozie-favs",favsToSave, uid);
       setSaveStatus(ok1&&ok2?"saved":"error");
       setTimeout(()=>setSaveStatus(""),2000);
     })();
