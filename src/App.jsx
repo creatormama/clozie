@@ -156,10 +156,46 @@ function makeOutfitsFallback(closet, context) {
 async function makeOutfitsAI(closet, context, profile, learnings) {
   if (!ANTHROPIC_KEY) return makeOutfitsFallback(closet, context);
 
+  // Filter wardrobe based on occasion and weather BEFORE sending to AI
+  const isSporty = ["Outdoor / Sport"].includes(context.occasion);
+  const isCasual = ["Casual Day","Weekend Errands","Travel"].includes(context.occasion);
+  const isDressy = ["Date Night","Party","Formal Event"].includes(context.occasion);
+  const isWork = ["Work / Office"].includes(context.occasion);
+  const isHot = ["Sunny & Hot","Warm & Breezy"].includes(context.weather);
+  const isCold = ["Cold & Dry","Rainy","Snowy"].includes(context.weather);
+
+  const filteredCloset = closet.filter(item => {
+    const cat = item.category;
+    const desc = (item.description || "").toLowerCase();
+    const name = (item.name || "").toLowerCase();
+    const combined = desc + " " + name;
+
+    // For sporty/casual: remove heels and formal dresses
+    if (isSporty || isCasual) {
+      if (cat === "Shoes" && (combined.includes("heel") || combined.includes("pump") || combined.includes("stiletto"))) return false;
+      if (cat === "Dresses" && isSporty) return false;
+    }
+
+    // For dressy/formal: remove sneakers
+    if (isDressy) {
+      if (cat === "Shoes" && (combined.includes("sneaker") || combined.includes("trainer") || combined.includes("sport"))) return false;
+    }
+
+    // For hot weather: remove heavy outerwear
+    if (isHot) {
+      if (cat === "Outerwear" && (combined.includes("wool") || combined.includes("heavy") || combined.includes("winter"))) return false;
+    }
+
+    // For cold weather: deprioritize sleeveless (keep but mark)
+    return true;
+  });
+
   // Give every item a unique label so AI can identify it precisely
-  const closetList = closet.map((item, idx) => {
+  const closetList = filteredCloset.map((item, idx) => {
     const label = [item.color, item.name, item.description].filter(Boolean).join(" ");
-    return `${idx + 1}. ID:${item.id} | LABEL:"${label}" | CATEGORY:${item.category}`;
+    const weatherHint = isHot && (item.description||"").toLowerCase().includes("long sleeve") ? " [too warm for today - only use if nothing else]" : "";
+    const coldHint = isCold && (item.description||"").toLowerCase().includes("sleeveless") ? " [too cold for today - only use if nothing else]" : "";
+    return `${idx + 1}. ID:${item.id} | LABEL:"${label}" | CATEGORY:${item.category}${weatherHint}${coldHint}`;
   }).join("\n");
 
   const styleProfile = profile.styles.length > 0
@@ -268,7 +304,7 @@ Respond ONLY with valid JSON, no markdown, no extra text:
           const found = closet.find(c => String(c.id) === idMatch[1]);
           if (found) return found;
         }
-        // Try full label match
+        // Try full label match against full closet
         let found = closet.find(c => {
           const label = [c.color, c.name, c.description].filter(Boolean).join(" ").toLowerCase();
           return label === n || label.includes(n) || n.includes(label);
