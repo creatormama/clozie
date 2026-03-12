@@ -364,6 +364,139 @@ Respond ONLY with valid JSON:
   }
 }
 
+// ── PEEK INSIDE SCREEN ───────────────────────────────────────────────────────
+function PeekInside({onSignup, onLogin}) {
+  const steps = [
+    {
+      icon: "📸",
+      title: "Snap & Add Your Clothes",
+      desc: "Take a photo of any item — AI instantly fills in all the details. Your wardrobe is ready in minutes.",
+      visual: (
+        <div style={{background:CARD,borderRadius:12,padding:14,border:"1px solid "+BORDER}}>
+          <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:10}}>
+            <div style={{width:56,height:56,borderRadius:10,background:"#1A1815",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>👗</div>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,marginBottom:3}}>AI DETECTED ✦</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#EDE5D8"}}>Navy Blue Wrap Dress</div>
+              <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666",marginTop:2}}>Dresses · Navy blue · Midi length</div>
+            </div>
+            <div style={{width:20,height:20,borderRadius:"50%",background:"#1A3A1A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11}}>✅</div>
+          </div>
+          <div style={{display:"flex",gap:6}}>
+            {["👗 Tops · 3","👖 Bottoms · 2","👠 Shoes · 3"].map((t,i)=>(
+              <div key={i} style={{flex:1,padding:"5px 4px",background:BG,borderRadius:8,fontFamily:"'DM Mono'",fontSize:9,color:"#666",textAlign:"center"}}>{t}</div>
+            ))}
+          </div>
+        </div>
+      )
+    },
+    {
+      icon: "🌤",
+      title: "Tell Clozie Your Day",
+      desc: "Pick the weather and your occasion. Heading to work? Date night? Weekend errands? Clozie styles you perfectly for the moment.",
+      visual: (
+        <div style={{background:CARD,borderRadius:12,padding:14,border:"1px solid "+BORDER}}>
+          <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.12em",marginBottom:10}}>TODAY'S VIBE</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+            {["Sunny & Hot","Warm & Breezy","Cold & Dry"].map((w,i)=>(
+              <div key={i} style={{padding:"5px 12px",borderRadius:100,fontFamily:"'DM Mono'",fontSize:10,background:i===0?G:"transparent",color:i===0?BG:"#555",border:"1px solid "+(i===0?G:BORDER)}}>{w}</div>
+            ))}
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {["Date Night","Casual Day","Work / Office"].map((o,i)=>(
+              <div key={i} style={{padding:"5px 12px",borderRadius:100,fontFamily:"'DM Mono'",fontSize:10,background:i===0?G+"20":"transparent",color:i===0?G:"#555",border:"1px solid "+(i===0?G+"60":BORDER)}}>{o}</div>
+            ))}
+          </div>
+        </div>
+      )
+    },
+    {
+      icon: "✨",
+      title: "Get 3 Perfect Outfits",
+      desc: "Clozie creates 3 styled outfits from YOUR actual clothes. See them in a mood board or on the mannequin. Rate them and Clozie learns your taste.",
+      visual: (
+        <div style={{background:CARD,borderRadius:12,padding:14,border:"1px solid #C9A96E40"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div>
+              <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.15em"}}>ROMANTIC</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:16,color:"#EDE5D8"}}>Evening Glow</div>
+            </div>
+            <div style={{display:"flex",gap:6}}>
+              <div style={{padding:"4px 8px",background:"#1A1512",borderRadius:8,fontFamily:"'DM Mono'",fontSize:9,color:G,border:"1px solid "+BORDER}}>🖼 Mood Board</div>
+              <div style={{padding:"4px 8px",background:G+"20",borderRadius:8,fontFamily:"'DM Mono'",fontSize:9,color:G,border:"1px solid "+G+"60"}}>✦ On Body</div>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:6}}>
+            {["Navy Wrap Dress","Brown Flats","Gold Earrings"].map((item,i)=>(
+              <div key={i} style={{flex:1,padding:"5px 4px",background:BG,borderRadius:8,fontFamily:"'DM Mono'",fontSize:9,color:"#8A7A68",textAlign:"center",border:"1px solid "+BORDER}}>{item}</div>
+            ))}
+          </div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:11,color:"#7A6A58",marginTop:8,lineHeight:1.5}}>
+            "The wrap silhouette is perfect for date night — elegant and effortless."
+          </div>
+        </div>
+      )
+    }
+  ];
+
+  const [active, setActive] = useState(0);
+  const s = steps[active];
+
+  return (
+    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px 24px"}}>
+      <style>{css}</style>
+      <div style={{width:"100%",maxWidth:400}} className="fade">
+
+        {/* Header */}
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <Logo/>
+          <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.2em",marginTop:12}}>✦ HERE'S HOW IT WORKS ✦</div>
+        </div>
+
+        {/* Step tabs */}
+        <div style={{display:"flex",gap:6,marginBottom:20}}>
+          {steps.map((_,i)=>(
+            <button key={i} onClick={()=>setActive(i)} style={{
+              flex:1,padding:"10px 4px",borderRadius:10,border:"1px solid "+(active===i?G:BORDER),
+              background:active===i?G+"15":CARD,cursor:"pointer",
+              fontFamily:"'DM Mono'",fontSize:10,
+              color:active===i?G:"#444",
+              transition:"all 0.2s",
+            }}>
+              <div style={{fontSize:18,marginBottom:3}}>{steps[i].icon}</div>
+              <div style={{fontSize:9,letterSpacing:"0.04em"}}>STEP {i+1}</div>
+            </button>
+          ))}
+        </div>
+
+        {/* Active step */}
+        <div className="card" style={{padding:20,marginBottom:16,borderColor:G+"30"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontWeight:300,fontSize:22,color:"#EDE5D8",marginBottom:8}}>{s.title}</div>
+          <div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#6A6058",lineHeight:1.8,marginBottom:16}}>{s.desc}</div>
+          {s.visual}
+        </div>
+
+        {/* Step dots */}
+        <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:24}}>
+          {steps.map((_,i)=>(
+            <div key={i} onClick={()=>setActive(i)} style={{width:i===active?24:8,height:8,borderRadius:100,background:i===active?G:"#252320",transition:"all 0.3s",cursor:"pointer"}}/>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <GBtn onClick={onSignup} style={{marginBottom:12}}>
+          ✦ Start Styling — It's Free
+        </GBtn>
+        <div style={{textAlign:"center",fontFamily:"'DM Mono'",fontSize:12,color:"#444"}}>
+          Already have an account?{" "}
+          <span onClick={onLogin} style={{color:G,cursor:"pointer"}}>Sign in</span>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 function Splash({onDone}) {
   useEffect(()=>{ setTimeout(onDone, 1800); },[]);
   return (
@@ -384,7 +517,6 @@ function Onboarding({onDone}) {
   const steps = [
     { icon:"👗", title:"Welcome to Clozie", sub:"Your personal AI stylist", desc:"The more you use Clozie, the better she knows you — and the more perfectly she styles you." },
     { icon:"📸", title:"Build Your Closet", sub:"Add any clothes you love", desc:"Add clothes you own, or pieces you're dreaming of buying. Clozie works with any clothes you add." },
-    { icon:"✨", title:"Get Styled Daily", sub:"Your stylist, every day", desc:null },
   ];
   const s = steps[step];
   return (
@@ -1498,7 +1630,8 @@ export default function Root() {
   if(!user) {
     if(page==="splash") return <Splash onDone={()=>setPage("onboarding")}/>;
     if(page==="onboarding") return <Onboarding onDone={()=>setPage("welcome")}/>;
-    if(page==="signup") return <AuthPage mode="signup" onDone={handleAuth} onSwitch={()=>setPage("login")} onForgot={()=>setPage("forgot")}/>;
+    if(page==="peek") return <PeekInside onSignup={()=>setPage("signup")} onLogin={()=>setPage("login")}/>;
+    if(page==="signup") return <AuthPage mode="signup" onDone={handleAuth} onSwitch={()=>setPage("login")} onForgot={()=>setPage("forgot")}/> ;
     if(page==="forgot") return forgotSent
       ? <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:40}}>
           <style>{css}</style>
@@ -1511,7 +1644,7 @@ export default function Root() {
         </div>
       : <AuthPage mode="forgot" onDone={handleAuth} onSwitch={()=>setPage("login")} onForgot={()=>{}}/>;
     if(page==="login") return <AuthPage mode="login" onDone={handleAuth} onSwitch={()=>setPage("signup")} onForgot={()=>setPage("forgot")}/>;
-    return <Welcome onLogin={()=>setPage("login")} onSignup={()=>setPage("signup")}/>;
+    return <Welcome onLogin={()=>setPage("login")} onSignup={()=>setPage("peek")}/>;
   }
 
   return (
