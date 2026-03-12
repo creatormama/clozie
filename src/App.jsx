@@ -156,9 +156,11 @@ function makeOutfitsFallback(closet, context) {
 async function makeOutfitsAI(closet, context, profile, learnings) {
   if (!ANTHROPIC_KEY) return makeOutfitsFallback(closet, context);
 
-  const closetList = closet.map(item =>
-    `- ${item.name} (${item.category}${item.color ? ", " + item.color : ""}${item.description ? ", " + item.description : ""})`
-  ).join("\n");
+  // Give every item a unique label so AI can identify it precisely
+  const closetList = closet.map((item, idx) => {
+    const label = [item.color, item.name, item.description].filter(Boolean).join(" ");
+    return `${idx + 1}. ID:${item.id} | LABEL:"${label}" | CATEGORY:${item.category}`;
+  }).join("\n");
 
   const styleProfile = profile.styles.length > 0
     ? `Style preferences: ${profile.styles.join(", ")}`
@@ -176,7 +178,7 @@ async function makeOutfitsAI(closet, context, profile, learnings) {
 
   const prompt = `You are Clozie, a world-class personal AI stylist. Create 3 COMPLETELY DIFFERENT outfit suggestions using the wardrobe below.
 
-WARDROBE (use EXACT names as written):
+WARDROBE - each item has ID and LABEL. Use the EXACT LABEL when listing items in outfits:
 ${closetList}
 
 STYLE PROFILE:
@@ -201,7 +203,7 @@ YOUR JOB:
 - Match shoes precisely to the outfit mood: heels or flats for elegant/dressy looks, sneakers for casual looks, boots for cold/rainy weather
 - Each outfit must perfectly suit BOTH the weather AND the occasion
 - Each outfit needs: a top + bottom OR a dress, plus shoes if available, plus accessories if they complement the look
-- Copy item names EXACTLY as written in the wardrobe - do not change or shorten them
+- Use the EXACT LABEL text from the wardrobe when listing items in outfits - copy it precisely
 - Give each outfit a creative name, a one-word vibe, and a warm personal description explaining why these pieces work together
 
 Respond ONLY with valid JSON, no markdown, no extra text:
@@ -210,7 +212,7 @@ Respond ONLY with valid JSON, no markdown, no extra text:
     {
       "name": "creative outfit name",
       "vibe": "one word",
-      "items": ["EXACT item name from wardrobe", "EXACT item name from wardrobe"],
+      "items": ["EXACT LABEL from wardrobe list", "EXACT LABEL from wardrobe list"],
       "description": "warm personal description explaining why these pieces work together"
     }
   ]
@@ -240,12 +242,24 @@ Respond ONLY with valid JSON, no markdown, no extra text:
     return parsed.outfits.map((o, i) => {
       const itemObjects = (o.items || []).map(name => {
         const n = name.toLowerCase().trim();
-        let found = closet.find(c => c.name.toLowerCase().trim() === n);
-        if (!found) found = closet.find(c => c.name.toLowerCase().includes(n));
-        if (!found) found = closet.find(c => n.includes(c.name.toLowerCase().trim()));
+        // Try matching by ID first (most reliable)
+        const idMatch = n.match(/id:(\d+)/);
+        if (idMatch) {
+          const found = closet.find(c => String(c.id) === idMatch[1]);
+          if (found) return found;
+        }
+        // Try full label match
+        let found = closet.find(c => {
+          const label = [c.color, c.name, c.description].filter(Boolean).join(" ").toLowerCase();
+          return label === n || label.includes(n) || n.includes(label);
+        });
+        // Try word by word
         if (!found) {
           const words = n.split(" ").filter(w => w.length > 2);
-          found = closet.find(c => words.some(w => c.name.toLowerCase().includes(w)));
+          found = closet.find(c => {
+            const label = [c.color, c.name, c.description].filter(Boolean).join(" ").toLowerCase();
+            return words.some(w => label.includes(w));
+          });
         }
         return found || null;
       }).filter(Boolean);
