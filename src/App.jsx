@@ -156,163 +156,82 @@ function makeOutfitsFallback(closet, context) {
 async function makeOutfitsAI(closet, context, profile, learnings) {
   if (!ANTHROPIC_KEY) return makeOutfitsFallback(closet, context);
 
-  const isSporty = context.occasion === "Outdoor / Sport";
-  const isCasual = ["Casual Day","Weekend Errands","Travel"].includes(context.occasion);
-  const isDressy = ["Date Night","Party","Formal Event"].includes(context.occasion);
-  const isWork = context.occasion === "Work / Office";
-  const isHot = ["Sunny & Hot","Warm & Breezy"].includes(context.weather);
-  const isCold = ["Cold & Dry","Rainy","Snowy"].includes(context.weather);
+  // Build a clear, numbered wardrobe list with all details
+  const wardrobeList = closet.map((item, i) => {
+    const parts = [
+      `#${i+1}`,
+      `Name: "${item.name}"`,
+      `Category: ${item.category}`,
+      item.color ? `Color: ${item.color}` : null,
+      item.description ? `Details: ${item.description}` : null
+    ].filter(Boolean).join(" | ");
+    return parts;
+  }).join("\n");
 
-  // Helper to get item label
-  const getLabel = item => [item.color, item.name, item.description].filter(Boolean).join(" ");
+  const styleInfo = [
+    profile.styles.length > 0 ? `Preferred styles: ${profile.styles.join(", ")}` : null,
+    profile.colors.length > 0 ? `Favourite colors: ${profile.colors.join(", ")}` : null,
+    profile.dislikes ? `Dislikes: ${profile.dislikes}` : null
+  ].filter(Boolean).join("\n") || "No style profile yet";
 
-  // Sort items by category
-  const byCategory = cat => closet.filter(c => c.category === cat);
-  const tops = byCategory("Tops");
-  const bottoms = byCategory("Bottoms");
-  const dresses = byCategory("Dresses");
-  const outerwear = byCategory("Outerwear");
-  const shoes = byCategory("Shoes");
-  const accessories = byCategory("Accessories");
+  const pastLearnings = learnings.slice(-8).join("\n");
 
-  // Filter shoes by occasion
-  const appropriateShoes = shoes.filter(s => {
-    const combined = (s.name + " " + s.description).toLowerCase();
-    const isHeel = combined.includes("heel") || combined.includes("pump") || combined.includes("stiletto");
-    const isSneaker = combined.includes("sneaker") || combined.includes("trainer") || combined.includes("sport") || combined.includes("running");
-    const isFlat = combined.includes("flat") || combined.includes("loafer") || combined.includes("ballet");
-    if (isSporty && isHeel) return false;
-    if (isDressy && isSneaker) return false;
-    return true;
-  });
+  const prompt = `You are Clozie, a brilliant personal AI stylist. Study this person's wardrobe carefully and create 3 outfits.
 
-  // Filter tops by weather
-  const appropriateTops = tops.filter(t => {
-    const combined = (t.name + " " + t.description).toLowerCase();
-    const isSleeveless = combined.includes("sleeveless") || combined.includes("tank") || combined.includes("cami");
-    const isLongSleeve = combined.includes("long sleeve") || combined.includes("longsleeve");
-    if (isHot && isLongSleeve && tops.filter(x => {
-      const c = (x.name + " " + x.description).toLowerCase();
-      return !c.includes("long sleeve") && !c.includes("longsleeve");
-    }).length > 0) return false;
-    if (isCold && isSleeveless && tops.filter(x => {
-      const c = (x.name + " " + x.description).toLowerCase();
-      return !c.includes("sleeveless") && !c.includes("tank");
-    }).length > 0) return false;
-    return true;
-  });
+=== WARDROBE (${closet.length} items) ===
+${wardrobeList}
 
-  // Use appropriateTops if available, otherwise fall back to all tops
-  const topsToUse = appropriateTops.length > 0 ? appropriateTops : tops;
-  const shoesToUse = appropriateShoes.length > 0 ? appropriateShoes : shoes;
+=== PERSON'S STYLE ===
+${styleInfo}
 
-  // Shuffle helper
-  const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
+=== TODAY ===
+Weather: ${context.weather}
+Occasion: ${context.occasion}
+${context.extraNote ? `They said: "${context.extraNote}"` : ""}
+${pastLearnings ? `\nWhat they liked/disliked before:\n${pastLearnings}` : ""}
 
-  // Build 3 outfit combinations in CODE - guaranteed variety
-  const shuffledTops = shuffle(topsToUse);
-  const shuffledBottoms = shuffle(bottoms);
-  const shuffledShoes = shuffle(shoesToUse);
-  const shuffledDresses = shuffle(dresses);
+=== YOUR TASK ===
+Create exactly 3 outfits. Each outfit MUST be completely different from the others.
 
-  const outfitCombinations = [];
+RULES YOU MUST FOLLOW:
+1. Use each item's EXACT name as written in the wardrobe above
+2. Rotate tops - use a DIFFERENT top in each outfit (you have ${closet.filter(c=>c.category==="Tops").length} tops available)
+3. Rotate bottoms - use DIFFERENT bottoms where possible
+4. Match shoes to occasion:
+   - "Outdoor / Sport" or "Casual" → use sneakers/flat shoes, NEVER heels
+   - "Date Night" or "Party" or "Formal" → use heels or dressy flats, avoid sneakers
+   - "Work / Office" → use flats or small heels
+5. Match to weather:
+   - Hot/Warm weather → prefer sleeveless or short sleeve tops
+   - Cold weather → prefer long sleeve tops, include outerwear if available
+   - Rainy → include outerwear/jacket
+6. Each outfit needs: (top + bottom) OR (dress), PLUS shoes if available
+7. NEVER repeat the exact same combination across outfits
+8. Consider colors - try to make each outfit cohesive
 
-  for (let i = 0; i < 3; i++) {
-    const usedIds = new Set();
-    const items = [];
-
-    // Decide if this outfit uses a dress (only for dressy/casual, not sporty, max 1 dress outfit)
-    const useDress = !isSporty && i === 0 && shuffledDresses.length > 0 && isDressy;
-
-    if (useDress) {
-      const dress = shuffledDresses[0];
-      items.push(dress);
-      usedIds.add(dress.id);
-    } else {
-      // Pick a top - rotate through them
-      const top = shuffledTops[i % shuffledTops.length];
-      if (top && !usedIds.has(top.id)) { items.push(top); usedIds.add(top.id); }
-
-      // Pick a bottom - rotate through them
-      const bottom = shuffledBottoms[i % shuffledBottoms.length];
-      if (bottom && !usedIds.has(bottom.id)) { items.push(bottom); usedIds.add(bottom.id); }
-    }
-
-    // Add outerwear for cold weather
-    if (isCold && outerwear.length > 0) {
-      const coat = outerwear[i % outerwear.length];
-      if (!usedIds.has(coat.id)) { items.push(coat); usedIds.add(coat.id); }
-    }
-
-    // Add shoes - rotate through appropriate shoes
-    if (shuffledShoes.length > 0) {
-      const shoe = shuffledShoes[i % shuffledShoes.length];
-      if (!usedIds.has(shoe.id)) { items.push(shoe); usedIds.add(shoe.id); }
-    }
-
-    // Add accessories
-    if (accessories.length > 0) {
-      const acc = accessories[i % accessories.length];
-      if (!usedIds.has(acc.id)) { items.push(acc); usedIds.add(acc.id); }
-    }
-
-    if (items.length > 0) {
-      outfitCombinations.push(items);
-    }
-  }
-
-  // Now ask AI ONLY to name and describe these pre-built outfits
-  const outfitDescriptions = outfitCombinations.map((items, i) =>
-    `Outfit ${i+1} items: ${items.map(getLabel).join(", ")}`
-  ).join("\n");
-
-  const closetList = outfitDescriptions;
-
-  const styleProfile = profile.styles.length > 0
-    ? `Style preferences: ${profile.styles.join(", ")}`
-    : "No style preferences set yet";
-
-  const colorProfile = profile.colors.length > 0
-    ? `Colour palette: ${profile.colors.join(", ")}`
-    : "";
-
-  const dislikes = profile.dislikes
-    ? `Never wants to wear: ${profile.dislikes}`
-    : "";
-
-  const recentLearnings = learnings.slice(-8).join("\n");
-
-  const prompt = `You are Clozie, a personal AI stylist. I have already chosen the items for 3 outfits. Your ONLY job is to give each outfit a name, vibe, and description.
-
-STYLE PROFILE:
-${styleProfile}
-${colorProfile}
-${dislikes}
-
-CONTEXT: Weather: ${context.weather} | Occasion: ${context.occasion}${context.extraNote ? " | Note: " + context.extraNote : ""}
-
-${recentLearnings ? `PAST RATINGS:\n${recentLearnings}` : ""}
-
-THE 3 OUTFITS (items already chosen - do not change them):
-${closetList}
-
-YOUR ONLY JOB:
-1. Give each outfit a creative name
-2. Give a one-word vibe (Chic, Bold, Relaxed, Elegant, Edgy, Romantic, Polished, Effortless, Sporty, Fresh)
-3. Write a warm 1-2 sentence description of why these pieces work together
-4. In "items" array copy the item labels EXACTLY as listed above
-
-Respond ONLY with valid JSON:
+Respond ONLY with this exact JSON format, nothing else:
 {
   "outfits": [
     {
-      "name": "creative outfit name",
-      "vibe": "one word",
-      "items": ["exact item label as listed above"],
-      "description": "warm personal styling description"
+      "name": "Creative outfit name",
+      "vibe": "OneWord",
+      "items": ["Exact item name from wardrobe", "Exact item name"],
+      "description": "Warm 1-2 sentence description of why this works"
+    },
+    {
+      "name": "Creative outfit name",
+      "vibe": "OneWord", 
+      "items": ["Exact item name from wardrobe", "Exact item name"],
+      "description": "Warm 1-2 sentence description of why this works"
+    },
+    {
+      "name": "Creative outfit name",
+      "vibe": "OneWord",
+      "items": ["Exact item name from wardrobe", "Exact item name"],
+      "description": "Warm 1-2 sentence description of why this works"
     }
   ]
-}\`;
+}`;
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -335,31 +254,53 @@ Respond ONLY with valid JSON:
     const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
 
-    // Use pre-built outfit combinations for items - AI only provides names/descriptions
-    return outfitCombinations.map((itemObjects, i) => {
-      const aiOutfit = parsed.outfits[i] || {};
+    return parsed.outfits.map((o, i) => {
+      // Match items back to closet objects for photos
+      const itemObjects = (o.items || []).map(name => {
+        const n = name.toLowerCase().trim();
+        const words = n.split(" ").filter(w => w.length > 2);
+        
+        // Build full label for each closet item (color + name + description)
+        const fullLabel = c => [c.color, c.name, c.description].filter(Boolean).join(" ").toLowerCase();
+        
+        // 1. Exact name match
+        let found = closet.find(c => c.name.toLowerCase().trim() === n);
+        // 2. Exact full label match
+        if (!found) found = closet.find(c => fullLabel(c) === n);
+        // 3. Full label contains search term
+        if (!found) found = closet.find(c => fullLabel(c).includes(n));
+        // 4. Search term contains full label
+        if (!found) found = closet.find(c => n.includes(fullLabel(c)));
+        // 5. Name partial match
+        if (!found) found = closet.find(c => c.name.toLowerCase().includes(n) || n.includes(c.name.toLowerCase().trim()));
+        // 6. Word by word match against full label
+        if (!found) found = closet.find(c => words.some(w => fullLabel(c).includes(w)));
+        // 7. Match by color + category
+        if (!found) {
+          const colorWords = words.filter(w => ["black","white","brown","red","blue","green","orange","pink","grey","gray","beige","navy","cream"].includes(w));
+          if (colorWords.length > 0) {
+            found = closet.find(c => colorWords.some(col => (c.color||"").toLowerCase().includes(col)));
+          }
+        }
+        return found || null;
+      }).filter(Boolean);
+
       return {
         id: Date.now() + i,
-        name: aiOutfit.name || "Outfit " + (i + 1),
-        vibe: aiOutfit.vibe || "Stylish",
-        items: itemObjects.map(getLabel),
+        name: o.name || "Outfit " + (i + 1),
+        vibe: o.vibe || "Stylish",
+        items: o.items || [],
         itemObjects,
-        description: aiOutfit.description || ""
+        description: o.description || ""
       };
     });
+
   } catch (e) {
-    console.error("AI failed, using pre-built combinations:", e);
-    // Still use smart pre-built outfits even if AI naming fails
-    return outfitCombinations.map((itemObjects, i) => ({
-      id: Date.now() + i,
-      name: ["Today's Look", "Fresh Pick", "Style Edit"][i] || "Outfit " + (i+1),
-      vibe: ["Chic", "Relaxed", "Bold"][i] || "Stylish",
-      items: itemObjects.map(getLabel),
-      itemObjects,
-      description: "A perfect combination for " + context.occasion + " in " + context.weather + " weather."
-    }));
+    console.error("AI outfit generation failed:", e);
+    return makeOutfitsFallback(closet, context);
   }
 }
+
 
 function Splash({onDone}) {
   useEffect(()=>{ setTimeout(onDone, 1800); },[]);
