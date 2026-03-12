@@ -174,9 +174,9 @@ async function makeOutfitsAI(closet, context, profile, learnings) {
 
   const recentLearnings = learnings.slice(-8).join("\n");
 
-  const prompt = `You are Clozie, a personal AI stylist. Create 3 outfit suggestions from the wardrobe below.
+  const prompt = `You are Clozie, a world-class personal AI stylist. Create 3 COMPLETELY DIFFERENT outfit suggestions using the wardrobe below.
 
-WARDROBE:
+WARDROBE (use EXACT names as written):
 ${closetList}
 
 STYLE PROFILE:
@@ -189,26 +189,29 @@ Weather: ${context.weather}
 Occasion: ${context.occasion}
 ${context.extraNote ? "Extra note: " + context.extraNote : ""}
 
-${recentLearnings ? `PAST RATINGS TO LEARN FROM:\n${recentLearnings}` : ""}
+${recentLearnings ? `WHAT THIS PERSON LIKED/DISLIKED BEFORE - LEARN FROM THIS:\n${recentLearnings}` : ""}
 
-CRITICAL RULES:
-- Use ONLY items from the wardrobe list above
-- In the "items" array, copy the item name EXACTLY as written in the wardrobe list - do not paraphrase or shorten
-- Each outfit must suit the weather and occasion
-- Make outfits feel genuinely stylish and cohesive
-- Each outfit needs at least a top+bottom OR a dress
-- Add shoes if available, accessories if they work
-- Give each outfit a creative name and a vibe word (one word like: Chic, Bold, Relaxed, Elegant, Edgy)
-- Write a short 1-2 sentence styling description that feels personal and warm
+YOUR JOB:
+- Study the FULL wardrobe carefully before picking anything
+- Create 3 outfits that each feel completely different from each other
+- Rotate through ALL available items - spread the wardrobe across all 3 outfits
+- Never use the same item in more than one outfit if you can avoid it
+- Read every item description carefully - "sleeveless" means warm weather, "long sleeve" means cooler weather, use this to match the weather
+- Read every item color - create outfits where colors work together beautifully
+- Match shoes precisely to the outfit mood: heels or flats for elegant/dressy looks, sneakers for casual looks, boots for cold/rainy weather
+- Each outfit must perfectly suit BOTH the weather AND the occasion
+- Each outfit needs: a top + bottom OR a dress, plus shoes if available, plus accessories if they complement the look
+- Copy item names EXACTLY as written in the wardrobe - do not change or shorten them
+- Give each outfit a creative name, a one-word vibe, and a warm personal description explaining why these pieces work together
 
-Respond ONLY with valid JSON, no markdown, no explanation:
+Respond ONLY with valid JSON, no markdown, no extra text:
 {
   "outfits": [
     {
-      "name": "outfit name",
+      "name": "creative outfit name",
       "vibe": "one word",
-      "items": ["EXACT item name copied from wardrobe list", "EXACT item name"],
-      "description": "personal styling description"
+      "items": ["EXACT item name from wardrobe", "EXACT item name from wardrobe"],
+      "description": "warm personal description explaining why these pieces work together"
     }
   ]
 }`;
@@ -224,7 +227,7 @@ Respond ONLY with valid JSON, no markdown, no explanation:
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
+        max_tokens: 2000,
         messages: [{ role: "user", content: prompt }]
       })
     });
