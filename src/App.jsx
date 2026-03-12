@@ -196,15 +196,35 @@ ${recentLearnings ? `WHAT THIS PERSON LIKED/DISLIKED BEFORE - LEARN FROM THIS:\n
 YOUR JOB:
 - Study the FULL wardrobe carefully before picking anything
 - Create 3 outfits that each feel completely different from each other
-- Rotate through ALL available items - spread the wardrobe across all 3 outfits
+- Rotate through ALL available items - use a DIFFERENT top in each outfit, different bottoms, different shoes
 - Never use the same item in more than one outfit if you can avoid it
-- Read every item description carefully - "sleeveless" means warm weather, "long sleeve" means cooler weather, use this to match the weather
-- Read every item color - create outfits where colors work together beautifully
-- Match shoes precisely to the outfit mood: heels or flats for elegant/dressy looks, sneakers for casual looks, boots for cold/rainy weather
-- Each outfit must perfectly suit BOTH the weather AND the occasion
-- Each outfit needs: a top + bottom OR a dress, plus shoes if available, plus accessories if they complement the look
-- Use the EXACT LABEL text from the wardrobe when listing items in outfits - copy it precisely
-- Give each outfit a creative name, a one-word vibe, and a warm personal description explaining why these pieces work together
+- Use the EXACT LABEL text from the wardrobe when listing items - copy it precisely
+
+WEATHER RULES - follow strictly:
+- Warm and Breezy / Sunny and Hot: pick sleeveless or short sleeve items, light fabrics, NO heavy layers
+- Mild and Cloudy: light layers are fine, mix sleeve lengths
+- Cold and Dry / Snowy: long sleeves essential, add outerwear if available
+- Rainy: outerwear essential, avoid open shoes
+
+OCCASION RULES - follow strictly, these override everything:
+- Outdoor / Sport: ONLY use casual comfortable items - sneakers ALWAYS, NO heels, NO formal dresses, NO dressy items
+- Casual Day / Weekend Errands: relaxed items, sneakers or flats, no heels
+- Work / Office: polished items, flats or small heels, smart casual
+- Date Night / Party / Formal Event: elegant items, heels or dressy flats, can use dresses
+- Travel: comfortable practical items, flat shoes
+
+SHOE RULES - match strictly to occasion:
+- Outdoor / Sport / Casual: SNEAKERS only
+- Work / Office: flats or small heels
+- Date Night / Party / Formal: heels or dressy flats
+- Never put heels with sporty or casual outdoor occasions
+
+VARIETY RULES:
+- Each outfit MUST use a different top - rotate through ALL tops available
+- Each outfit MUST use different bottoms where possible
+- Dresses are only appropriate for Date Night, Party, Formal, or Casual Day - NEVER for sport or outdoor
+- Read color descriptions and create cohesive color combinations
+- Each outfit needs: top + bottom OR dress, plus shoes, plus accessories if available
 
 Respond ONLY with valid JSON, no markdown, no extra text:
 {
