@@ -9,9 +9,9 @@ const ANTHROPIC_KEY = import.meta.env.VITE_ANTHROPIC_KEY;
 
 // ── VIP accounts — always Pro, always unlimited ───────────────────────────────
 const VIP_EMAILS = [
-  "insuredbyjacek@msn.com",
-  "zuzia.starz@gmail.com",
-  "stefka992001@gmail.com"
+"insuredbyjacek@msn.com",
+"zuzia.starz@gmail.com",
+"stefka992001@gmail.com"
 ];
 
 const STYLE_OPTIONS = ["Minimalist","Streetwear","Classic","Bohemian","Sporty","Romantic","Edgy","Business"];
@@ -21,30 +21,7 @@ const OCCASION_OPTIONS = ["Casual Day","Work / Office","Date Night","Party","Out
 const CATEGORIES = ["Tops","Bottoms","Dresses","Outerwear","Shoes","Accessories"];
 const G = "#C9A96E", BG = "#0D0C0A", CARD = "#161512", BORDER = "#252320";
 
-const css = `
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0;}
-  .tag{cursor:pointer;padding:7px 16px;border-radius:100px;font-size:12px;font-family:'DM Mono',monospace;border:1px solid #383430;transition:all 0.18s;color:#888;background:transparent;}
-  .tag:hover{border-color:#C9A96E;color:#C9A96E;}
-  .tag.on{background:#C9A96E;color:#0D0C0A;border-color:#C9A96E;}
-  .inp{background:#0F0E0B;border:1px solid #252320;color:#DDD5C5;border-radius:8px;padding:11px 14px;font-family:'DM Mono',monospace;font-size:13px;outline:none;transition:border-color 0.2s;width:100%;}
-  .inp:focus{border-color:#C9A96E50;}
-  .inp::placeholder{color:#2A2820;}
-  select.inp option{background:#161512;}
-  .card{background:#161512;border:1px solid #252320;border-radius:14px;}
-  .gbtn{cursor:pointer;border:none;font-family:'Playfair Display',serif;transition:all 0.2s;width:100%;padding:16px;border-radius:12px;font-size:16px;}
-  .gbtn:hover:not(:disabled){opacity:0.85;transform:translateY(-1px);}
-  .gbtn:disabled{opacity:0.35;cursor:default;}
-  .social{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px;border-radius:10px;font-family:'DM Mono';font-size:13px;cursor:pointer;border:1px solid #252320;background:#111009;color:#777;transition:all 0.18s;}
-  .social:hover{border-color:#C9A96E50;color:#DDD5C5;}
-  .ntab{cursor:pointer;padding:10px 0 12px;font-size:10px;font-family:'DM Mono';letter-spacing:0.04em;border:none;background:transparent;display:flex;flex-direction:column;align-items:center;gap:5px;transition:color 0.18s;border-bottom:2px solid transparent;margin-bottom:-1px;}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-  .fade{animation:fadeUp 0.3s ease forwards;}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .spin{animation:spin 1.2s linear infinite;display:inline-block;}
-  @keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
-  .pulse{animation:pulse 1.4s infinite;}
-`;
+const css = `@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap'); *{box-sizing:border-box;margin:0;padding:0;} .tag{cursor:pointer;padding:7px 16px;border-radius:100px;font-size:12px;font-family:'DM Mono',monospace;border:1px solid #383430;transition:all 0.18s;color:#888;background:transparent;} .tag:hover{border-color:#C9A96E;color:#C9A96E;} .tag.on{background:#C9A96E;color:#0D0C0A;border-color:#C9A96E;} .inp{background:#0F0E0B;border:1px solid #252320;color:#DDD5C5;border-radius:8px;padding:11px 14px;font-family:'DM Mono',monospace;font-size:13px;outline:none;transition:border-color 0.2s;width:100%;} .inp:focus{border-color:#C9A96E50;} .inp::placeholder{color:#2A2820;} select.inp option{background:#161512;} .card{background:#161512;border:1px solid #252320;border-radius:14px;} .gbtn{cursor:pointer;border:none;font-family:'Playfair Display',serif;transition:all 0.2s;width:100%;padding:16px;border-radius:12px;font-size:16px;} .gbtn:hover:not(:disabled){opacity:0.85;transform:translateY(-1px);} .gbtn:disabled{opacity:0.35;cursor:default;} .social{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px;border-radius:10px;font-family:'DM Mono';font-size:13px;cursor:pointer;border:1px solid #252320;background:#111009;color:#777;transition:all 0.18s;} .social:hover{border-color:#C9A96E50;color:#DDD5C5;} .ntab{cursor:pointer;padding:10px 0 12px;font-size:10px;font-family:'DM Mono';letter-spacing:0.04em;border:none;background:transparent;display:flex;flex-direction:column;align-items:center;gap:5px;transition:color 0.18s;border-bottom:2px solid transparent;margin-bottom:-1px;} @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}} .fade{animation:fadeUp 0.3s ease forwards;} @keyframes spin{to{transform:rotate(360deg)}} .spin{animation:spin 1.2s linear infinite;display:inline-block;} @keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}} .pulse{animation:pulse 1.4s infinite;} @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}} .ai-scanning{background:linear-gradient(90deg,#C9A96E20 25%,#C9A96E60 50%,#C9A96E20 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;}`;
 
 const Logo = () => (
   <div style={{fontFamily:"'Playfair Display',serif",fontSize:26,letterSpacing:"-0.02em"}}>
@@ -80,13 +57,11 @@ async function sbSet(table, userId, val) {
 }
 
 async function storageGet(key, userId) {
-  // Try Supabase first
   const tableMap = { "clozie-profile": "profiles", "clozie-learnings": "profiles", "clozie-favs": "favorites" };
   if (supabase && userId && tableMap[key]) {
     const d = await sbGet(tableMap[key], userId + "-" + key);
     if (d !== null) return d;
   }
-  // Fallback: localStorage
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch(e) { return null; }
 }
 async function storageSet(key, val, userId) {
@@ -100,7 +75,6 @@ async function storageSet(key, val, userId) {
 async function saveCloset(closet, userId) {
   try { localStorage.setItem("clozie-closet", JSON.stringify(closet)); } catch(e) {}
   if (supabase && userId) {
-    // Store without images for DB (images stay in localStorage)
     const slim = closet.map(({image, ...rest}) => rest);
     await sbSet("closet", userId, slim);
   }
@@ -108,12 +82,10 @@ async function saveCloset(closet, userId) {
 }
 
 async function loadCloset(userId) {
-  // Try localStorage first (has full images)
   try {
     const v = localStorage.getItem("clozie-closet");
     if (v) { const p = JSON.parse(v); if (Array.isArray(p) && p.length > 0) return p; }
   } catch(e) {}
-  // Try Supabase (no images but persistent)
   if (supabase && userId) {
     const d = await sbGet("closet", userId);
     if (Array.isArray(d) && d.length > 0) return d;
@@ -121,7 +93,79 @@ async function loadCloset(userId) {
   return null;
 }
 
-// ── Fallback rule-based outfits (used if AI fails) ───────────────────────────
+// ── AI PHOTO RECOGNITION ──────────────────────────────────────────────────────
+async function analyseClothingPhoto(imageBase64) {
+  if (!ANTHROPIC_KEY) return null;
+  
+  // Strip the data URL prefix to get just the base64 data
+  const base64Data = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
+  const mediaType = imageBase64.includes("image/png") ? "image/png" : 
+                    imageBase64.includes("image/webp") ? "image/webp" : "image/jpeg";
+
+  const prompt = `You are a fashion expert analysing a clothing item photo for a wardrobe app called Clozie.
+
+Look at this clothing item and return ONLY a JSON object with these exact fields:
+- "name": a short descriptive name (2-4 words, e.g. "White linen shirt", "Black midi skirt", "Brown leather boots")
+- "category": MUST be exactly one of: Tops, Bottoms, Dresses, Outerwear, Shoes, Accessories
+- "color": the main color(s) and pattern (e.g. "Navy blue", "Floral print", "Black and white stripe")
+- "description": one short phrase about style/fit/fabric (e.g. "Relaxed fit", "Knee length", "Ankle boots with heel")
+
+Rules:
+- category must be EXACTLY one of the 6 options listed
+- name should be concise and clear
+- color should describe what you actually see
+- description should be brief and useful for outfit matching
+
+Respond ONLY with valid JSON, nothing else. Example:
+{"name":"White linen shirt","category":"Tops","color":"White","description":"Relaxed fit, slightly sheer"}`;
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 300,
+        messages: [{
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: mediaType,
+                data: base64Data
+              }
+            },
+            { type: "text", text: prompt }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text || "";
+    const clean = text.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(clean);
+    
+    // Validate category is one of the allowed ones
+    if (!CATEGORIES.includes(parsed.category)) {
+      parsed.category = "Tops"; // safe fallback
+    }
+    
+    return parsed;
+  } catch(e) {
+    console.error("Photo analysis failed:", e);
+    return null;
+  }
+}
+
+// ── Fallback rule-based outfits ───────────────────────────────────────────────
 function makeOutfitsFallback(closet, context) {
   const by = cat => closet.filter(c => c.category === cat);
   const tops=by("Tops"), bottoms=by("Bottoms"), dresses=by("Dresses");
@@ -152,74 +196,44 @@ function makeOutfitsFallback(closet, context) {
   return results;
 }
 
-// ── AI-powered outfit generation ──────────────────────────────────────────────
+// ── AI outfit generation ──────────────────────────────────────────────────────
 async function makeOutfitsAI(closet, context, profile, learnings) {
   if (!ANTHROPIC_KEY) return makeOutfitsFallback(closet, context);
 
   const occasion = context.occasion || "";
   const weather = context.weather || "";
 
-  // ── STEP 1: HARD FILTERS (code enforces these 100%) ──────────────────────────
   const isSporty = occasion === "Outdoor / Sport";
   const isCasual = ["Casual Day","Weekend Errands","Travel"].includes(occasion);
   const isDressy = ["Date Night","Party","Formal Event"].includes(occasion);
-  const isWork = occasion === "Work / Office";
   const isHot = ["Sunny & Hot","Warm & Breezy"].includes(weather);
   const isCold = ["Cold & Dry","Rainy","Snowy"].includes(weather);
   const isRainy = weather === "Rainy";
 
   const desc = item => (item.name + " " + item.description + " " + item.color).toLowerCase();
-
   const isHeel = item => desc(item).match(/heel|pump|stiletto/);
   const isSneaker = item => desc(item).match(/sneaker|trainer|running|sport shoe/);
-  const isFlat = item => desc(item).match(/flat|loafer|ballet|moccasin/);
   const isSleeveless = item => desc(item).match(/sleeveless|tank|cami|strapless/);
   const isLongSleeve = item => desc(item).match(/long.?sleeve|longsleeve/);
-  const isDress = item => item.category === "Dresses";
-  const isOuterwear = item => item.category === "Outerwear";
 
-  // Filter each category with smart rules
   const filterItems = (items, category) => {
     return items.filter(item => {
-
-      // ── SHOES ──────────────────────────────────────────────────────────────
       if (category === "Shoes") {
         const hasNonHeels = items.filter(s => !isHeel(s)).length > 0;
         const hasNonSneakers = items.filter(s => !isSneaker(s)).length > 0;
-
-        // Sport: NEVER heels - sneakers or flats only
         if (isSporty && isHeel(item)) return false;
-
-        // Casual: no heels (flats and sneakers are fine)
-        // A casual outfit can have flats OR sneakers - both are good!
         if (isCasual && isHeel(item) && hasNonHeels) return false;
-
-        // Dressy (party, date night, formal): prefer no sneakers
-        // BUT if sneakers are all they have, use them
         if (isDressy && isSneaker(item) && hasNonSneakers) return false;
-
-        // Work: all shoes are fine (flats, small heels, even clean sneakers)
       }
-
-      // ── DRESSES ────────────────────────────────────────────────────────────
       if (category === "Dresses") {
-        // Never for sport - dresses are not practical for outdoor sport
         if (isSporty) return false;
-        // Dresses are great for: casual, work, date night, party, formal
-        // In cold weather: dress + coat/jacket combo is fine and stylish!
-        // In hot weather: sleeveless dress is perfect
       }
-
-      // ── TOPS: weather filtering ─────────────────────────────────────────────
       if (category === "Tops") {
         const hasNonSleeveless = items.filter(t => !isSleeveless(t)).length > 0;
         const hasNonLongSleeve = items.filter(t => !isLongSleeve(t)).length > 0;
-        // Cold weather: avoid sleeveless if other options exist
         if (isCold && isSleeveless(item) && hasNonSleeveless) return false;
-        // Hot weather: avoid long sleeve if other options exist
         if (isHot && isLongSleeve(item) && hasNonLongSleeve) return false;
       }
-
       return true;
     });
   };
@@ -239,7 +253,6 @@ async function makeOutfitsAI(closet, context, profile, learnings) {
   const outerwear = allOuterwear;
   const accessories = allAccessories;
 
-  // ── STEP 2: BUILD 3 VARIED OUTFIT COMBINATIONS ───────────────────────────────
   const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
   const sTops = shuffle(tops);
   const sBottoms = shuffle(bottoms);
@@ -255,28 +268,21 @@ async function makeOutfitsAI(closet, context, profile, learnings) {
     const usedIds = new Set();
     const add = item => { if (item && !usedIds.has(item.id)) { items.push(item); usedIds.add(item.id); } };
 
-    // Dress outfit: only for dressy occasions, only once
-    // Dresses work for ALL occasions except sport
     const useDress = !isSporty && i === 0 && sDresses.length > 0;
 
     if (useDress) {
       add(sDresses[0]);
     } else {
-      // Pick different top for each outfit
       add(sTops[i % sTops.length]);
-      // Pick different bottom for each outfit  
       add(sBottoms[i % sBottoms.length]);
     }
 
-    // Add outerwear for cold/rainy
     if ((isCold || isRainy) && sOuterwear.length > 0) {
       add(sOuterwear[i % sOuterwear.length]);
     }
 
-    // Add shoes - rotate through appropriate shoes
     add(sShoes[i % sShoes.length]);
 
-    // Add accessories if available
     if (sAccessories.length > 0) {
       add(sAccessories[i % sAccessories.length]);
     }
@@ -284,7 +290,6 @@ async function makeOutfitsAI(closet, context, profile, learnings) {
     if (items.length > 0) outfitCombinations.push(items);
   }
 
-  // ── STEP 3: AI NAMES AND DESCRIBES THE PRE-BUILT OUTFITS ─────────────────────
   const styleInfo = [
     profile.styles.length > 0 ? `Style: ${profile.styles.join(", ")}` : null,
     profile.colors.length > 0 ? `Favourite colors: ${profile.colors.join(", ")}` : null,
@@ -338,7 +343,7 @@ Respond ONLY with valid JSON:
       const ai = parsed.outfits?.[i] || {};
       return {
         id: Date.now() + i,
-        name: ai.name || ["Today\'s Look","Fresh Pick","Style Edit"][i] || "Outfit "+(i+1),
+        name: ai.name || ["Today's Look","Fresh Pick","Style Edit"][i] || "Outfit "+(i+1),
         vibe: ai.vibe || ["Chic","Relaxed","Bold"][i] || "Stylish",
         items: itemObjects.map(it => [it.color, it.name, it.description].filter(Boolean).join(" ")),
         itemObjects,
@@ -350,7 +355,7 @@ Respond ONLY with valid JSON:
     console.error("AI naming failed, using defaults:", e);
     return outfitCombinations.map((itemObjects, i) => ({
       id: Date.now() + i,
-      name: ["Today\'s Look","Fresh Pick","Style Edit"][i] || "Outfit "+(i+1),
+      name: ["Today's Look","Fresh Pick","Style Edit"][i] || "Outfit "+(i+1),
       vibe: ["Chic","Relaxed","Bold"][i] || "Stylish",
       items: itemObjects.map(it => [it.color, it.name, it.description].filter(Boolean).join(" ")),
       itemObjects,
@@ -358,7 +363,6 @@ Respond ONLY with valid JSON:
     }));
   }
 }
-
 
 function Splash({onDone}) {
   useEffect(()=>{ setTimeout(onDone, 1800); },[]);
@@ -408,7 +412,6 @@ function Onboarding({onDone}) {
               </div>
           }
         </div>
-        {/* Step dots */}
         <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:32}}>
           {steps.map((_,i)=>(
             <div key={i} style={{width:i===step?24:8,height:8,borderRadius:100,background:i===step?G:"#252320",transition:"all 0.3s"}}/>
@@ -671,12 +674,10 @@ function AvatarView({outfit}) {
   const top     = isDress || allItems.find(i=>["Tops","Outerwear"].includes(i.category)) || null;
   const bottom  = isDress ? null : (allItems.find(i=>i.category==="Bottoms") || null);
   const shoes   = allItems.find(i=>i.category==="Shoes") || null;
-  // Accessories — split by type
   const allAcc  = allItems.filter(i=>i.category==="Accessories");
   const hat     = allAcc.find(i=>/(hat|cap|beret|beanie|headband)/i.test(i.name||""));
   const earring = allAcc.find(i=>/(earring|ear|stud|hoop)/i.test(i.name||""));
   const bag     = allAcc.find(i=>/(bag|purse|clutch|tote)/i.test(i.name||""));
-  // Fallback — if no name match, just show first two
   const acc1 = hat || earring || allAcc[0] || null;
   const acc2 = bag || (hat ? earring : null) || allAcc[1] || null;
 
@@ -691,7 +692,6 @@ function AvatarView({outfit}) {
 
   return (
     <div style={{background:bg,padding:"16px 16px 8px",transition:"background 0.3s"}}>
-      {/* Background picker */}
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,justifyContent:"center"}}>
         <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#999",letterSpacing:"0.1em"}}>BACKGROUND</span>
         {bgOptions.map(o=>(
@@ -699,124 +699,163 @@ function AvatarView({outfit}) {
         ))}
       </div>
       <div style={{display:"flex",justifyContent:"center"}}>
-      <div style={{position:"relative",width:200,userSelect:"none"}}>
+        <div style={{position:"relative",width:200,userSelect:"none"}}>
+          <svg width="200" height="500" viewBox="0 0 200 500" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:"block"}}>
+            <ellipse cx="100" cy="32" rx="16" ry="20" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1"/>
+            <rect x="95" y="50" width="10" height="14" rx="3" fill="#DDD0BC"/>
+            <path d="M48 74 Q100 60 152 74" stroke="#C8B8A2" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+            <path d="M52 74 Q46 104 52 124 Q72 132 100 132 Q128 132 148 124 Q154 104 148 74 Q100 62 52 74Z" fill="#E8DCC8" stroke="#C8B8A2" strokeWidth="0.8"/>
+            <path d="M54 122 Q100 130 146 122" stroke="#C8B8A2" strokeWidth="0.5" strokeDasharray="3,2" opacity="0.4"/>
+            <path d="M52 124 Q44 144 48 164 Q70 174 100 174 Q130 174 152 164 Q156 144 148 124 Q128 132 100 132 Q72 132 52 124Z" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="0.8"/>
+            <path d="M52 76 Q38 116 40 168" stroke="#DDD0BC" strokeWidth="10" strokeLinecap="round"/>
+            <path d="M52 76 Q38 116 40 168" stroke="#C8B8A2" strokeWidth="0.8" strokeLinecap="round" fill="none"/>
+            <path d="M148 76 Q162 116 160 168" stroke="#DDD0BC" strokeWidth="10" strokeLinecap="round"/>
+            <path d="M148 76 Q162 116 160 168" stroke="#C8B8A2" strokeWidth="0.8" strokeLinecap="round" fill="none"/>
+            <path d="M76 170 Q70 300 72 420" stroke="#DDD0BC" strokeWidth="20" strokeLinecap="round"/>
+            <path d="M76 170 Q70 300 72 420" stroke="#C8B8A2" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
+            <path d="M124 170 Q130 300 128 420" stroke="#DDD0BC" strokeWidth="20" strokeLinecap="round"/>
+            <path d="M124 170 Q130 300 128 420" stroke="#C8B8A2" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
+            <path d="M60 418 Q72 428 86 424" stroke="#C8B8A2" strokeWidth="8" strokeLinecap="round"/>
+            <path d="M114 418 Q126 428 140 424" stroke="#C8B8A2" strokeWidth="8" strokeLinecap="round"/>
+          </svg>
 
-        {/* Mannequin SVG */}
-        <svg width="200" height="500" viewBox="0 0 200 500" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:"block"}}>
-          <ellipse cx="100" cy="32" rx="16" ry="20" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1"/>
-          <rect x="95" y="50" width="10" height="14" rx="3" fill="#DDD0BC"/>
-          <path d="M48 74 Q100 60 152 74" stroke="#C8B8A2" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-          <path d="M52 74 Q46 104 52 124 Q72 132 100 132 Q128 132 148 124 Q154 104 148 74 Q100 62 52 74Z" fill="#E8DCC8" stroke="#C8B8A2" strokeWidth="0.8"/>
-          <path d="M54 122 Q100 130 146 122" stroke="#C8B8A2" strokeWidth="0.5" strokeDasharray="3,2" opacity="0.4"/>
-          <path d="M52 124 Q44 144 48 164 Q70 174 100 174 Q130 174 152 164 Q156 144 148 124 Q128 132 100 132 Q72 132 52 124Z" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="0.8"/>
-          <path d="M52 76 Q38 116 40 168" stroke="#DDD0BC" strokeWidth="10" strokeLinecap="round"/>
-          <path d="M52 76 Q38 116 40 168" stroke="#C8B8A2" strokeWidth="0.8" strokeLinecap="round" fill="none"/>
-          <path d="M148 76 Q162 116 160 168" stroke="#DDD0BC" strokeWidth="10" strokeLinecap="round"/>
-          <path d="M148 76 Q162 116 160 168" stroke="#C8B8A2" strokeWidth="0.8" strokeLinecap="round" fill="none"/>
-          <path d="M76 170 Q70 300 72 420" stroke="#DDD0BC" strokeWidth="20" strokeLinecap="round"/>
-          <path d="M76 170 Q70 300 72 420" stroke="#C8B8A2" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
-          <path d="M124 170 Q130 300 128 420" stroke="#DDD0BC" strokeWidth="20" strokeLinecap="round"/>
-          <path d="M124 170 Q130 300 128 420" stroke="#C8B8A2" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
-          <path d="M60 418 Q72 428 86 424" stroke="#C8B8A2" strokeWidth="8" strokeLinecap="round"/>
-          <path d="M114 418 Q126 428 140 424" stroke="#C8B8A2" strokeWidth="8" strokeLinecap="round"/>
-        </svg>
-
-        {/* DRESS */}
-        {isDress && isDress.image && (
-          <div style={{position:"absolute",top:60,left:36,width:128,height:340,borderRadius:10,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 16px #00000025"}}>
-            <img src={isDress.image} alt={isDress.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
-          </div>
-        )}
-
-        {/* TOP */}
-        {!isDress && top && top.image && (
-          <div style={{position:"absolute",top:58,left:38,width:124,height:170,borderRadius:8,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 12px #00000022"}}>
-            <img src={top.image} alt={top.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
-          </div>
-        )}
-
-        {/* BOTTOM */}
-        {!isDress && bottom && bottom.image && (
-          <div style={{position:"absolute",top:220,left:38,width:124,height:190,borderRadius:8,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 12px #00000022"}}>
-            <img src={bottom.image} alt={bottom.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
-          </div>
-        )}
-
-        {/* SHOES — single clean display */}
-        {shoes && shoes.image && (
-          <div style={{position:"absolute",top:402,left:40,width:120,height:70,borderRadius:8,overflow:"hidden",boxShadow:"0 2px 8px #00000020",background:"#f0ede8"}}>
-            <img src={shoes.image} alt={shoes.name} style={{width:"100%",height:"100%",objectFit:"contain",mixBlendMode:"multiply"}}/>
-          </div>
-        )}
-
-        {/* HAT — on top of head */}
-        {acc1 && acc1.image && /(hat|cap|beret|beanie|headband)/i.test(acc1.name||"") && (
-          <div style={{position:"absolute",top:-10,left:68,width:64,height:44,borderRadius:8,overflow:"hidden",boxShadow:"0 2px 8px #00000030"}}>
-            <img src={acc1.image} alt={acc1.name} style={{width:"100%",height:"100%",objectFit:"contain",mixBlendMode:"multiply"}}/>
-          </div>
-        )}
-
-        {/* EARRING — beside ear, left side */}
-        {acc1 && acc1.image && !/(hat|cap|beret|beanie|headband)/i.test(acc1.name||"") && (
-          <div style={{position:"absolute",top:18,left:62,width:36,height:36,borderRadius:"50%",overflow:"hidden",border:"2px solid #fff",boxShadow:"0 2px 8px #00000030"}}>
-            <img src={acc1.image} alt={acc1.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-          </div>
-        )}
-
-        {/* SECOND ACCESSORY — right side near ear or as badge */}
-        {acc2 && acc2.image && (
-          <div style={{position:"absolute",top:18,right:62,width:36,height:36,borderRadius:"50%",overflow:"hidden",border:"2px solid #fff",boxShadow:"0 2px 8px #00000030"}}>
-            <img src={acc2.image} alt={acc2.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-          </div>
-        )}
-
-        {/* Labels */}
-        <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:5}}>
-          {[top,bottom,shoes,acc1,acc2].filter(Boolean).map((item,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
-              <div style={{width:5,height:5,borderRadius:"50%",background:"#C9A96E",flexShrink:0}}/>
-              <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888"}}>{item.name}</span>
-              {item.category&&<span style={{fontFamily:"'DM Mono'",fontSize:8,color:"#C9A96E",opacity:0.6}}>{item.category}</span>}
+          {isDress && isDress.image && (
+            <div style={{position:"absolute",top:60,left:36,width:128,height:340,borderRadius:10,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 16px #00000025"}}>
+              <img src={isDress.image} alt={isDress.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
             </div>
-          ))}
+          )}
+          {!isDress && top && top.image && (
+            <div style={{position:"absolute",top:58,left:38,width:124,height:170,borderRadius:8,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 12px #00000022"}}>
+              <img src={top.image} alt={top.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
+            </div>
+          )}
+          {!isDress && bottom && bottom.image && (
+            <div style={{position:"absolute",top:220,left:38,width:124,height:190,borderRadius:8,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 12px #00000022"}}>
+              <img src={bottom.image} alt={bottom.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
+            </div>
+          )}
+          {shoes && shoes.image && (
+            <div style={{position:"absolute",top:402,left:40,width:120,height:70,borderRadius:8,overflow:"hidden",boxShadow:"0 2px 8px #00000020",background:"#f0ede8"}}>
+              <img src={shoes.image} alt={shoes.name} style={{width:"100%",height:"100%",objectFit:"contain",mixBlendMode:"multiply"}}/>
+            </div>
+          )}
+          {acc1 && acc1.image && /(hat|cap|beret|beanie|headband)/i.test(acc1.name||"") && (
+            <div style={{position:"absolute",top:-10,left:68,width:64,height:44,borderRadius:8,overflow:"hidden",boxShadow:"0 2px 8px #00000030"}}>
+              <img src={acc1.image} alt={acc1.name} style={{width:"100%",height:"100%",objectFit:"contain",mixBlendMode:"multiply"}}/>
+            </div>
+          )}
+          {acc1 && acc1.image && !/(hat|cap|beret|beanie|headband)/i.test(acc1.name||"") && (
+            <div style={{position:"absolute",top:18,left:62,width:36,height:36,borderRadius:"50%",overflow:"hidden",border:"2px solid #fff",boxShadow:"0 2px 8px #00000030"}}>
+              <img src={acc1.image} alt={acc1.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+            </div>
+          )}
+          {acc2 && acc2.image && (
+            <div style={{position:"absolute",top:18,right:62,width:36,height:36,borderRadius:"50%",overflow:"hidden",border:"2px solid #fff",boxShadow:"0 2px 8px #00000030"}}>
+              <img src={acc2.image} alt={acc2.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+            </div>
+          )}
+
+          <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:5}}>
+            {[top,bottom,shoes,acc1,acc2].filter(Boolean).map((item,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
+                <div style={{width:5,height:5,borderRadius:"50%",background:"#C9A96E",flexShrink:0}}/>
+                <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888"}}>{item.name}</span>
+                {item.category&&<span style={{fontFamily:"'DM Mono'",fontSize:8,color:"#C9A96E",opacity:0.6}}>{item.category}</span>}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
       </div>
     </div>
   );
 }
 
-
+// ── IMPROVED MoodBoard with obvious tabs ──────────────────────────────────────
 function MoodBoard({outfit, onClose}) {
-  const [view, setView] = useState("moodboard"); // "moodboard" | "avatar"
+  const [view, setView] = useState("moodboard");
   const items = outfit.itemObjects || [];
   const withPhoto = items.filter(it => it && it.image);
 
+  const tabs = [
+    { id: "moodboard", icon: "🖼", label: "Mood Board", sub: "Photos side by side" },
+    { id: "avatar",    icon: "✦",  label: "On Body",    sub: "Styled on mannequin" },
+  ];
+
   return (
-    <div style={{position:"fixed",inset:0,background:"#000000DD",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}} onClick={onClose}>
-      <div style={{background:"#F5F0E8",borderRadius:16,width:"100%",maxWidth:460,position:"relative"}} onClick={e=>e.stopPropagation()}>
+    <div style={{position:"fixed",inset:0,background:"#000000EE",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}} onClick={onClose}>
+      <div style={{background:"#F5F0E8",borderRadius:20,width:"100%",maxWidth:460,position:"relative",boxShadow:"0 32px 80px #000000AA"}} onClick={e=>e.stopPropagation()}>
 
         {/* Header */}
-        <div style={{background:BG,padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderRadius:"16px 16px 0 0"}}>
+        <div style={{background:BG,padding:"18px 22px",display:"flex",justifyContent:"space-between",alignItems:"center",borderRadius:"20px 20px 0 0"}}>
           <div>
             <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.15em"}}>{(outfit.vibe||"OUTFIT").toUpperCase()}</div>
-            <div style={{fontFamily:"'Playfair Display',serif",fontWeight:300,fontSize:18,color:"#EDE5D8"}}>{outfit.name}</div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontWeight:300,fontSize:20,color:"#EDE5D8"}}>{outfit.name}</div>
           </div>
-          <button onClick={onClose} style={{background:"none",border:"1px solid "+BORDER,borderRadius:8,color:"#888",fontFamily:"'DM Mono'",fontSize:11,padding:"5px 12px",cursor:"pointer"}}>Close</button>
+          <button onClick={onClose} style={{background:"#1A1815",border:"1px solid "+BORDER,borderRadius:10,color:"#888",fontFamily:"'DM Mono'",fontSize:11,padding:"7px 14px",cursor:"pointer",transition:"all 0.15s"}}>✕ Close</button>
         </div>
 
-        {/* View toggle */}
-        <div style={{display:"flex",background:BG,borderBottom:"1px solid "+BORDER}}>
-          {[["moodboard","🖼 Mood Board"],["avatar","✦ Outfit Preview"]].map(([v,label])=>(
-            <button key={v} onClick={()=>setView(v)} style={{
-              flex:1,padding:"10px",border:"none",cursor:"pointer",
-              fontFamily:"'DM Mono'",fontSize:11,
-              background:view===v?G+"20":BG,
-              color:view===v?G:"#666",
-              borderBottom:"2px solid "+(view===v?G:"transparent"),
-              transition:"all 0.18s"
-            }}>{label}</button>
-          ))}
+        {/* ── TAB SWITCHER — big, bold, impossible to miss ── */}
+        <div style={{background:BG,padding:"14px 16px 0",borderBottom:"2px solid "+BORDER}}>
+          <div style={{display:"flex",gap:8}}>
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setView(tab.id)}
+                style={{
+                  flex: 1,
+                  padding: "12px 8px 14px",
+                  border: "none",
+                  cursor: "pointer",
+                  borderRadius: "10px 10px 0 0",
+                  background: view === tab.id ? "#F5F0E8" : "#111009",
+                  borderTop: "2px solid " + (view === tab.id ? G : "transparent"),
+                  borderLeft: "1px solid " + (view === tab.id ? BORDER : "transparent"),
+                  borderRight: "1px solid " + (view === tab.id ? BORDER : "transparent"),
+                  transition: "all 0.2s",
+                  position: "relative",
+                  marginBottom: view === tab.id ? "-2px" : "0",
+                }}
+              >
+                <div style={{
+                  fontSize: 20,
+                  marginBottom: 4,
+                  filter: view === tab.id ? "none" : "grayscale(1) opacity(0.4)"
+                }}>
+                  {tab.icon}
+                </div>
+                <div style={{
+                  fontFamily: "'DM Mono'",
+                  fontSize: 11,
+                  fontWeight: view === tab.id ? "bold" : "normal",
+                  color: view === tab.id ? "#1A1612" : "#555",
+                  letterSpacing: "0.04em",
+                  marginBottom: 2,
+                }}>
+                  {tab.label}
+                </div>
+                <div style={{
+                  fontFamily: "'DM Mono'",
+                  fontSize: 9,
+                  color: view === tab.id ? "#8A7A68" : "#333",
+                  letterSpacing: "0.02em",
+                }}>
+                  {tab.sub}
+                </div>
+                {view === tab.id && (
+                  <div style={{
+                    position: "absolute",
+                    top: -2,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: 32,
+                    height: 2,
+                    background: G,
+                    borderRadius: 2,
+                  }}/>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Mood Board view */}
@@ -841,11 +880,11 @@ function MoodBoard({outfit, onClose}) {
           </div>
         )}
 
-        {/* Avatar view */}
+        {/* Avatar / On Body view */}
         {view==="avatar"&&<AvatarView outfit={outfit}/>}
 
-        {/* Items list */}
-        <div style={{background:BG,padding:"14px 20px",borderRadius:"0 0 16px 16px"}}>
+        {/* Items list footer */}
+        <div style={{background:BG,padding:"14px 20px",borderRadius:"0 0 20px 20px"}}>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:withPhoto.length>0?10:0}}>
             {items.map((it,j)=>(
               <span key={j} style={{padding:"4px 10px",background:CARD,borderRadius:100,fontFamily:"'DM Mono'",fontSize:10,color:"#8A7A68",border:"1px solid "+BORDER,display:"flex",alignItems:"center",gap:5}}>
@@ -860,7 +899,6 @@ function MoodBoard({outfit, onClose}) {
     </div>
   );
 }
-
 
 function Favorites({favOutfits, onRemove, onBack}) {
   const [viewing, setViewing] = useState(null);
@@ -889,45 +927,43 @@ function Favorites({favOutfits, onRemove, onBack}) {
                 </div>
               </div>
             : favOutfits.map((o,i)=>(
-              <div key={o.id||i} className="card" style={{marginBottom:14,overflow:"hidden",cursor:"pointer"}} onClick={()=>setViewing(o)}>
-                {/* Photo strip preview */}
-                {true ? (
-                  <div style={{display:"flex",gap:8,padding:"10px 10px 0",background:CARD,position:"relative"}}>
-                    {(o.itemObjects||[]).filter(it=>it&&it.image).slice(0,4).map((item,j)=>(
-                      <div key={j} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                        <img src={item.image} alt={item.name} style={{width:"100%",maxHeight:120,objectFit:"contain",borderRadius:6,background:"#111009"}}/>
-                        <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",paddingBottom:6,textAlign:"center"}}>{item.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{height:60,background:"#111009",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                    <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666"}}>Tap to view mood board ✦</span>
-                  </div>
-                )}
-                <div style={{padding:16}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                    <div>
-                      <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.15em",marginBottom:3}}>{(o.vibe||"OUTFIT").toUpperCase()}</div>
-                      <div style={{fontSize:18,fontWeight:300}}>{o.name}</div>
+                <div key={o.id||i} className="card" style={{marginBottom:14,overflow:"hidden",cursor:"pointer"}} onClick={()=>setViewing(o)}>
+                  {true ? (
+                    <div style={{display:"flex",gap:8,padding:"10px 10px 0",background:CARD,position:"relative"}}>
+                      {(o.itemObjects||[]).filter(it=>it&&it.image).slice(0,4).map((item,j)=>(
+                        <div key={j} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                          <img src={item.image} alt={item.name} style={{width:"100%",maxHeight:120,objectFit:"contain",borderRadius:6,background:"#111009"}}/>
+                          <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",paddingBottom:6,textAlign:"center"}}>{item.name}</span>
+                        </div>
+                      ))}
                     </div>
-                    <button onClick={e=>{e.stopPropagation();onRemove(o.id||i);}} style={{background:"none",border:"1px solid #3A1515",borderRadius:8,color:"#C96E6E",fontFamily:"'DM Mono'",fontSize:10,padding:"4px 10px",cursor:"pointer"}}>Remove</button>
-                  </div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                    {(o.items||[]).map((it,j)=>(
-                      <span key={j} style={{padding:"3px 10px",background:BG,borderRadius:100,fontFamily:"'DM Mono'",fontSize:10,color:"#8A7A68",border:"1px solid "+BORDER}}>{it}</span>
-                    ))}
+                  ) : (
+                    <div style={{height:60,background:"#111009",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666"}}>Tap to view mood board ✦</span>
+                    </div>
+                  )}
+                  <div style={{padding:16}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                      <div>
+                        <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.15em",marginBottom:3}}>{(o.vibe||"OUTFIT").toUpperCase()}</div>
+                        <div style={{fontSize:18,fontWeight:300}}>{o.name}</div>
+                      </div>
+                      <button onClick={e=>{e.stopPropagation();onRemove(o.id||i);}} style={{background:"none",border:"1px solid #3A1515",borderRadius:8,color:"#C96E6E",fontFamily:"'DM Mono'",fontSize:10,padding:"4px 10px",cursor:"pointer"}}>Remove</button>
+                    </div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                      {(o.items||[]).map((it,j)=>(
+                        <span key={j} style={{padding:"3px 10px",background:BG,borderRadius:100,fontFamily:"'DM Mono'",fontSize:10,color:"#8A7A68",border:"1px solid "+BORDER}}>{it}</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))
           }
         </div>
       </div>
     </div>
   );
 }
-
 
 function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset, profile, setProfile, learnings, setLearnings, favOutfits, setFavOutfits, saveStatus}) {
   const [step,setStep]=useState("profile");
@@ -940,14 +976,46 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
   const [editingItem,setEditingItem]=useState(null);
   const [moodBoard,setMoodBoard]=useState(null);
   const [showFavs,setShowFavs]=useState(false);
+  // AI photo recognition state
+  const [aiScanning,setAiScanning]=useState(false);
+  const [aiScanResult,setAiScanResult]=useState(null);
   const fileRef=useRef();
+  const cameraRef=useRef();
 
   const toggle=(key,val)=>setProfile(p=>({...p,[key]:p[key].includes(val)?p[key].filter(x=>x!==val):[...p[key],val]}));
 
-  const handleImg=e=>{
-    const f=e.target.files[0]; if(!f) return;
-    const r=new FileReader();
-    r.onload=ev=>setNewItem(p=>({...p,image:ev.target.result}));
+  // ── handleImg: shows photo instantly, then AI scans ──────────────────────
+  const handleImg = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    // Reset input so same file can be re-selected if needed
+    e.target.value = "";
+    const r = new FileReader();
+    r.onload = (ev) => {
+      const imageData = ev.target.result;
+      // Show photo immediately
+      setNewItem(p => ({...p, image: imageData}));
+      setAiScanning(true);
+      setAiScanResult(null);
+      // Run AI analysis async (don't block UI)
+      analyseClothingPhoto(imageData).then(result => {
+        if (result) {
+          setAiScanResult(result);
+          setNewItem(p => ({
+            ...p,
+            image: imageData,
+            name: result.name || p.name,
+            category: result.category || p.category,
+            color: result.color || p.color,
+            description: result.description || p.description,
+          }));
+        }
+      }).catch(err => {
+        console.error("Photo scan failed:", err);
+      }).finally(() => {
+        setAiScanning(false);
+      });
+    };
     r.readAsDataURL(f);
   };
 
@@ -955,6 +1023,7 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
     if(!newItem.name.trim()) return;
     setCloset(p=>[...p,{...newItem,id:Date.now()}]);
     setNewItem({name:"",category:"Tops",color:"",description:""});
+    setAiScanResult(null);
     setAddingItem(false);
   };
 
@@ -1103,7 +1172,7 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
                     </div>
                     <div style={{fontSize:15,fontWeight:300}}>{item.name}</div>
                     {item.color&&<div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#6A6058",marginTop:2}}>{item.color}</div>}
-<div style={{position:"absolute",top:8,right:8,display:"flex",gap:4}}>
+                    <div style={{position:"absolute",top:8,right:8,display:"flex",gap:4}}>
                       <button onClick={()=>setEditingItem(item)} style={{background:"#1A1815",color:G,border:"none",borderRadius:"50%",width:22,height:22,fontSize:11,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✎</button>
                       <button onClick={()=>setCloset(p=>p.filter(c=>c.id!==item.id))} style={{background:"#1A1815",color:"#888",border:"none",borderRadius:"50%",width:22,height:22,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
                     </div>
@@ -1111,7 +1180,6 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
                 ))}
               </div>
             )}
-            {/* Edit item modal */}
             {editingItem&&(
               <div className="card" style={{padding:22,marginBottom:12,borderColor:G+"40"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
@@ -1133,26 +1201,109 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
               <div className="card" style={{padding:22,marginBottom:12}}>
                 <Label text="NEW ITEM"/>
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                  <input className="inp" placeholder="Name * (e.g. White linen shirt)" value={newItem.name} onChange={e=>setNewItem(p=>({...p,name:e.target.value}))}/>
+
+                  {/* ── AI PHOTO UPLOAD — camera + gallery options ── */}
+                  <div style={{
+                    border: "2px dashed " + (newItem.image ? G : BORDER),
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    transition: "border-color 0.2s",
+                    position: "relative",
+                  }}>
+                    {/* State: no photo yet, not scanning */}
+                    {!newItem.image && !aiScanning && (
+                      <div style={{padding:"20px 16px"}}>
+                        <div style={{textAlign:"center",marginBottom:14}}>
+                          <div style={{fontSize:32,marginBottom:6}}>📷</div>
+                          <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:15,color:"#EDE5D8",marginBottom:3}}>Add a Photo</div>
+                          <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.06em"}}>✦ AI fills in all details automatically</div>
+                        </div>
+                        {/* Two clear buttons */}
+                        <div style={{display:"flex",gap:8}}>
+                          <button
+                            onClick={()=>cameraRef.current.click()}
+                            style={{flex:1,padding:"10px 8px",background:"#111009",border:"1px solid "+BORDER,borderRadius:9,cursor:"pointer",fontFamily:"'DM Mono'",fontSize:11,color:"#AAA",display:"flex",flexDirection:"column",alignItems:"center",gap:4,transition:"all 0.18s"}}
+                          >
+                            <span style={{fontSize:18}}>📸</span>
+                            <span>Take Photo</span>
+                          </button>
+                          <button
+                            onClick={()=>fileRef.current.click()}
+                            style={{flex:1,padding:"10px 8px",background:"#111009",border:"1px solid "+BORDER,borderRadius:9,cursor:"pointer",fontFamily:"'DM Mono'",fontSize:11,color:"#AAA",display:"flex",flexDirection:"column",alignItems:"center",gap:4,transition:"all 0.18s"}}
+                          >
+                            <span style={{fontSize:18}}>🖼</span>
+                            <span>Upload File</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* State: scanning but photo not loaded yet */}
+                    {!newItem.image && aiScanning && (
+                      <div style={{textAlign:"center",padding:"28px 16px"}}>
+                        <div className="spin" style={{fontSize:28,color:G,display:"block",margin:"0 auto 12px"}}>✦</div>
+                        <div style={{fontFamily:"'DM Mono'",fontSize:11,color:G,letterSpacing:"0.08em"}} className="pulse">AI IS READING YOUR ITEM...</div>
+                        <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#444",marginTop:6}}>Detecting category, color & style</div>
+                      </div>
+                    )}
+
+                    {/* State: photo loaded */}
+                    {newItem.image && (
+                      <div>
+                        <img src={newItem.image} alt="preview" style={{width:"100%",maxHeight:220,objectFit:"contain",background:"#111009",display:"block"}}/>
+                        {aiScanning && (
+                          <div className="ai-scanning" style={{padding:"10px 14px",textAlign:"center"}}>
+                            <span className="spin" style={{fontSize:14,color:G}}>✦</span>
+                            <span style={{fontFamily:"'DM Mono'",fontSize:10,color:G,marginLeft:8,letterSpacing:"0.06em"}} className="pulse">AI SCANNING YOUR ITEM...</span>
+                          </div>
+                        )}
+                        {aiScanResult && !aiScanning && (
+                          <div style={{padding:"10px 14px",background:"#0A1A0A",borderTop:"1px solid #1A3A1A",display:"flex",alignItems:"center",gap:8}}>
+                            <span style={{fontSize:14}}>✅</span>
+                            <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#5BA85A",letterSpacing:"0.04em"}}>AI filled in your details — check and edit below!</span>
+                          </div>
+                        )}
+                        {!aiScanning && !aiScanResult && (
+                          <div style={{padding:"8px 12px",background:"#111009",display:"flex",alignItems:"center",gap:8}}>
+                            <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#555"}}>No AI key — fill in details manually below</span>
+                          </div>
+                        )}
+                        <div style={{padding:"6px 10px",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#0D0C0A"}}>
+                          <span style={{fontFamily:"'DM Mono'",fontSize:10,color:G}}>✓ Photo ready</span>
+                          <button onClick={e=>{e.stopPropagation();setNewItem(p=>({...p,image:null}));setAiScanResult(null);setAiScanning(false);}} style={{background:"none",border:"none",color:"#666",fontSize:12,cursor:"pointer",fontFamily:"'DM Mono'"}}>Remove ×</button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Hidden inputs — camera and gallery */}
+                    <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handleImg}/>
+                    <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleImg}/>
+                  </div>
+
+                  {/* Photo tip — shown when no photo yet */}
+                  {!newItem.image && (
+                    <div style={{display:"flex",alignItems:"flex-start",gap:6,padding:"8px 10px",background:"#0D0C0A",borderRadius:8,border:"1px solid #1E1C18"}}>
+                      <span style={{color:G,fontSize:12,flexShrink:0}}>💡</span>
+                      <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#555",lineHeight:1.7}}>Best results: photograph on a <span style={{color:G}}>white or light background</span> — AI reads colors more accurately.</span>
+                    </div>
+                  )}
+
+                  {/* Fields — always shown, AI fills them in */}
+                  <input className="inp" placeholder="Name * (e.g. White linen shirt)" value={newItem.name} onChange={e=>setNewItem(p=>({...p,name:e.target.value}))}
+                    style={{borderColor: aiScanResult && newItem.name ? G+"60" : undefined}}/>
                   <select className="inp" value={newItem.category} onChange={e=>setNewItem(p=>({...p,category:e.target.value}))}>
                     {CATEGORIES.map(c=><option key={c}>{c}</option>)}
                   </select>
-                  <input className="inp" placeholder="Colour / pattern (e.g. navy blue)" value={newItem.color} onChange={e=>setNewItem(p=>({...p,color:e.target.value}))}/>
-                  <input className="inp" placeholder="Notes — fit, fabric (optional)" value={newItem.description} onChange={e=>setNewItem(p=>({...p,description:e.target.value}))}/>
-                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                    <button onClick={()=>fileRef.current.click()} style={{padding:"8px 14px",background:"#111009",color:"#888",border:"1px solid "+BORDER,borderRadius:8,fontFamily:"'DM Mono'",fontSize:11,cursor:"pointer"}}>📷 Add Photo</button>
-                    {newItem.image&&<span style={{fontFamily:"'DM Mono'",fontSize:11,color:G}}>✓ Photo added</span>}
-                    <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleImg}/>
-                  </div>
-                  <div style={{display:"flex",alignItems:"flex-start",gap:6,padding:"8px 10px",background:"#0D0C0A",borderRadius:8,border:"1px solid #1E1C18"}}>
-                    <span style={{color:G,fontSize:12,flexShrink:0}}>💡</span>
-                    <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666",lineHeight:1.7}}>For best results photograph on a <span style={{color:G}}>white wall or light background</span> — avoid carpets or busy backgrounds.</span>
-                  </div>
-                  <div style={{display:"none"}}>
-                  </div>
+                  <input className="inp" placeholder="Colour / pattern (e.g. navy blue)" value={newItem.color} onChange={e=>setNewItem(p=>({...p,color:e.target.value}))}
+                    style={{borderColor: aiScanResult && newItem.color ? G+"60" : undefined}}/>
+                  <input className="inp" placeholder="Notes — fit, fabric (optional)" value={newItem.description} onChange={e=>setNewItem(p=>({...p,description:e.target.value}))}
+                    style={{borderColor: aiScanResult && newItem.description ? G+"60" : undefined}}/>
+
                   <div style={{display:"flex",gap:8,marginTop:4}}>
-                    <GBtn onClick={addItem} disabled={!newItem.name.trim()} style={{padding:12,fontSize:15}}>Add to Closet</GBtn>
-                    <button onClick={()=>setAddingItem(false)} style={{padding:"12px 20px",background:"#111009",color:"#777",border:"1px solid "+BORDER,borderRadius:10,fontFamily:"'DM Mono'",fontSize:11,cursor:"pointer"}}>Cancel</button>
+                    <GBtn onClick={addItem} disabled={!newItem.name.trim()||aiScanning} style={{padding:12,fontSize:15}}>
+                      {aiScanning ? "Scanning..." : "Add to Closet"}
+                    </GBtn>
+                    <button onClick={()=>{setAddingItem(false);setAiScanResult(null);}} style={{padding:"12px 20px",background:"#111009",color:"#777",border:"1px solid "+BORDER,borderRadius:10,fontFamily:"'DM Mono'",fontSize:11,cursor:"pointer"}}>Cancel</button>
                   </div>
                 </div>
               </div>
@@ -1295,7 +1446,6 @@ export default function Root() {
   const [user,setUser]=useState(null);
   const [forgotSent,setForgotSent]=useState(false);
 
-  // ── Persistent state lives HERE so it survives page navigation ──
   const [closet,setCloset]=useState([]);
   const [profile,setProfile]=useState({styles:[],colors:[],dislikes:""});
   const [learnings,setLearnings]=useState([]);
@@ -1303,7 +1453,6 @@ export default function Root() {
   const [saveStatus,setSaveStatus]=useState("");
   const [ready,setReady]=useState(false);
 
-  // Load once on mount
   useEffect(()=>{
     (async()=>{
       const uid = user?.email || null;
@@ -1319,7 +1468,6 @@ export default function Root() {
     })();
   },[]);
 
-  // Save whenever data changes
   useEffect(()=>{
     if(!ready) return;
     const uid = user?.email || null;
@@ -1347,7 +1495,6 @@ export default function Root() {
 
   const sharedProps={closet,setCloset,profile,setProfile,learnings,setLearnings,favOutfits,setFavOutfits,saveStatus};
 
-  // Auth screens — shown before login
   if(!user) {
     if(page==="splash") return <Splash onDone={()=>setPage("onboarding")}/>;
     if(page==="onboarding") return <Onboarding onDone={()=>setPage("welcome")}/>;
@@ -1367,8 +1514,6 @@ export default function Root() {
     return <Welcome onLogin={()=>setPage("login")} onSignup={()=>setPage("signup")}/>;
   }
 
-  // Logged in — MainApp ALWAYS stays mounted so state is never lost
-  // Settings and Subscription slide over as fixed overlays
   return (
     <div>
       <MainApp
