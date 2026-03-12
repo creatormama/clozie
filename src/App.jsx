@@ -156,82 +156,162 @@ function makeOutfitsFallback(closet, context) {
 async function makeOutfitsAI(closet, context, profile, learnings) {
   if (!ANTHROPIC_KEY) return makeOutfitsFallback(closet, context);
 
-  // Build a clear, numbered wardrobe list with all details
-  const wardrobeList = closet.map((item, i) => {
-    const parts = [
-      `#${i+1}`,
-      `Name: "${item.name}"`,
-      `Category: ${item.category}`,
-      item.color ? `Color: ${item.color}` : null,
-      item.description ? `Details: ${item.description}` : null
-    ].filter(Boolean).join(" | ");
-    return parts;
-  }).join("\n");
+  const occasion = context.occasion || "";
+  const weather = context.weather || "";
 
+  // ── STEP 1: HARD FILTERS (code enforces these 100%) ──────────────────────────
+  const isSporty = occasion === "Outdoor / Sport";
+  const isCasual = ["Casual Day","Weekend Errands","Travel"].includes(occasion);
+  const isDressy = ["Date Night","Party","Formal Event"].includes(occasion);
+  const isWork = occasion === "Work / Office";
+  const isHot = ["Sunny & Hot","Warm & Breezy"].includes(weather);
+  const isCold = ["Cold & Dry","Rainy","Snowy"].includes(weather);
+  const isRainy = weather === "Rainy";
+
+  const desc = item => (item.name + " " + item.description + " " + item.color).toLowerCase();
+
+  const isHeel = item => desc(item).match(/heel|pump|stiletto/);
+  const isSneaker = item => desc(item).match(/sneaker|trainer|running|sport shoe/);
+  const isFlat = item => desc(item).match(/flat|loafer|ballet|moccasin/);
+  const isSleeveless = item => desc(item).match(/sleeveless|tank|cami|strapless/);
+  const isLongSleeve = item => desc(item).match(/long.?sleeve|longsleeve/);
+  const isDress = item => item.category === "Dresses";
+  const isOuterwear = item => item.category === "Outerwear";
+
+  // Filter each category with smart rules
+  const filterItems = (items, category) => {
+    return items.filter(item => {
+
+      // ── SHOES ──────────────────────────────────────────────────────────────
+      if (category === "Shoes") {
+        const hasNonHeels = items.filter(s => !isHeel(s)).length > 0;
+        const hasNonSneakers = items.filter(s => !isSneaker(s)).length > 0;
+
+        // Sport: NEVER heels - sneakers or flats only
+        if (isSporty && isHeel(item)) return false;
+
+        // Casual: no heels (flats and sneakers are fine)
+        // A casual outfit can have flats OR sneakers - both are good!
+        if (isCasual && isHeel(item) && hasNonHeels) return false;
+
+        // Dressy (party, date night, formal): prefer no sneakers
+        // BUT if sneakers are all they have, use them
+        if (isDressy && isSneaker(item) && hasNonSneakers) return false;
+
+        // Work: all shoes are fine (flats, small heels, even clean sneakers)
+      }
+
+      // ── DRESSES ────────────────────────────────────────────────────────────
+      if (category === "Dresses") {
+        // Never for sport - dresses are not practical for outdoor sport
+        if (isSporty) return false;
+        // Dresses are great for: casual, work, date night, party, formal
+        // In cold weather: dress + coat/jacket combo is fine and stylish!
+        // In hot weather: sleeveless dress is perfect
+      }
+
+      // ── TOPS: weather filtering ─────────────────────────────────────────────
+      if (category === "Tops") {
+        const hasNonSleeveless = items.filter(t => !isSleeveless(t)).length > 0;
+        const hasNonLongSleeve = items.filter(t => !isLongSleeve(t)).length > 0;
+        // Cold weather: avoid sleeveless if other options exist
+        if (isCold && isSleeveless(item) && hasNonSleeveless) return false;
+        // Hot weather: avoid long sleeve if other options exist
+        if (isHot && isLongSleeve(item) && hasNonLongSleeve) return false;
+      }
+
+      return true;
+    });
+  };
+
+  const byCategory = cat => closet.filter(c => c.category === cat);
+  const allTops = byCategory("Tops");
+  const allBottoms = byCategory("Bottoms");
+  const allDresses = byCategory("Dresses");
+  const allShoes = byCategory("Shoes");
+  const allOuterwear = byCategory("Outerwear");
+  const allAccessories = byCategory("Accessories");
+
+  const tops = filterItems(allTops, "Tops").length > 0 ? filterItems(allTops, "Tops") : allTops;
+  const bottoms = allBottoms;
+  const dresses = filterItems(allDresses, "Dresses");
+  const shoes = filterItems(allShoes, "Shoes").length > 0 ? filterItems(allShoes, "Shoes") : allShoes;
+  const outerwear = allOuterwear;
+  const accessories = allAccessories;
+
+  // ── STEP 2: BUILD 3 VARIED OUTFIT COMBINATIONS ───────────────────────────────
+  const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
+  const sTops = shuffle(tops);
+  const sBottoms = shuffle(bottoms);
+  const sShoes = shuffle(shoes);
+  const sDresses = shuffle(dresses);
+  const sOuterwear = shuffle(outerwear);
+  const sAccessories = shuffle(accessories);
+
+  const outfitCombinations = [];
+
+  for (let i = 0; i < 3; i++) {
+    const items = [];
+    const usedIds = new Set();
+    const add = item => { if (item && !usedIds.has(item.id)) { items.push(item); usedIds.add(item.id); } };
+
+    // Dress outfit: only for dressy occasions, only once
+    // Dresses work for ALL occasions except sport
+    const useDress = !isSporty && i === 0 && sDresses.length > 0;
+
+    if (useDress) {
+      add(sDresses[0]);
+    } else {
+      // Pick different top for each outfit
+      add(sTops[i % sTops.length]);
+      // Pick different bottom for each outfit  
+      add(sBottoms[i % sBottoms.length]);
+    }
+
+    // Add outerwear for cold/rainy
+    if ((isCold || isRainy) && sOuterwear.length > 0) {
+      add(sOuterwear[i % sOuterwear.length]);
+    }
+
+    // Add shoes - rotate through appropriate shoes
+    add(sShoes[i % sShoes.length]);
+
+    // Add accessories if available
+    if (sAccessories.length > 0) {
+      add(sAccessories[i % sAccessories.length]);
+    }
+
+    if (items.length > 0) outfitCombinations.push(items);
+  }
+
+  // ── STEP 3: AI NAMES AND DESCRIBES THE PRE-BUILT OUTFITS ─────────────────────
   const styleInfo = [
-    profile.styles.length > 0 ? `Preferred styles: ${profile.styles.join(", ")}` : null,
+    profile.styles.length > 0 ? `Style: ${profile.styles.join(", ")}` : null,
     profile.colors.length > 0 ? `Favourite colors: ${profile.colors.join(", ")}` : null,
     profile.dislikes ? `Dislikes: ${profile.dislikes}` : null
-  ].filter(Boolean).join("\n") || "No style profile yet";
+  ].filter(Boolean).join(" | ") || "No style profile yet";
 
   const pastLearnings = learnings.slice(-8).join("\n");
 
-  const prompt = `You are Clozie, a brilliant personal AI stylist. Study this person's wardrobe carefully and create 3 outfits.
+  const outfitList = outfitCombinations.map((items, i) =>
+    `Outfit ${i+1}: ${items.map(it => [it.color, it.name, it.description].filter(Boolean).join(" ")).join(" + ")}`
+  ).join("\n");
 
-=== WARDROBE (${closet.length} items) ===
-${wardrobeList}
+  const prompt = `You are Clozie, a personal AI stylist. I have selected the items for 3 outfits. Give each a creative name, vibe word, and warm description.
 
-=== PERSON'S STYLE ===
-${styleInfo}
+Person's style: ${styleInfo}
+Weather: ${weather} | Occasion: ${occasion}${context.extraNote ? ` | Note: "${context.extraNote}"` : ""}
+${pastLearnings ? `Past preferences:\n${pastLearnings}` : ""}
 
-=== TODAY ===
-Weather: ${context.weather}
-Occasion: ${context.occasion}
-${context.extraNote ? `They said: "${context.extraNote}"` : ""}
-${pastLearnings ? `\nWhat they liked/disliked before:\n${pastLearnings}` : ""}
+${outfitList}
 
-=== YOUR TASK ===
-Create exactly 3 outfits. Each outfit MUST be completely different from the others.
+For each outfit give:
+- A creative stylish name
+- One vibe word (Chic, Bold, Relaxed, Elegant, Sporty, Fresh, Romantic, Polished, Effortless, Edgy)
+- A warm 1-2 sentence description of why these pieces work together
 
-RULES YOU MUST FOLLOW:
-1. Use each item's EXACT name as written in the wardrobe above
-2. Rotate tops - use a DIFFERENT top in each outfit (you have ${closet.filter(c=>c.category==="Tops").length} tops available)
-3. Rotate bottoms - use DIFFERENT bottoms where possible
-4. Match shoes to occasion:
-   - "Outdoor / Sport" or "Casual" → use sneakers/flat shoes, NEVER heels
-   - "Date Night" or "Party" or "Formal" → use heels or dressy flats, avoid sneakers
-   - "Work / Office" → use flats or small heels
-5. Match to weather:
-   - Hot/Warm weather → prefer sleeveless or short sleeve tops
-   - Cold weather → prefer long sleeve tops, include outerwear if available
-   - Rainy → include outerwear/jacket
-6. Each outfit needs: (top + bottom) OR (dress), PLUS shoes if available
-7. NEVER repeat the exact same combination across outfits
-8. Consider colors - try to make each outfit cohesive
-
-Respond ONLY with this exact JSON format, nothing else:
-{
-  "outfits": [
-    {
-      "name": "Creative outfit name",
-      "vibe": "OneWord",
-      "items": ["Exact item name from wardrobe", "Exact item name"],
-      "description": "Warm 1-2 sentence description of why this works"
-    },
-    {
-      "name": "Creative outfit name",
-      "vibe": "OneWord", 
-      "items": ["Exact item name from wardrobe", "Exact item name"],
-      "description": "Warm 1-2 sentence description of why this works"
-    },
-    {
-      "name": "Creative outfit name",
-      "vibe": "OneWord",
-      "items": ["Exact item name from wardrobe", "Exact item name"],
-      "description": "Warm 1-2 sentence description of why this works"
-    }
-  ]
-}`;
+Respond ONLY with valid JSON:
+{"outfits":[{"name":"","vibe":"","items":[],"description":""},{"name":"","vibe":"","items":[],"description":""},{"name":"","vibe":"","items":[],"description":""}]}`;
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -244,7 +324,7 @@ Respond ONLY with this exact JSON format, nothing else:
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 2000,
+        max_tokens: 1000,
         messages: [{ role: "user", content: prompt }]
       })
     });
@@ -254,50 +334,28 @@ Respond ONLY with this exact JSON format, nothing else:
     const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
 
-    return parsed.outfits.map((o, i) => {
-      // Match items back to closet objects for photos
-      const itemObjects = (o.items || []).map(name => {
-        const n = name.toLowerCase().trim();
-        const words = n.split(" ").filter(w => w.length > 2);
-        
-        // Build full label for each closet item (color + name + description)
-        const fullLabel = c => [c.color, c.name, c.description].filter(Boolean).join(" ").toLowerCase();
-        
-        // 1. Exact name match
-        let found = closet.find(c => c.name.toLowerCase().trim() === n);
-        // 2. Exact full label match
-        if (!found) found = closet.find(c => fullLabel(c) === n);
-        // 3. Full label contains search term
-        if (!found) found = closet.find(c => fullLabel(c).includes(n));
-        // 4. Search term contains full label
-        if (!found) found = closet.find(c => n.includes(fullLabel(c)));
-        // 5. Name partial match
-        if (!found) found = closet.find(c => c.name.toLowerCase().includes(n) || n.includes(c.name.toLowerCase().trim()));
-        // 6. Word by word match against full label
-        if (!found) found = closet.find(c => words.some(w => fullLabel(c).includes(w)));
-        // 7. Match by color + category
-        if (!found) {
-          const colorWords = words.filter(w => ["black","white","brown","red","blue","green","orange","pink","grey","gray","beige","navy","cream"].includes(w));
-          if (colorWords.length > 0) {
-            found = closet.find(c => colorWords.some(col => (c.color||"").toLowerCase().includes(col)));
-          }
-        }
-        return found || null;
-      }).filter(Boolean);
-
+    return outfitCombinations.map((itemObjects, i) => {
+      const ai = parsed.outfits?.[i] || {};
       return {
         id: Date.now() + i,
-        name: o.name || "Outfit " + (i + 1),
-        vibe: o.vibe || "Stylish",
-        items: o.items || [],
+        name: ai.name || ["Today\'s Look","Fresh Pick","Style Edit"][i] || "Outfit "+(i+1),
+        vibe: ai.vibe || ["Chic","Relaxed","Bold"][i] || "Stylish",
+        items: itemObjects.map(it => [it.color, it.name, it.description].filter(Boolean).join(" ")),
         itemObjects,
-        description: o.description || ""
+        description: ai.description || "A perfect look for "+occasion+" in "+weather+" weather."
       };
     });
 
-  } catch (e) {
-    console.error("AI outfit generation failed:", e);
-    return makeOutfitsFallback(closet, context);
+  } catch(e) {
+    console.error("AI naming failed, using defaults:", e);
+    return outfitCombinations.map((itemObjects, i) => ({
+      id: Date.now() + i,
+      name: ["Today\'s Look","Fresh Pick","Style Edit"][i] || "Outfit "+(i+1),
+      vibe: ["Chic","Relaxed","Bold"][i] || "Stylish",
+      items: itemObjects.map(it => [it.color, it.name, it.description].filter(Boolean).join(" ")),
+      itemObjects,
+      description: "A perfect look for "+occasion+" in "+weather+" weather."
+    }));
   }
 }
 
