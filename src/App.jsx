@@ -1574,8 +1574,9 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
 }
 
 export default function Root() {
-  const [page,setPage]=useState("splash");
-  const [user,setUser]=useState(null);
+  const savedUser = (() => { try { const u=localStorage.getItem("clozie-user"); return u?JSON.parse(u):null; } catch(e){return null;} })();
+  const [page,setPage]=useState(savedUser?"app":"splash");
+  const [user,setUser]=useState(savedUser||null);
   const [forgotSent,setForgotSent]=useState(false);
 
   const [closet,setCloset]=useState([]);
@@ -1621,7 +1622,9 @@ export default function Root() {
   const handleAuth=({email,name,mode})=>{
     if(mode==="forgot"){ setForgotSent(true); return; }
     const isVip = VIP_EMAILS.includes(email.trim().toLowerCase());
-    setUser({email,name:name||email.split("@")[0],pro:isVip,vip:isVip});
+    const u = {email,name:name||email.split("@")[0],pro:isVip,vip:isVip};
+    try { localStorage.setItem("clozie-user", JSON.stringify(u)); } catch(e){}
+    setUser(u);
     setPage("app");
   };
 
@@ -1651,14 +1654,14 @@ export default function Root() {
     <div>
       <MainApp
         user={user}
-        onLogout={()=>{setUser(null);setPage("welcome");}}
+        onLogout={()=>{try{localStorage.removeItem("clozie-user");}catch(e){}setUser(null);setPage("welcome");}}
         onSettings={()=>setPage("settings")}
         onSubscription={()=>setPage("subscription")}
         {...sharedProps}
       />
       {page==="settings"&&(
         <div style={{position:"fixed",inset:0,zIndex:500,overflowY:"auto",background:BG}}>
-          <Settings user={user} onBack={()=>setPage("app")} onLogout={()=>{setUser(null);setPage("welcome");}} onSubscription={()=>setPage("subscription")}/>
+          <Settings user={user} onBack={()=>setPage("app")} onLogout={()=>{try{localStorage.removeItem("clozie-user");}catch(e){}setUser(null);setPage("welcome");}} onSubscription={()=>setPage("subscription")}/>
         </div>
       )}
       {page==="subscription"&&(
