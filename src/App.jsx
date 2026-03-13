@@ -562,7 +562,151 @@ function Onboarding({onDone}) {
   );
 }
 
-function Welcome({onLogin, onSignup}) {
+function DemoMode({onSignup, onBack}) {
+  const demoCloset = [
+    {id:"d1",name:"White Silk Blouse",category:"Tops",color:"White",description:"Elegant silk blouse"},
+    {id:"d2",name:"Camel Blazer",category:"Tops",color:"Camel",description:"Tailored blazer"},
+    {id:"d3",name:"Black Midi Skirt",category:"Bottoms",color:"Black",description:"Flowing midi skirt"},
+    {id:"d4",name:"Dark Blue Jeans",category:"Bottoms",color:"Dark Blue",description:"Slim fit jeans"},
+    {id:"d5",name:"Navy Wrap Dress",category:"Dresses",color:"Navy",description:"Elegant wrap dress"},
+    {id:"d6",name:"Black Heels",category:"Shoes",color:"Black",description:"Classic block heels"},
+    {id:"d7",name:"White Sneakers",category:"Shoes",color:"White",description:"Clean white sneakers"},
+    {id:"d8",name:"Brown Leather Bag",category:"Accessories",color:"Brown",description:"Structured tote bag"},
+  ];
+
+  const demoOutfits = [
+    {
+      id:"o1",
+      name:"Evening Elegance",
+      vibe:"ROMANTIC",
+      description:"The wrap dress drapes beautifully for date night — effortless and polished.",
+      items:["Navy Wrap Dress","Black Heels","Brown Leather Bag"]
+    },
+    {
+      id:"o2",
+      name:"Power Monday",
+      vibe:"CLASSIC",
+      description:"The camel blazer over white blouse is the ultimate power combination for the office.",
+      items:["White Silk Blouse","Camel Blazer","Black Midi Skirt","Black Heels"]
+    },
+    {
+      id:"o3",
+      name:"Weekend Ease",
+      vibe:"CASUAL",
+      description:"Dark jeans and a crisp white blouse — simple, stylish, ready for anything.",
+      items:["White Silk Blouse","Dark Blue Jeans","White Sneakers","Brown Leather Bag"]
+    }
+  ];
+
+  const [tab, setTab] = useState("outfits");
+  const [selectedOutfit, setSelectedOutfit] = useState(null);
+
+  return (
+    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
+      <style>{css}</style>
+
+      {/* Header */}
+      <div style={{padding:"20px 20px 0",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <button onClick={onBack} style={{background:"none",border:"none",color:"#666",fontFamily:"'DM Mono'",fontSize:12,cursor:"pointer"}}>← Back</button>
+        <Logo/>
+        <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.1em"}}>DEMO MODE</div>
+      </div>
+
+      {/* Demo banner */}
+      <div style={{margin:"12px 20px",padding:"10px 16px",background:"#C9A96E15",borderRadius:10,border:"1px solid #C9A96E40",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G}}>✦ You're previewing Clozie with example clothes</div>
+        <button onClick={onSignup} style={{background:G,color:BG,border:"none",borderRadius:100,padding:"5px 12px",fontFamily:"'DM Mono'",fontSize:9,cursor:"pointer"}}>Sign up free</button>
+      </div>
+
+      {/* Tabs */}
+      <div style={{display:"flex",borderBottom:"1px solid "+BORDER,margin:"0 20px"}}>
+        {[["outfits","✨ Outfits"],["wardrobe","👗 Wardrobe"]].map(([id,label])=>(
+          <button key={id} onClick={()=>{setTab(id);setSelectedOutfit(null);}} style={{
+            flex:1,padding:"12px 0",background:"none",border:"none",
+            borderBottom:"2px solid "+(tab===id?G:"transparent"),
+            color:tab===id?G:"#555",fontFamily:"'DM Mono'",fontSize:11,cursor:"pointer",
+            transition:"all 0.2s",marginBottom:-1
+          }}>{label}</button>
+        ))}
+      </div>
+
+      <div style={{flex:1,overflowY:"auto",padding:"16px 20px"}}>
+
+        {tab==="wardrobe" && (
+          <div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:18,color:"#EDE5D8",marginBottom:4}}>Example Wardrobe</div>
+            <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#555",marginBottom:16}}>Your real wardrobe will be filled with your own clothes!</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {demoCloset.map(item=>(
+                <div key={item.id} className="card" style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:44,height:44,borderRadius:10,background:"#1A1815",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
+                    {item.category==="Tops"?"👚":item.category==="Bottoms"?"👖":item.category==="Dresses"?"👗":item.category==="Shoes"?"👠":item.category==="Accessories"?"👜":"✦"}
+                  </div>
+                  <div>
+                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#EDE5D8"}}>{item.name}</div>
+                    <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#555"}}>{item.category} · {item.color}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {tab==="outfits" && !selectedOutfit && (
+          <div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:18,color:"#EDE5D8",marginBottom:2}}>✦ Your looks are ready</div>
+            <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#555",marginBottom:16}}>Date Night · Warm & Breezy — tap any outfit to explore</div>
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              {demoOutfits.map((outfit,i)=>(
+                <div key={outfit.id} className="card" style={{padding:16,cursor:"pointer",borderColor:i===0?"#C9A96E40":BORDER}} onClick={()=>setSelectedOutfit(outfit)}>
+                  <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.15em",marginBottom:4}}>{outfit.vibe}</div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:20,color:"#EDE5D8",marginBottom:8}}>{outfit.name}</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+                    {outfit.items.map((item,j)=>(
+                      <div key={j} style={{padding:"4px 10px",background:BG,borderRadius:100,fontFamily:"'DM Mono'",fontSize:9,color:"#777",border:"1px solid "+BORDER}}>{item}</div>
+                    ))}
+                  </div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:12,color:"#6A6058",lineHeight:1.6}}>{outfit.description}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {tab==="outfits" && selectedOutfit && (
+          <div>
+            <button onClick={()=>setSelectedOutfit(null)} style={{background:"none",border:"none",color:"#666",fontFamily:"'DM Mono'",fontSize:11,cursor:"pointer",marginBottom:16}}>← Back to outfits</button>
+            <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.15em",marginBottom:4}}>{selectedOutfit.vibe}</div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:24,color:"#EDE5D8",marginBottom:8}}>{selectedOutfit.name}</div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:13,color:"#6A6058",lineHeight:1.7,marginBottom:16}}>{selectedOutfit.description}</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+              {selectedOutfit.items.map((item,i)=>(
+                <div key={i} className="card" style={{padding:"12px 16px",display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:36,height:36,borderRadius:8,background:"#1A1815",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>✦</div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#EDE5D8"}}>{item}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{padding:16,background:"#C9A96E08",borderRadius:12,border:"1px solid #C9A96E30",textAlign:"center",marginBottom:12}}>
+              <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,marginBottom:6}}>✦ WANT TO SEE YOUR OWN OUTFITS?</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:14,color:"#EDE5D8",marginBottom:12}}>Add your own clothes and Clozie styles you perfectly — every single day!</div>
+              <GBtn onClick={onSignup}>Create Free Account ✦</GBtn>
+            </div>
+          </div>
+        )}
+
+      </div>
+
+      {/* Bottom CTA */}
+      <div style={{padding:"16px 20px",borderTop:"1px solid "+BORDER,background:BG}}>
+        <GBtn onClick={onSignup}>✦ Start with Your Own Clothes — Free</GBtn>
+        <div style={{textAlign:"center",fontFamily:"'DM Mono'",fontSize:11,color:"#444",marginTop:10}}>No credit card needed · Takes 2 minutes</div>
+      </div>
+    </div>
+  );
+}
+
+function Welcome({onLogin, onSignup, onDemo}) {
   return (
     <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"40px 24px",overflow:"hidden",position:"relative"}}>
       <style>{css}</style>
@@ -585,8 +729,11 @@ function Welcome({onLogin, onSignup}) {
             </div>
           ))}
         </div>
-        <button onClick={onSignup} style={{padding:"18px 64px",background:G,color:BG,borderRadius:100,fontSize:16,fontFamily:"'Playfair Display',serif",border:"none",cursor:"pointer",display:"block",margin:"0 auto 18px"}}>
+        <button onClick={onSignup} style={{padding:"18px 64px",background:G,color:BG,borderRadius:100,fontSize:16,fontFamily:"'Playfair Display',serif",border:"none",cursor:"pointer",display:"block",margin:"0 auto 14px"}}>
           Get Started — It's Free
+        </button>
+        <button onClick={onDemo} style={{padding:"13px 40px",background:"transparent",color:G,borderRadius:100,fontSize:14,fontFamily:"'Playfair Display',serif",fontStyle:"italic",border:"1px solid #C9A96E50",cursor:"pointer",display:"block",margin:"0 auto 18px"}}>
+          👀 See it in action first
         </button>
         <div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#666"}}>
           Already have an account?{" "}
@@ -1634,6 +1781,7 @@ export default function Root() {
     if(page==="splash") return <Splash onDone={()=>setPage("onboarding")}/>;
     if(page==="onboarding") return <Onboarding onDone={()=>setPage("welcome")}/>;
     if(page==="peek") return <PeekInside onSignup={()=>setPage("signup")} onLogin={()=>setPage("login")}/>;
+    if(page==="demo") return <DemoMode onSignup={()=>setPage("signup")} onBack={()=>setPage("welcome")}/>;
     if(page==="signup") return <AuthPage mode="signup" onDone={handleAuth} onSwitch={()=>setPage("login")} onForgot={()=>setPage("forgot")}/> ;
     if(page==="forgot") return forgotSent
       ? <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:40}}>
@@ -1647,7 +1795,7 @@ export default function Root() {
         </div>
       : <AuthPage mode="forgot" onDone={handleAuth} onSwitch={()=>setPage("login")} onForgot={()=>{}}/>;
     if(page==="login") return <AuthPage mode="login" onDone={handleAuth} onSwitch={()=>setPage("signup")} onForgot={()=>setPage("forgot")}/>;
-    return <Welcome onLogin={()=>setPage("login")} onSignup={()=>setPage("peek")}/>;
+    return <Welcome onLogin={()=>setPage("login")} onSignup={()=>setPage("peek")} onDemo={()=>setPage("demo")}/>;
   }
 
   return (
