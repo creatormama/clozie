@@ -370,13 +370,13 @@ const steps = [
 {
 icon: "📸",
 title: "Snap & Add Your Clothes",
-desc: "Take a photo of any item — AI instantly fills in all the details. Your wardrobe is ready in minutes.",
+desc: "Take a photo of any item — Clozie instantly fills in all the details. Your wardrobe is ready in minutes.",
 visual: (
 <div style={{background:CARD,borderRadius:12,padding:14,border:"1px solid "+BORDER}}>
 <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:10}}>
 <div style={{width:56,height:56,borderRadius:10,background:"#1A1815",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>👗</div>
 <div style={{flex:1}}>
-<div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,marginBottom:3}}>AI DETECTED ✦</div>
+<div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,marginBottom:3}}>RECOGNISED ✦</div>
 <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#EDE5D8"}}>Navy Blue Wrap Dress</div>
 <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666",marginTop:2}}>Dresses · Navy blue · Midi length</div>
 </div>
@@ -1456,8 +1456,8 @@ style={{flex:1,color:step===s?G:"#333",borderBottomColor:step===s?G:"transparent
 
         {!loading&&outfits.length===0&&(
           <div className="card" style={{padding:48,textAlign:"center"}}>
-            <div style={{fontSize:36,marginBottom:12}}>🤔</div>
-            <div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#777",marginBottom:20}}>Not enough variety in your closet.<br/>Add more tops, bottoms, or shoes.</div>
+            <div style={{fontSize:36,marginBottom:12}}>✦</div>
+            <div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#777",marginBottom:20}}>No outfits yet. Tap Generate to get your first looks ✦</div>
             <GBtn onClick={()=>setStep("closet")} style={{maxWidth:220,margin:"0 auto",padding:12,fontSize:14}}>Add More Clothes</GBtn>
           </div>
         )}
@@ -1572,10 +1572,11 @@ setTimeout(()=>setSaveStatus(""),2000);
 const handleAuth=({email,name,mode})=>{
 if(mode==="forgot"){ setForgotSent(true); return; }
 const isVip = VIP_EMAILS.includes(email.trim().toLowerCase());
+const isNew = mode==="signup";
 const u = {email,name:name||email.split("@")[0],pro:isVip,vip:isVip};
 try { localStorage.setItem("clozie-user", JSON.stringify(u)); } catch(e){}
 setUser(u);
-setPage("postlogin");
+setPage(isNew ? "postlogin" : "app");
 };
 
 const sharedProps={closet,setCloset,profile,setProfile,learnings,setLearnings,favOutfits,setFavOutfits,saveStatus};
