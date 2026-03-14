@@ -830,98 +830,90 @@ function AvatarView({outfit}) {
   const top     = isDress || allItems.find(i=>["Tops","Outerwear"].includes(i.category)) || null;
   const bottom  = isDress ? null : (allItems.find(i=>i.category==="Bottoms") || null);
   const shoes   = allItems.find(i=>i.category==="Shoes") || null;
-  const allAcc  = allItems.filter(i=>i.category==="Accessories");
-  const hat     = allAcc.find(i=>/(hat|cap|beret|beanie|headband)/i.test(i.name||""));
-  const earring = allAcc.find(i=>/(earring|ear|stud|hoop)/i.test(i.name||""));
-  const bag     = allAcc.find(i=>/(bag|purse|clutch|tote)/i.test(i.name||""));
-  const acc1 = hat || earring || allAcc[0] || null;
-  const acc2 = bag || (hat ? earring : null) || allAcc[1] || null;
+  const accessories = allItems.filter(i=>i.category==="Accessories");
 
-  const [bg, setBg] = useState("#F5F0E8");
+  const [bg, setBg] = useState("#F5F2EE");
   const bgOptions = [
-    {color:"#F5F0E8",label:"Cream"},
+    {color:"#F5F2EE",label:"Cream"},
     {color:"#FFFFFF",label:"White"},
     {color:"#F0F0F0",label:"Grey"},
-    {color:"#0D0C0A",label:"Dark"},
     {color:"#E8F0E8",label:"Sage"},
   ];
 
   return (
-    <div style={{background:bg,padding:"16px 16px 8px",transition:"background 0.3s"}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,justifyContent:"center"}}>
+    <div style={{background:bg,padding:"16px",transition:"background 0.3s"}}>
+      {/* Background picker */}
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,justifyContent:"center"}}>
         <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#999",letterSpacing:"0.1em"}}>BACKGROUND</span>
         {bgOptions.map(o=>(
           <div key={o.color} onClick={()=>setBg(o.color)} style={{width:20,height:20,borderRadius:"50%",background:o.color,border:"2px solid "+(bg===o.color?"#C9A96E":"#ccc"),cursor:"pointer",transition:"border 0.15s",boxShadow:"0 1px 4px #00000020"}}/>
         ))}
       </div>
-      <div style={{display:"flex",justifyContent:"center"}}>
-        <div style={{position:"relative",width:200,userSelect:"none"}}>
-          <svg width="200" height="500" viewBox="0 0 200 500" fill="none" xmlns="http://www.w3.org/2000/svg" style={{display:"block"}}>
-            <ellipse cx="100" cy="32" rx="16" ry="20" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1"/>
-            <rect x="95" y="50" width="10" height="14" rx="3" fill="#DDD0BC"/>
-            <path d="M48 74 Q100 60 152 74" stroke="#C8B8A2" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-            <path d="M52 74 Q46 104 52 124 Q72 132 100 132 Q128 132 148 124 Q154 104 148 74 Q100 62 52 74Z" fill="#E8DCC8" stroke="#C8B8A2" strokeWidth="0.8"/>
-            <path d="M54 122 Q100 130 146 122" stroke="#C8B8A2" strokeWidth="0.5" strokeDasharray="3,2" opacity="0.4"/>
-            <path d="M52 124 Q44 144 48 164 Q70 174 100 174 Q130 174 152 164 Q156 144 148 124 Q128 132 100 132 Q72 132 52 124Z" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="0.8"/>
-            <path d="M52 76 Q38 116 40 168" stroke="#DDD0BC" strokeWidth="10" strokeLinecap="round"/>
-            <path d="M52 76 Q38 116 40 168" stroke="#C8B8A2" strokeWidth="0.8" strokeLinecap="round" fill="none"/>
-            <path d="M148 76 Q162 116 160 168" stroke="#DDD0BC" strokeWidth="10" strokeLinecap="round"/>
-            <path d="M148 76 Q162 116 160 168" stroke="#C8B8A2" strokeWidth="0.8" strokeLinecap="round" fill="none"/>
-            <path d="M76 170 Q70 300 72 420" stroke="#DDD0BC" strokeWidth="20" strokeLinecap="round"/>
-            <path d="M76 170 Q70 300 72 420" stroke="#C8B8A2" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
-            <path d="M124 170 Q130 300 128 420" stroke="#DDD0BC" strokeWidth="20" strokeLinecap="round"/>
-            <path d="M124 170 Q130 300 128 420" stroke="#C8B8A2" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
-            <path d="M60 418 Q72 428 86 424" stroke="#C8B8A2" strokeWidth="8" strokeLinecap="round"/>
-            <path d="M114 418 Q126 428 140 424" stroke="#C8B8A2" strokeWidth="8" strokeLinecap="round"/>
-          </svg>
 
-          {isDress && isDress.image && (
-            <div style={{position:"absolute",top:60,left:36,width:128,height:340,borderRadius:10,overflow:"hidden",opacity:0.96}}>
-              <img src={isDress.image} alt={isDress.name} style={{width:"100%",height:"100%",objectFit:"contain",objectPosition:"center top"}}/>
-            </div>
-          )}
-          {!isDress && top && top.image && (
-            <div style={{position:"absolute",top:58,left:38,width:124,height:170,borderRadius:8,overflow:"hidden",opacity:0.96}}>
-              <img src={top.image} alt={top.name} style={{width:"100%",height:"100%",objectFit:"contain",objectPosition:"center top"}}/>
-            </div>
-          )}
-          {!isDress && bottom && bottom.image && (
-            <div style={{position:"absolute",top:220,left:38,width:124,height:190,borderRadius:8,overflow:"hidden",opacity:0.96}}>
-              <img src={bottom.image} alt={bottom.name} style={{width:"100%",height:"100%",objectFit:"contain",objectPosition:"center top"}}/>
-            </div>
-          )}
-          {shoes && shoes.image && (
-            <div style={{position:"absolute",top:402,left:40,width:120,height:70,borderRadius:8,overflow:"hidden"}}>
-              <img src={shoes.image} alt={shoes.name} style={{width:"100%",height:"100%",objectFit:"contain"}}/>
-            </div>
-          )}
-          {acc1 && acc1.image && /(hat|cap|beret|beanie|headband)/i.test(acc1.name||"") && (
-            <div style={{position:"absolute",top:-10,left:68,width:64,height:44,borderRadius:8,overflow:"hidden",boxShadow:"0 2px 8px #00000030"}}>
-              <img src={acc1.image} alt={acc1.name} style={{width:"100%",height:"100%",objectFit:"contain",mixBlendMode:"multiply"}}/>
-            </div>
-          )}
-          {acc1 && acc1.image && !/(hat|cap|beret|beanie|headband)/i.test(acc1.name||"") && (
-            <div style={{position:"absolute",top:18,left:62,width:36,height:36,borderRadius:"50%",overflow:"hidden",border:"2px solid #fff",boxShadow:"0 2px 8px #00000030"}}>
-              <img src={acc1.image} alt={acc1.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-            </div>
-          )}
-          {acc2 && acc2.image && (
-            <div style={{position:"absolute",top:18,right:62,width:36,height:36,borderRadius:"50%",overflow:"hidden",border:"2px solid #fff",boxShadow:"0 2px 8px #00000030"}}>
-              <img src={acc2.image} alt={acc2.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-            </div>
-          )}
-
-          <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:5}}>
-            {[top,bottom,shoes,acc1,acc2].filter(Boolean).map((item,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
-                <div style={{width:5,height:5,borderRadius:"50%",background:"#C9A96E",flexShrink:0}}/>
-                <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888"}}>{item.name}</span>
-                {item.category&&<span style={{fontFamily:"'DM Mono'",fontSize:8,color:"#C9A96E",opacity:0.6}}>{item.category}</span>}
-              </div>
-            ))}
-          </div>
+      {allItems.filter(i=>i.image).length === 0 ? (
+        <div style={{padding:"40px 0",textAlign:"center"}}>
+          <div style={{fontSize:44,marginBottom:12}}>👗</div>
+          <div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#999"}}>Add photos to your closet items to see them here</div>
         </div>
-      </div>
+      ) : (
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+
+          {/* TOP or DRESS — large */}
+          {top && (
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,width:"70%"}}>
+              <div style={{width:"100%",height:200,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:12,overflow:"hidden"}}>
+                {top.image
+                  ? <img src={top.image} alt={top.name} style={{width:"100%",height:"100%",objectFit:"contain"}}/>
+                  : <div style={{fontSize:48,opacity:0.2}}>👕</div>
+                }
+              </div>
+              <div style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",textAlign:"center"}}>{top.name}</div>
+            </div>
+          )}
+
+          {/* BOTTOM — large, directly below top */}
+          {bottom && (
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,width:"70%"}}>
+              <div style={{width:"100%",height:200,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:12,overflow:"hidden"}}>
+                {bottom.image
+                  ? <img src={bottom.image} alt={bottom.name} style={{width:"100%",height:"100%",objectFit:"contain"}}/>
+                  : <div style={{fontSize:48,opacity:0.2}}>👖</div>
+                }
+              </div>
+              <div style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",textAlign:"center"}}>{bottom.name}</div>
+            </div>
+          )}
+
+          {/* SHOES + ACCESSORIES — small, side by side in a row */}
+          {(shoes || accessories.length > 0) && (
+            <div style={{display:"flex",justifyContent:"center",gap:10,width:"100%",marginTop:4}}>
+              {shoes && (
+                <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,width:90}}>
+                  <div style={{width:90,height:90,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,overflow:"hidden"}}>
+                    {shoes.image
+                      ? <img src={shoes.image} alt={shoes.name} style={{width:"100%",height:"100%",objectFit:"contain"}}/>
+                      : <div style={{fontSize:28,opacity:0.2}}>👟</div>
+                    }
+                  </div>
+                  <div style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",textAlign:"center"}}>{shoes.name}</div>
+                </div>
+              )}
+              {accessories.map((acc,i)=>(
+                <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,width:90}}>
+                  <div style={{width:90,height:90,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,overflow:"hidden"}}>
+                    {acc.image
+                      ? <img src={acc.image} alt={acc.name} style={{width:"100%",height:"100%",objectFit:"contain"}}/>
+                      : <div style={{fontSize:28,opacity:0.2}}>✨</div>
+                    }
+                  </div>
+                  <div style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",textAlign:"center"}}>{acc.name}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+        </div>
+      )}
     </div>
   );
 }
