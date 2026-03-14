@@ -1120,17 +1120,25 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
   const handleImg = (e) => {
     const f = e.target.files[0];
     if (!f) return;
-    // Reset input so same file can be re-selected if needed
     e.target.value = "";
     const r = new FileReader();
     r.onload = (ev) => {
-      const imageData = ev.target.result;
-      // Show photo immediately
-      setNewItem(p => ({...p, image: imageData}));
-      setAiScanning(true);
-      setAiScanResult(null);
-      // Run AI analysis async (don't block UI)
-      analyseClothingPhoto(imageData).then(result => {
+      const raw = ev.target.result;
+      // Compress image before sending to AI — fixes camera photos which are too large
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1024;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const imageData = canvas.toDataURL('image/jpeg', 0.85);
+        setNewItem(p => ({...p, image: imageData}));
+        setAiScanning(true);
+        setAiScanResult(null);
+        analyseClothingPhoto(imageData).then(result => {
         if (result) {
           setAiScanResult(result);
           setNewItem(p => ({
@@ -1147,6 +1155,8 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
       }).finally(() => {
         setAiScanning(false);
       });
+      };
+      img.src = raw;
     };
     r.readAsDataURL(f);
   };
