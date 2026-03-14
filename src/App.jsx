@@ -1088,7 +1088,7 @@ function Favorites({favOutfits, onRemove, onBack}) {
                     <div style={{display:"flex",gap:8,padding:"10px 10px 0",background:CARD,position:"relative"}}>
                       {(o.itemObjects||[]).filter(it=>it&&it.image).slice(0,4).map((item,j)=>(
                         <div key={j} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                          <img src={item.image} alt={item.name} style={{width:"100%",maxHeight:120,objectFit:"contain",borderRadius:6,background:"#F5F2EE"}}/>
+                          <div style={{width:"100%",height:120,borderRadius:6,background:"#F5F2EE",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}><img src={item.image} alt={item.name} style={{width:"100%",height:"100%",objectFit:"contain"}}/></div>
                           <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",paddingBottom:6,textAlign:"center"}}>{item.name}</span>
                         </div>
                       ))}
@@ -1320,7 +1320,7 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
                 {closet.map(item=>(
                   <div key={item.id} className="card" style={{padding:14,position:"relative"}}>
-                    {item.image&&<img src={item.image} alt={item.name} style={{width:"100%",maxHeight:140,objectFit:"contain",borderRadius:8,marginBottom:10,background:"#F5F2EE"}}/>}
+                    {item.image&&<div style={{width:"100%",height:140,borderRadius:8,marginBottom:10,background:"#F5F2EE",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}><img src={item.image} alt={item.name} style={{width:"100%",height:"100%",objectFit:"contain"}}/></div>}
                     <div style={{display:"flex",alignItems:"center",marginBottom:4}}>
                       <span style={{
                         padding:"2px 8px",borderRadius:100,fontSize:9,
@@ -1547,7 +1547,7 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
                     <div style={{display:"flex",gap:8,padding:"10px 10px 0",background:CARD}}>
                       {(outfit.itemObjects||[]).filter(it=>it.image).slice(0,4).map((item,j)=>(
                         <div key={j} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                          <img src={item.image} alt={item.name} style={{width:"100%",maxHeight:140,objectFit:"contain",borderRadius:8,background:"#F5F2EE"}}/>
+                          <div style={{width:"100%",height:140,borderRadius:8,background:"#F5F2EE",display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}><img src={item.image} alt={item.name} style={{width:"100%",height:"100%",objectFit:"contain"}}/></div>
                           <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",textAlign:"center",paddingBottom:6}}>{item.name}</span>
                         </div>
                       ))}
