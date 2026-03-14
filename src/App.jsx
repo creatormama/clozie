@@ -153,7 +153,7 @@ Respond ONLY with valid JSON, nothing else. Example:
         "anthropic-dangerous-direct-browser-access": "true"
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-5",
         max_tokens: 300,
         messages: [{
           role: "user",
@@ -352,7 +352,7 @@ Respond ONLY with valid JSON:
         "anthropic-dangerous-direct-browser-access": "true"
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-5",
         max_tokens: 1000,
         messages: [{ role: "user", content: prompt }]
       })
