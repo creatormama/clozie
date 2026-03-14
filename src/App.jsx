@@ -97,7 +97,6 @@ async function loadCloset(userId) {
 async function removeBackground(imageBase64) {
   if (!REMOVEBG_KEY) return imageBase64;
   try {
-    const base64Data = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
     const blob = await fetch(imageBase64).then(r => r.blob());
     const formData = new FormData();
     formData.append("image_file", blob, "image.jpg");
@@ -110,9 +109,18 @@ async function removeBackground(imageBase64) {
     if (!response.ok) return imageBase64;
     const resultBlob = await response.blob();
     return new Promise(resolve => {
-      const reader = new FileReader();
-      reader.onload = e => resolve(e.target.result);
-      reader.readAsDataURL(resultBlob);
+      const img = new Image();
+      img.onload = () => {
+        const padding = Math.round(Math.max(img.width, img.height) * 0.15);
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width + padding * 2;
+        canvas.height = img.height + padding * 2;
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, padding, padding);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.src = URL.createObjectURL(resultBlob);
     });
   } catch(e) {
     return imageBase64;
@@ -837,6 +845,7 @@ function AvatarView({outfit}) {
     {color:"#F5F2EE",label:"Cream"},
     {color:"#FFFFFF",label:"White"},
     {color:"#F0F0F0",label:"Grey"},
+    {color:"#0D0C0A",label:"Dark"},
     {color:"#E8F0E8",label:"Sage"},
   ];
 
