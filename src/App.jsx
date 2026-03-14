@@ -1458,7 +1458,6 @@ style={{flex:1,color:step===s?G:"#333",borderBottomColor:step===s?G:"transparent
           <div className="card" style={{padding:48,textAlign:"center"}}>
             <div style={{fontSize:36,marginBottom:12}}>✦</div>
             <div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#777",marginBottom:20}}>No outfits yet. Tap Generate to get your first looks ✦</div>
-            <GBtn onClick={()=>setStep("closet")} style={{maxWidth:220,margin:"0 auto",padding:12,fontSize:14}}>Add More Clothes</GBtn>
           </div>
         )}
 
@@ -1583,7 +1582,6 @@ const sharedProps={closet,setCloset,profile,setProfile,learnings,setLearnings,fa
 
 if(!user) {
 if(page==="splash") return <Splash onDone={()=>setPage("welcome")}/>;
-if(page==="postlogin") return <PostLoginWelcome onDone={()=>setPage("app")}/>;
 if(page==="peek") return <PeekInside onSignup={()=>setPage("signup")} onLogin={()=>setPage("login")}/>;
 if(page==="signup") return <AuthPage mode="signup" onDone={handleAuth} onSwitch={()=>setPage("login")} onForgot={()=>setPage("forgot")}/>;
 if(page==="forgot") return forgotSent
@@ -1603,13 +1601,14 @@ return <Welcome onLogin={()=>setPage("login")} onSignup={()=>setPage("peek")}/>;
 
 return (
 <div>
-<MainApp
+{page==="postlogin"&&<PostLoginWelcome onDone={()=>setPage("app")}/>}
+{page!=="postlogin"&&<MainApp
 user={user}
 onLogout={()=>{try{localStorage.removeItem("clozie-user");}catch(e){}setUser(null);setPage("welcome");}}
 onSettings={()=>setPage("settings")}
 onSubscription={()=>setPage("subscription")}
 {...sharedProps}
-/>
+/>}
 {page==="settings"&&(
 <div style={{position:"fixed",inset:0,zIndex:500,overflowY:"auto",background:BG}}>
 <Settings user={user} onBack={()=>setPage("app")} onLogout={()=>{try{localStorage.removeItem("clozie-user");}catch(e){}setUser(null);setPage("welcome");}} onSubscription={()=>setPage("subscription")}/>
