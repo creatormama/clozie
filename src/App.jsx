@@ -1121,10 +1121,11 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
     const f = e.target.files[0];
     if (!f) return;
     e.target.value = "";
+    setAiScanning(true);
+    setAiScanResult(null);
     const r = new FileReader();
     r.onload = (ev) => {
       const raw = ev.target.result;
-      // Compress image before sending to AI — fixes camera photos which are too large
       const img = new Image();
       img.onload = () => {
         const MAX = 1024;
@@ -1136,25 +1137,23 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         const imageData = canvas.toDataURL('image/jpeg', 0.85);
         setNewItem(p => ({...p, image: imageData}));
-        setAiScanning(true);
-        setAiScanResult(null);
         analyseClothingPhoto(imageData).then(result => {
-        if (result) {
-          setAiScanResult(result);
-          setNewItem(p => ({
-            ...p,
-            image: imageData,
-            name: result.name || p.name,
-            category: result.category || p.category,
-            color: result.color || p.color,
-            description: result.description || p.description,
-          }));
-        }
-      }).catch(err => {
-        console.error("Photo scan failed:", err);
-      }).finally(() => {
-        setAiScanning(false);
-      });
+          if (result) {
+            setAiScanResult(result);
+            setNewItem(p => ({
+              ...p,
+              image: imageData,
+              name: result.name || p.name,
+              category: result.category || p.category,
+              color: result.color || p.color,
+              description: result.description || p.description,
+            }));
+          }
+        }).catch(err => {
+          console.error("Photo scan failed:", err);
+        }).finally(() => {
+          setAiScanning(false);
+        });
       };
       img.src = raw;
     };
