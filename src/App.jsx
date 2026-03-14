@@ -533,9 +533,9 @@ return (
 );
 }
 
-// ── TASK 1 — Splash screen: extended time + tagline ──────────────────────────
+// ── Splash screen: logo only ──────────────────────────────────────────────────
 function Splash({onDone}) {
-useEffect(()=>{ setTimeout(onDone, 3200); },[]);
+useEffect(()=>{ setTimeout(onDone, 1800); },[]);
 return (
 <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
 <style>{css}</style>
@@ -544,97 +544,52 @@ return (
     <span style={{fontWeight:300,color:"#EDE5D8"}}>Clo</span><span style={{fontStyle:"italic",color:G}}>zie</span>
   </div>
   <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.25em",marginTop:16}} className="pulse">✦ YOUR PERSONAL STYLIST ✦</div>
-  <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontWeight:300,fontSize:16,color:"#6A6058",marginTop:20,lineHeight:1.7}}>
-    Everyone says I have nothing to wear.<br/>Clozie solves that in 30 seconds.
-  </div>
 </div>
 </div>
 );
 }
 
-function Onboarding({onDone}) {
-const [step, setStep] = useState(0);
-const steps = [
-{ icon:"👗", title:"Welcome to Clozie", sub:"Your personal AI stylist", desc:"The more you use Clozie, the better she knows you — and the more perfectly she styles you." },
-{ icon:"📸", title:"Build Your Closet", sub:"Add any clothes you love", desc:"Add clothes you own, or pieces you're dreaming of buying. Clozie works with any clothes you add." },
-];
-const s = steps[step];
+// ── Post-login welcome screen ─────────────────────────────────────────────────
+function PostLoginWelcome({onDone}) {
 return (
 <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"40px 24px"}}>
 <style>{css}</style>
 <div style={{width:"100%",maxWidth:380,textAlign:"center"}} className="fade">
-<Logo/>
-<div style={{margin:"24px 0 20px"}}>
-<div style={{fontSize:88,marginBottom:16}}>{s.icon}</div>
-<div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.2em",marginBottom:10}}>{s.sub.toUpperCase()}</div>
-<div style={{fontFamily:"'Playfair Display',serif",fontWeight:300,fontSize:30,color:"#EDE5D8",marginBottom:16}}>{s.title}</div>
-{s.desc
-? <div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#666",lineHeight:1.9}}>{s.desc}</div>
-: <div style={{display:"flex",flexDirection:"column",gap:12,marginTop:8}}>
-{[
-["✦","Your outfits, your clothes — nothing new to buy"],
-["🌤","Styled for today's weather and occasion"],
-["♡","Clozie learns your taste with every rating"],
-].map(([icon,text],i)=>(
-<div key={i} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 18px",background:"#161512",borderRadius:14,border:"1px solid #2E2B27"}}>
-<span style={{color:G,fontSize:18,flexShrink:0,width:24,textAlign:"center"}}>{icon}</span>
-<span style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontWeight:300,fontSize:14,color:"#DDD5C5",lineHeight:1.6,textAlign:"left"}}>{text}</span>
-</div>
-))}
-</div>
-}
-</div>
-<div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:32}}>
-{steps.map((_,i)=>(
-<div key={i} style={{width:i===step?24:8,height:8,borderRadius:100,background:i===step?G:"#252320",transition:"all 0.3s"}}/>
-))}
-</div>
-<GBtn onClick={()=>step<steps.length-1?setStep(step+1):onDone()} style={{marginBottom:14}}>
-{step<steps.length-1?"Next →":"Let's Start ✦"}
-</GBtn>
-{step===0&&(
-<button onClick={onDone} style={{background:"none",border:"none",color:"#444",fontFamily:"'DM Mono'",fontSize:12,cursor:"pointer"}}>
-Skip intro
-</button>
-)}
+  <div style={{fontSize:48,marginBottom:24}}>👗 👔</div>
+  <div style={{fontFamily:"'Playfair Display',serif",fontSize:36,letterSpacing:"-0.02em",marginBottom:20}}>
+    <span style={{fontWeight:300,color:"#EDE5D8"}}>Welcome to Clo</span><span style={{fontStyle:"italic",color:G}}>zie</span>
+  </div>
+  <div style={{fontFamily:"'DM Mono'",fontSize:13,color:"#6A6058",lineHeight:1.9,marginBottom:40}}>
+    The more you use Clozie, the better she knows you — and the more perfectly she styles you.
+  </div>
+  <GBtn onClick={onDone}>Let's Start ✦</GBtn>
 </div>
 </div>
 );
 }
 
-// ── TASK 2 — Welcome screen: added 👗 and 👔 emojis ─────────────────────────
+// ── Welcome screen ────────────────────────────────────────────────────────────
 function Welcome({onLogin, onSignup}) {
 return (
 <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"40px 24px",overflow:"hidden",position:"relative"}}>
 <style>{css}</style>
 <div style={{position:"absolute",width:500,height:500,borderRadius:"50%",background:"radial-gradient(circle,#C9A96E08 0%,transparent 65%)",top:"50%",left:"50%",transform:"translate(-50%,-50%)",pointerEvents:"none"}}/>
 <div style={{textAlign:"center",maxWidth:480,position:"relative",zIndex:1}} className="fade">
-<div style={{fontFamily:"'DM Mono'",fontSize:10,letterSpacing:"0.25em",color:G,marginBottom:32}}>✦ PERSONAL STYLIST ✦</div>
-<div style={{fontFamily:"'Playfair Display',serif",fontSize:80,letterSpacing:"-0.03em",lineHeight:1,marginBottom:16}}>
-<span style={{fontWeight:300,color:"#EDE5D8"}}>Clo</span><span style={{fontStyle:"italic",color:G}}>zie</span>
-</div>
-{/* TASK 2 — 👗 and 👔 emojis */}
-<div style={{fontSize:36,marginBottom:32,letterSpacing:"0.1em"}}>👗 👔</div>
-<p style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontWeight:300,fontSize:18,color:"#6A6058",lineHeight:1.8,marginBottom:52}}>
-Your stylist that knows your wardrobe,<br/>learns your taste, and dresses you perfectly.
-</p>
-<div style={{display:"flex",justifyContent:"center",marginBottom:52}}>
-{[["①","Build your closet"],["②","Set today's context"],["③","Get styled outfits"]].map(([num,label],i)=>(
-<div key={i} style={{flex:1,textAlign:"center",position:"relative"}}>
-{i>0&&<div style={{position:"absolute",left:0,top:13,width:"50%",height:1,background:"#C9A96E20"}}/>}
-{i<2&&<div style={{position:"absolute",right:0,top:13,width:"50%",height:1,background:"#C9A96E20"}}/>}
-<div style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:G,marginBottom:8,position:"relative",zIndex:1,background:BG,display:"inline-block",padding:"0 8px"}}>{num}</div>
-<div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666",lineHeight:1.7}}>{label}</div>
-</div>
-))}
-</div>
-<button onClick={onSignup} style={{padding:"18px 64px",background:G,color:BG,borderRadius:100,fontSize:16,fontFamily:"'Playfair Display',serif",border:"none",cursor:"pointer",display:"block",margin:"0 auto 14px"}}>
-Get Started — It's Free
-</button>
-<div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#666"}}>
-Already have an account?{" "}
-<span onClick={onLogin} style={{color:G,cursor:"pointer"}}>Sign in</span>
-</div>
+  <div style={{fontFamily:"'DM Mono'",fontSize:10,letterSpacing:"0.25em",color:G,marginBottom:32}}>✦ PERSONAL STYLIST ✦</div>
+  <div style={{fontFamily:"'Playfair Display',serif",fontSize:80,letterSpacing:"-0.03em",lineHeight:1,marginBottom:16}}>
+    <span style={{fontWeight:300,color:"#EDE5D8"}}>Clo</span><span style={{fontStyle:"italic",color:G}}>zie</span>
+  </div>
+  <div style={{fontSize:36,marginBottom:28,letterSpacing:"0.1em"}}>👗 👔</div>
+  <p style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontWeight:300,fontSize:20,color:"#6A6058",lineHeight:1.8,marginBottom:48}}>
+    Everyone says I have nothing to wear.<br/>Clozie solves that in 30 seconds.
+  </p>
+  <button onClick={onSignup} style={{padding:"18px 64px",background:G,color:BG,borderRadius:100,fontSize:16,fontFamily:"'Playfair Display',serif",border:"none",cursor:"pointer",display:"block",margin:"0 auto 14px"}}>
+    Next →
+  </button>
+  <div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#666"}}>
+    Already have an account?{" "}
+    <span onClick={onLogin} style={{color:G,cursor:"pointer"}}>Sign in</span>
+  </div>
 </div>
 </div>
 );
@@ -1620,14 +1575,14 @@ const isVip = VIP_EMAILS.includes(email.trim().toLowerCase());
 const u = {email,name:name||email.split("@")[0],pro:isVip,vip:isVip};
 try { localStorage.setItem("clozie-user", JSON.stringify(u)); } catch(e){}
 setUser(u);
-setPage("app");
+setPage("postlogin");
 };
 
 const sharedProps={closet,setCloset,profile,setProfile,learnings,setLearnings,favOutfits,setFavOutfits,saveStatus};
 
 if(!user) {
-if(page==="splash") return <Splash onDone={()=>setPage("onboarding")}/>;
-if(page==="onboarding") return <Onboarding onDone={()=>setPage("welcome")}/>;
+if(page==="splash") return <Splash onDone={()=>setPage("welcome")}/>;
+if(page==="postlogin") return <PostLoginWelcome onDone={()=>setPage("app")}/>;
 if(page==="peek") return <PeekInside onSignup={()=>setPage("signup")} onLogin={()=>setPage("login")}/>;
 if(page==="signup") return <AuthPage mode="signup" onDone={handleAuth} onSwitch={()=>setPage("login")} onForgot={()=>setPage("forgot")}/>;
 if(page==="forgot") return forgotSent
