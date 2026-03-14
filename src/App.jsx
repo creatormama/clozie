@@ -6,7 +6,7 @@ const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON;
 const supabase = (SUPABASE_URL && SUPABASE_ANON) ? createClient(SUPABASE_URL, SUPABASE_ANON) : null;
 
 const ANTHROPIC_KEY = import.meta.env.VITE_ANTHROPIC_KEY;
-const REMOVEBG_KEY = import.meta.env.VITE_REMOVEBG_KEY;
+
 // ── VIP accounts — always Pro, always unlimited ───────────────────────────────
 const VIP_EMAILS = [
 "insuredbyjacek@msn.com",
@@ -94,36 +94,12 @@ async function loadCloset(userId) {
 }
 
 // ── AI PHOTO RECOGNITION ──────────────────────────────────────────────────────
-async function removeBackground(imageBase64) {
-  if (!REMOVEBG_KEY) return imageBase64;
-  try {
-    const base64Data = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
-    const blob = await fetch(imageBase64).then(r => r.blob());
-    const formData = new FormData();
-    formData.append("image_file", blob, "image.jpg");
-    formData.append("size", "auto");
-    const response = await fetch("https://api.remove.bg/v1.0/removebg", {
-      method: "POST",
-      headers: { "X-Api-Key": REMOVEBG_KEY },
-      body: formData
-    });
-    if (!response.ok) return imageBase64;
-    const resultBlob = await response.blob();
-    return new Promise(resolve => {
-      const reader = new FileReader();
-      reader.onload = e => resolve(e.target.result);
-      reader.readAsDataURL(resultBlob);
-    });
-  } catch(e) {
-    return imageBase64;
-  }
-}
 async function analyseClothingPhoto(imageBase64) {
   if (!ANTHROPIC_KEY) return null;
-  
+ 
   // Strip the data URL prefix to get just the base64 data
   const base64Data = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
-  const mediaType = imageBase64.includes("image/png") ? "image/png" : 
+  const mediaType = imageBase64.includes("image/png") ? "image/png" :
                     imageBase64.includes("image/webp") ? "image/webp" : "image/jpeg";
 
   const prompt = `You are a fashion expert analysing a clothing item photo for a wardrobe app called Clozie.
@@ -176,12 +152,12 @@ Respond ONLY with valid JSON, nothing else. Example:
     const text = data.content?.[0]?.text || "";
     const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
-    
+   
     // Validate category is one of the allowed ones
     if (!CATEGORIES.includes(parsed.category)) {
       parsed.category = "Tops"; // safe fallback
     }
-    
+   
     return parsed;
   } catch(e) {
     console.error("Photo analysis failed:", e);
