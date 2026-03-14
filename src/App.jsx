@@ -876,23 +876,23 @@ function AvatarView({outfit}) {
           </svg>
 
           {isDress && isDress.image && (
-            <div style={{position:"absolute",top:60,left:36,width:128,height:340,borderRadius:10,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 16px #00000025"}}>
-              <img src={isDress.image} alt={isDress.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
+            <div style={{position:"absolute",top:60,left:36,width:128,height:340,borderRadius:10,overflow:"hidden",opacity:0.96}}>
+              <img src={isDress.image} alt={isDress.name} style={{width:"100%",height:"100%",objectFit:"contain",objectPosition:"center top"}}/>
             </div>
           )}
           {!isDress && top && top.image && (
-            <div style={{position:"absolute",top:58,left:38,width:124,height:170,borderRadius:8,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 12px #00000022"}}>
-              <img src={top.image} alt={top.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
+            <div style={{position:"absolute",top:58,left:38,width:124,height:170,borderRadius:8,overflow:"hidden",opacity:0.96}}>
+              <img src={top.image} alt={top.name} style={{width:"100%",height:"100%",objectFit:"contain",objectPosition:"center top"}}/>
             </div>
           )}
           {!isDress && bottom && bottom.image && (
-            <div style={{position:"absolute",top:220,left:38,width:124,height:190,borderRadius:8,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 12px #00000022"}}>
-              <img src={bottom.image} alt={bottom.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
+            <div style={{position:"absolute",top:220,left:38,width:124,height:190,borderRadius:8,overflow:"hidden",opacity:0.96}}>
+              <img src={bottom.image} alt={bottom.name} style={{width:"100%",height:"100%",objectFit:"contain",objectPosition:"center top"}}/>
             </div>
           )}
           {shoes && shoes.image && (
-            <div style={{position:"absolute",top:402,left:40,width:120,height:70,borderRadius:8,overflow:"hidden",boxShadow:"0 2px 8px #00000020",background:"#f0ede8"}}>
-              <img src={shoes.image} alt={shoes.name} style={{width:"100%",height:"100%",objectFit:"contain",mixBlendMode:"multiply"}}/>
+            <div style={{position:"absolute",top:402,left:40,width:120,height:70,borderRadius:8,overflow:"hidden"}}>
+              <img src={shoes.image} alt={shoes.name} style={{width:"100%",height:"100%",objectFit:"contain"}}/>
             </div>
           )}
           {acc1 && acc1.image && /(hat|cap|beret|beanie|headband)/i.test(acc1.name||"") && (
