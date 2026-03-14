@@ -150,11 +150,11 @@ data: base64Data
 
 const data = await response.json();
 const text = data.content?.[0]?.text || "";
-const clean = text.replace(/```json|```/g, "").trim();
+const clean = text.replace(/`json|`/g, "").trim();
 const parsed = JSON.parse(clean);
 
 if (!CATEGORIES.includes(parsed.category)) {
-  parsed.category = "Tops";
+parsed.category = "Tops";
 }
 
 return parsed;
@@ -271,20 +271,20 @@ const add = item => { if (item && !usedIds.has(item.id)) { items.push(item); use
 const useDress = !isSporty && i === 0 && sDresses.length > 0;
 
 if (useDress) {
-  add(sDresses[0]);
+add(sDresses[0]);
 } else {
-  add(sTops[i % sTops.length]);
-  add(sBottoms[i % sBottoms.length]);
+add(sTops[i % sTops.length]);
+add(sBottoms[i % sBottoms.length]);
 }
 
 if ((isCold || isRainy) && sOuterwear.length > 0) {
-  add(sOuterwear[i % sOuterwear.length]);
+add(sOuterwear[i % sOuterwear.length]);
 }
 
 add(sShoes[i % sShoes.length]);
 
 if (sAccessories.length > 0) {
-  add(sAccessories[i % sAccessories.length]);
+add(sAccessories[i % sAccessories.length]);
 }
 
 if (items.length > 0) outfitCombinations.push(items);
@@ -336,19 +336,19 @@ messages: [{ role: "user", content: prompt }]
 
 const data = await response.json();
 const text = data.content?.[0]?.text || "";
-const clean = text.replace(/```json|```/g, "").trim();
+const clean = text.replace(/`json|`/g, "").trim();
 const parsed = JSON.parse(clean);
 
 return outfitCombinations.map((itemObjects, i) => {
-  const ai = parsed.outfits?.[i] || {};
-  return {
-    id: Date.now() + i,
-    name: ai.name || ["Today's Look","Fresh Pick","Style Edit"][i] || "Outfit "+(i+1),
-    vibe: ai.vibe || ["Chic","Relaxed","Bold"][i] || "Stylish",
-    items: itemObjects.map(it => [it.color, it.name, it.description].filter(Boolean).join(" ")),
-    itemObjects,
-    description: ai.description || "A perfect look for "+occasion+" in "+weather+" weather."
-  };
+const ai = parsed.outfits?.[i] || {};
+return {
+id: Date.now() + i,
+name: ai.name || ["Today's Look","Fresh Pick","Style Edit"][i] || "Outfit "+(i+1),
+vibe: ai.vibe || ["Chic","Relaxed","Bold"][i] || "Stylish",
+items: itemObjects.map(it => [it.color, it.name, it.description].filter(Boolean).join(" ")),
+itemObjects,
+description: ai.description || "A perfect look for "+occasion+" in "+weather+" weather."
+};
 });
 
 } catch(e) {
@@ -444,8 +444,8 @@ const [tapped, setTapped] = useState(false);
 const s = steps[active];
 
 const handleTabClick = (i) => {
-  setActive(i);
-  setTapped(true);
+setActive(i);
+setTapped(true);
 };
 
 return (
@@ -461,74 +461,69 @@ return (
 `}</style>
 <div style={{width:"100%",maxWidth:400}} className="fade">
 
-    {/* Header */}
-    <div style={{textAlign:"center",marginBottom:28}}>
-      <Logo/>
-      <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.2em",marginTop:12}}>✦ HERE'S HOW IT WORKS ✦</div>
-    </div>
-
-    {/* Step tabs */}
-    <div style={{display:"flex",gap:6,marginBottom:6}}>
-      {steps.map((_,i)=>(
-        <button key={i} onClick={()=>handleTabClick(i)} style={{
-          flex:1,padding:"10px 4px",borderRadius:10,border:"1px solid "+(active===i?G:BORDER),
-          background:active===i?G+"15":CARD,cursor:"pointer",
-          fontFamily:"'DM Mono'",fontSize:10,
-          color:active===i?G:"#444",
-          transition:"all 0.2s",
-          position:"relative",
-        }}>
-          {/* Bouncing dot on step 1 only, disappears after first tap */}
-          {i===0 && !tapped && (
-            <div className="bounce-dot" style={{
-              position:"absolute",
-              top:-6,
-              right:-4,
-              width:10,
-              height:10,
-              borderRadius:"50%",
-              background:G,
-              border:"2px solid "+BG,
-            }}/>
-          )}
-          <div style={{fontSize:18,marginBottom:3}}>{steps[i].icon}</div>
-          <div style={{fontSize:9,letterSpacing:"0.04em"}}>STEP {i+1}</div>
-        </button>
-      ))}
-    </div>
-
-    {/* Tap hint — disappears after first tap */}
-    {!tapped && (
-      <div style={{textAlign:"center",marginBottom:14}}>
-        <span style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.06em"}}>✦ Tap each step to explore</span>
-      </div>
-    )}
-    {tapped && <div style={{marginBottom:14}}/>}
-
-    {/* Active step */}
-    <div className="card" style={{padding:20,marginBottom:16,borderColor:G+"30"}}>
-      <div style={{fontFamily:"'Playfair Display',serif",fontWeight:300,fontSize:22,color:"#EDE5D8",marginBottom:8}}>{s.title}</div>
-      <div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#6A6058",lineHeight:1.8,marginBottom:16}}>{s.desc}</div>
-      {s.visual}
-    </div>
-
-    {/* Step dots */}
-    <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:24}}>
-      {steps.map((_,i)=>(
-        <div key={i} onClick={()=>handleTabClick(i)} style={{width:i===active?24:8,height:8,borderRadius:100,background:i===active?G:"#252320",transition:"all 0.3s",cursor:"pointer"}}/>
-      ))}
-    </div>
-
-    {/* CTA */}
-    <GBtn onClick={onSignup} style={{marginBottom:12}}>
-      ✦ Start Styling — It's Free
-    </GBtn>
-    <div style={{textAlign:"center",fontFamily:"'DM Mono'",fontSize:12,color:"#444"}}>
-      Already have an account?{" "}
-      <span onClick={onLogin} style={{color:G,cursor:"pointer"}}>Sign in</span>
-    </div>
-
+  {/* Header */}
+  <div style={{textAlign:"center",marginBottom:28}}>
+    <Logo/>
+    <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.2em",marginTop:12}}>✦ HERE'S HOW IT WORKS ✦</div>
   </div>
+
+  {/* Step tabs */}
+  <div style={{display:"flex",gap:6,marginBottom:6}}>
+    {steps.map((_,i)=>(
+      <button key={i} onClick={()=>handleTabClick(i)} style={{
+        flex:1,padding:"10px 4px",borderRadius:10,border:"1px solid "+(active===i?G:BORDER),
+        background:active===i?G+"15":CARD,cursor:"pointer",
+        fontFamily:"'DM Mono'",fontSize:10,
+        color:active===i?G:"#444",
+        transition:"all 0.2s",
+        position:"relative",
+      }}>
+        {i===0 && !tapped && (
+          <div className="bounce-dot" style={{
+            position:"absolute",
+            top:-6,
+            right:-4,
+            width:10,
+            height:10,
+            borderRadius:"50%",
+            background:G,
+            border:"2px solid "+BG,
+          }}/>
+        )}
+        <div style={{fontSize:18,marginBottom:3}}>{steps[i].icon}</div>
+        <div style={{fontSize:9,letterSpacing:"0.04em"}}>STEP {i+1}</div>
+      </button>
+    ))}
+  </div>
+
+  {!tapped && (
+    <div style={{textAlign:"center",marginBottom:14}}>
+      <span style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.06em"}}>✦ Tap each step to explore</span>
+    </div>
+  )}
+  {tapped && <div style={{marginBottom:14}}/>}
+
+  <div className="card" style={{padding:20,marginBottom:16,borderColor:G+"30"}}>
+    <div style={{fontFamily:"'Playfair Display',serif",fontWeight:300,fontSize:22,color:"#EDE5D8",marginBottom:8}}>{s.title}</div>
+    <div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#6A6058",lineHeight:1.8,marginBottom:16}}>{s.desc}</div>
+    {s.visual}
+  </div>
+
+  <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:24}}>
+    {steps.map((_,i)=>(
+      <div key={i} onClick={()=>handleTabClick(i)} style={{width:i===active?24:8,height:8,borderRadius:100,background:i===active?G:"#252320",transition:"all 0.3s",cursor:"pointer"}}/>
+    ))}
+  </div>
+
+  <GBtn onClick={onSignup} style={{marginBottom:12}}>
+    ✦ Start Styling — It's Free
+  </GBtn>
+  <div style={{textAlign:"center",fontFamily:"'DM Mono'",fontSize:12,color:"#444"}}>
+    Already have an account?{" "}
+    <span onClick={onLogin} style={{color:G,cursor:"pointer"}}>Sign in</span>
+  </div>
+
+</div>
 </div>
 );
 }
@@ -625,52 +620,53 @@ return (
 </div>
 </div>
 
-    {!isForgot && (
-      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-        <button className="social" onClick={()=>onDone({email:"google@user.com",name:"Google User",mode:isLogin?"login":"signup"})}>
-          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          Continue with Google
-        </button>
-        <button className="social" onClick={()=>onDone({email:"apple@user.com",name:"Apple User",mode:isLogin?"login":"signup"})}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-          Continue with Apple
-        </button>
-        <div style={{display:"flex",alignItems:"center",gap:12,margin:"4px 0"}}>
-          <div style={{flex:1,height:1,background:BORDER}}/><span style={{fontFamily:"'DM Mono'",fontSize:11,color:"#666"}}>or</span><div style={{flex:1,height:1,background:BORDER}}/>
-        </div>
+  {!isForgot && (
+    <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+      <button className="social" onClick={()=>onDone({email:"google@user.com",name:"Google User",mode:isLogin?"login":"signup"})}>
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continue with Google
+      </button>
+      <button className="social" onClick={()=>onDone({email:"apple@user.com",name:"Apple User",mode:isLogin?"login":"signup"})}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        Continue with Apple
+      </button>
+      <div style={{display:"flex",alignItems:"center",gap:12,margin:"4px 0"}}>
+        <div style={{flex:1,height:1,background:BORDER}}/><span style={{fontFamily:"'DM Mono'",fontSize:11,color:"#666"}}>or</span><div style={{flex:1,height:1,background:BORDER}}/>
       </div>
-    )}
-
-    <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:16}}>
-      {!isLogin&&!isForgot&&<input className="inp" placeholder="Full name" value={name} onChange={e=>setName(e.target.value)}/>}
-      <input className="inp" placeholder="Email address" type="email" value={email} onChange={e=>setEmail(e.target.value)}/>
-      {!isForgot&&<input className="inp" placeholder="Password" type="password" value={pass} onChange={e=>setPass(e.target.value)}/>}
     </div>
+  )}
 
-    {err&&<div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#C96E6E",marginBottom:12}}>{err}</div>}
-
-    {isLogin&&(
-      <div style={{textAlign:"right",marginBottom:14}}>
-        <span onClick={onForgot} style={{fontFamily:"'DM Mono'",fontSize:12,color:G,cursor:"pointer"}}>Forgot password?</span>
-      </div>
-    )}
-
-    <GBtn onClick={handle} style={{marginBottom:20}}>
-      {isForgot?"Send Reset Link →":isLogin?"Sign In →":"Create Account →"}
-    </GBtn>
-
-    {!isForgot&&(
-      <div style={{textAlign:"center",fontFamily:"'DM Mono'",fontSize:12,color:"#666"}}>
-        {isLogin?"Don't have an account? ":"Already have an account? "}
-        <span onClick={onSwitch} style={{color:G,cursor:"pointer"}}>{isLogin?"Sign up":"Sign in"}</span>
-      </div>
-    )}
-    {isForgot&&(
-      <div style={{textAlign:"center",fontFamily:"'DM Mono'",fontSize:12,color:"#666"}}>
-        <span onClick={()=>onSwitch("login")} style={{color:G,cursor:"pointer"}}>← Back to sign in</span>
-      </div>
-    )}
+  <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:16}}>
+    {!isLogin&&!isForgot&&<input className="inp" placeholder="Full name" value={name} onChange={e=>setName(e.target.value)}/>}
+    <input className="inp" placeholder="Email address" type="email" value={email} onChange={e=>setEmail(e.target.value)}/>
+    {!isForgot&&<input className="inp" placeholder="Password" type="password" value={pass} onChange={e=>setPass(e.target.value)}/>}
   </div>
+
+  {err&&<div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#C96E6E",marginBottom:12}}>{err}</div>}
+
+  {isLogin&&(
+    <div style={{textAlign:"right",marginBottom:14}}>
+      <span onClick={onForgot} style={{fontFamily:"'DM Mono'",fontSize:12,color:G,cursor:"pointer"}}>Forgot password?</span>
+    </div>
+  )}
+
+  <GBtn onClick={handle} style={{marginBottom:20}}>
+    {isForgot?"Send Reset Link →":isLogin?"Sign In →":"Create Account →"}
+  </GBtn>
+
+  {!isForgot&&(
+    <div style={{textAlign:"center",fontFamily:"'DM Mono'",fontSize:12,color:"#666"}}>
+      {isLogin?"Don't have an account? ":"Already have an account? "}
+      <span onClick={onSwitch} style={{color:G,cursor:"pointer"}}>{isLogin?"Sign up":"Sign in"}</span>
+    </div>
+  )}
+  {isForgot&&(
+    <div style={{textAlign:"center",fontFamily:"'DM Mono'",fontSize:12,color:"#666"}}>
+      <span onClick={()=>onSwitch("login")} style={{color:G,cursor:"pointer"}}>← Back to sign in</span>
+    </div>
+  )}
+
+</div>
 </div>
 );
 }
@@ -834,53 +830,53 @@ return (
 <path d="M114 418 Q126 428 140 424" stroke="#C8B8A2" strokeWidth="8" strokeLinecap="round"/>
 </svg>
 
-      {isDress && isDress.image && (
-        <div style={{position:"absolute",top:60,left:36,width:128,height:340,borderRadius:10,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 16px #00000025"}}>
-          <img src={isDress.image} alt={isDress.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
-        </div>
-      )}
-      {!isDress && top && top.image && (
-        <div style={{position:"absolute",top:58,left:38,width:124,height:170,borderRadius:8,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 12px #00000022"}}>
-          <img src={top.image} alt={top.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
-        </div>
-      )}
-      {!isDress && bottom && bottom.image && (
-        <div style={{position:"absolute",top:220,left:38,width:124,height:190,borderRadius:8,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 12px #00000022"}}>
-          <img src={bottom.image} alt={bottom.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
-        </div>
-      )}
-      {shoes && shoes.image && (
-        <div style={{position:"absolute",top:402,left:40,width:120,height:70,borderRadius:8,overflow:"hidden",boxShadow:"0 2px 8px #00000020",background:"#f0ede8"}}>
-          <img src={shoes.image} alt={shoes.name} style={{width:"100%",height:"100%",objectFit:"contain",mixBlendMode:"multiply"}}/>
-        </div>
-      )}
-      {acc1 && acc1.image && /(hat|cap|beret|beanie|headband)/i.test(acc1.name||"") && (
-        <div style={{position:"absolute",top:-10,left:68,width:64,height:44,borderRadius:8,overflow:"hidden",boxShadow:"0 2px 8px #00000030"}}>
-          <img src={acc1.image} alt={acc1.name} style={{width:"100%",height:"100%",objectFit:"contain",mixBlendMode:"multiply"}}/>
-        </div>
-      )}
-      {acc1 && acc1.image && !/(hat|cap|beret|beanie|headband)/i.test(acc1.name||"") && (
-        <div style={{position:"absolute",top:18,left:62,width:36,height:36,borderRadius:"50%",overflow:"hidden",border:"2px solid #fff",boxShadow:"0 2px 8px #00000030"}}>
-          <img src={acc1.image} alt={acc1.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-        </div>
-      )}
-      {acc2 && acc2.image && (
-        <div style={{position:"absolute",top:18,right:62,width:36,height:36,borderRadius:"50%",overflow:"hidden",border:"2px solid #fff",boxShadow:"0 2px 8px #00000030"}}>
-          <img src={acc2.image} alt={acc2.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-        </div>
-      )}
-
-      <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:5}}>
-        {[top,bottom,shoes,acc1,acc2].filter(Boolean).map((item,i)=>(
-          <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
-            <div style={{width:5,height:5,borderRadius:"50%",background:"#C9A96E",flexShrink:0}}/>
-            <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888"}}>{item.name}</span>
-            {item.category&&<span style={{fontFamily:"'DM Mono'",fontSize:8,color:"#C9A96E",opacity:0.6}}>{item.category}</span>}
-          </div>
-        ))}
-      </div>
+  {isDress && isDress.image && (
+    <div style={{position:"absolute",top:60,left:36,width:128,height:340,borderRadius:10,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 16px #00000025"}}>
+      <img src={isDress.image} alt={isDress.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
     </div>
+  )}
+  {!isDress && top && top.image && (
+    <div style={{position:"absolute",top:58,left:38,width:124,height:170,borderRadius:8,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 12px #00000022"}}>
+      <img src={top.image} alt={top.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
+    </div>
+  )}
+  {!isDress && bottom && bottom.image && (
+    <div style={{position:"absolute",top:220,left:38,width:124,height:190,borderRadius:8,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 12px #00000022"}}>
+      <img src={bottom.image} alt={bottom.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
+    </div>
+  )}
+  {shoes && shoes.image && (
+    <div style={{position:"absolute",top:402,left:40,width:120,height:70,borderRadius:8,overflow:"hidden",boxShadow:"0 2px 8px #00000020",background:"#f0ede8"}}>
+      <img src={shoes.image} alt={shoes.name} style={{width:"100%",height:"100%",objectFit:"contain",mixBlendMode:"multiply"}}/>
+    </div>
+  )}
+  {acc1 && acc1.image && /(hat|cap|beret|beanie|headband)/i.test(acc1.name||"") && (
+    <div style={{position:"absolute",top:-10,left:68,width:64,height:44,borderRadius:8,overflow:"hidden",boxShadow:"0 2px 8px #00000030"}}>
+      <img src={acc1.image} alt={acc1.name} style={{width:"100%",height:"100%",objectFit:"contain",mixBlendMode:"multiply"}}/>
+    </div>
+  )}
+  {acc1 && acc1.image && !/(hat|cap|beret|beanie|headband)/i.test(acc1.name||"") && (
+    <div style={{position:"absolute",top:18,left:62,width:36,height:36,borderRadius:"50%",overflow:"hidden",border:"2px solid #fff",boxShadow:"0 2px 8px #00000030"}}>
+      <img src={acc1.image} alt={acc1.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+    </div>
+  )}
+  {acc2 && acc2.image && (
+    <div style={{position:"absolute",top:18,right:62,width:36,height:36,borderRadius:"50%",overflow:"hidden",border:"2px solid #fff",boxShadow:"0 2px 8px #00000030"}}>
+      <img src={acc2.image} alt={acc2.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+    </div>
+  )}
+
+  <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:5}}>
+    {[top,bottom,shoes,acc1,acc2].filter(Boolean).map((item,i)=>(
+      <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
+        <div style={{width:5,height:5,borderRadius:"50%",background:"#C9A96E",flexShrink:0}}/>
+        <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888"}}>{item.name}</span>
+        {item.category&&<span style={{fontFamily:"'DM Mono'",fontSize:8,color:"#C9A96E",opacity:0.6}}>{item.category}</span>}
+      </div>
+    ))}
   </div>
+</div>
+</div>
 </div>
 );
 }
@@ -899,87 +895,88 @@ return (
 <div style={{position:"fixed",inset:0,background:"#000000EE",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}} onClick={onClose}>
 <div style={{background:"#F5F0E8",borderRadius:20,width:"100%",maxWidth:460,position:"relative",boxShadow:"0 32px 80px #000000AA"}} onClick={e=>e.stopPropagation()}>
 
-    <div style={{background:BG,padding:"18px 22px",display:"flex",justifyContent:"space-between",alignItems:"center",borderRadius:"20px 20px 0 0"}}>
-      <div>
-        <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.15em"}}>{(outfit.vibe||"OUTFIT").toUpperCase()}</div>
-        <div style={{fontFamily:"'Playfair Display',serif",fontWeight:300,fontSize:20,color:"#EDE5D8"}}>{outfit.name}</div>
-      </div>
-      <button onClick={onClose} style={{background:"#1A1815",border:"1px solid "+BORDER,borderRadius:10,color:"#888",fontFamily:"'DM Mono'",fontSize:11,padding:"7px 14px",cursor:"pointer",transition:"all 0.15s"}}>✕ Close</button>
+  <div style={{background:BG,padding:"18px 22px",display:"flex",justifyContent:"space-between",alignItems:"center",borderRadius:"20px 20px 0 0"}}>
+    <div>
+      <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.15em"}}>{(outfit.vibe||"OUTFIT").toUpperCase()}</div>
+      <div style={{fontFamily:"'Playfair Display',serif",fontWeight:300,fontSize:20,color:"#EDE5D8"}}>{outfit.name}</div>
     </div>
+    <button onClick={onClose} style={{background:"#1A1815",border:"1px solid "+BORDER,borderRadius:10,color:"#888",fontFamily:"'DM Mono'",fontSize:11,padding:"7px 14px",cursor:"pointer",transition:"all 0.15s"}}>✕ Close</button>
+  </div>
 
-    <div style={{background:BG,padding:"14px 16px 0",borderBottom:"2px solid "+BORDER}}>
-      <div style={{display:"flex",gap:8}}>
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setView(tab.id)}
-            style={{
-              flex: 1,
-              padding: "12px 8px 14px",
-              border: "none",
-              cursor: "pointer",
-              borderRadius: "10px 10px 0 0",
-              background: view === tab.id ? "#F5F0E8" : "#111009",
-              borderTop: "2px solid " + (view === tab.id ? G : "transparent"),
-              borderLeft: "1px solid " + (view === tab.id ? BORDER : "transparent"),
-              borderRight: "1px solid " + (view === tab.id ? BORDER : "transparent"),
-              transition: "all 0.2s",
-              position: "relative",
-              marginBottom: view === tab.id ? "-2px" : "0",
-            }}
-          >
-            <div style={{fontSize: 20,marginBottom: 4,filter: view === tab.id ? "none" : "grayscale(1) opacity(0.4)"}}>
-              {tab.icon}
-            </div>
-            <div style={{fontFamily: "'DM Mono'",fontSize: 11,fontWeight: view === tab.id ? "bold" : "normal",color: view === tab.id ? "#1A1612" : "#555",letterSpacing: "0.04em",marginBottom: 2}}>
-              {tab.label}
-            </div>
-            <div style={{fontFamily: "'DM Mono'",fontSize: 9,color: view === tab.id ? "#8A7A68" : "#333",letterSpacing: "0.02em"}}>
-              {tab.sub}
-            </div>
-            {view === tab.id && (
-              <div style={{position: "absolute",top: -2,left: "50%",transform: "translateX(-50%)",width: 32,height: 2,background: G,borderRadius: 2}}/>
-            )}
-          </button>
-        ))}
-      </div>
-    </div>
-
-    {view==="moodboard"&&(
-      <div style={{background:"#F5F0E8",padding:16}}>
-        {withPhoto.length===0
-          ? <div style={{padding:"40px 0",textAlign:"center"}}>
-              <div style={{fontSize:44,marginBottom:12}}>👗</div>
-              <div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#999"}}>Add photos to your closet items to see them here</div>
-            </div>
-          : <div style={{display:"grid",gridTemplateColumns:withPhoto.length===1?"1fr":"1fr 1fr",gap:12}}>
-              {withPhoto.map((item,i)=>(
-                <div key={i} style={{background:"#fff",borderRadius:12,overflow:"hidden",boxShadow:"0 4px 16px #00000018"}}>
-                  <img src={item.image} alt={item.name} style={{width:"100%",display:"block",objectFit:"contain",background:"#f8f8f8",maxHeight:withPhoto.length===1?380:200}}/>
-                  <div style={{padding:"8px 10px",borderTop:"1px solid #eee"}}>
-                    <div style={{fontFamily:"'DM Mono'",fontSize:9,color:"#999",textAlign:"center"}}>{item.name}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-        }
-      </div>
-    )}
-
-    {view==="avatar"&&<AvatarView outfit={outfit}/>}
-
-    <div style={{background:BG,padding:"14px 20px",borderRadius:"0 0 20px 20px"}}>
-      <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:withPhoto.length>0?10:0}}>
-        {items.map((it,j)=>(
-          <span key={j} style={{padding:"4px 10px",background:CARD,borderRadius:100,fontFamily:"'DM Mono'",fontSize:10,color:"#8A7A68",border:"1px solid "+BORDER,display:"flex",alignItems:"center",gap:5}}>
-            {it.image&&<img src={it.image} alt={it.name} style={{width:16,height:16,borderRadius:"50%",objectFit:"cover"}}/>}
-            {it.name}
-          </span>
-        ))}
-      </div>
-      {outfit.description&&<div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:12,color:"#7A6A58",lineHeight:1.5}}>{outfit.description}</div>}
+  <div style={{background:BG,padding:"14px 16px 0",borderBottom:"2px solid "+BORDER}}>
+    <div style={{display:"flex",gap:8}}>
+      {tabs.map(tab => (
+        <button
+          key={tab.id}
+          onClick={() => setView(tab.id)}
+          style={{
+            flex: 1,
+            padding: "12px 8px 14px",
+            border: "none",
+            cursor: "pointer",
+            borderRadius: "10px 10px 0 0",
+            background: view === tab.id ? "#F5F0E8" : "#111009",
+            borderTop: "2px solid " + (view === tab.id ? G : "transparent"),
+            borderLeft: "1px solid " + (view === tab.id ? BORDER : "transparent"),
+            borderRight: "1px solid " + (view === tab.id ? BORDER : "transparent"),
+            transition: "all 0.2s",
+            position: "relative",
+            marginBottom: view === tab.id ? "-2px" : "0",
+          }}
+        >
+          <div style={{fontSize: 20,marginBottom: 4,filter: view === tab.id ? "none" : "grayscale(1) opacity(0.4)"}}>
+            {tab.icon}
+          </div>
+          <div style={{fontFamily: "'DM Mono'",fontSize: 11,fontWeight: view === tab.id ? "bold" : "normal",color: view === tab.id ? "#1A1612" : "#555",letterSpacing: "0.04em",marginBottom: 2}}>
+            {tab.label}
+          </div>
+          <div style={{fontFamily: "'DM Mono'",fontSize: 9,color: view === tab.id ? "#8A7A68" : "#333",letterSpacing: "0.02em"}}>
+            {tab.sub}
+          </div>
+          {view === tab.id && (
+            <div style={{position: "absolute",top: -2,left: "50%",transform: "translateX(-50%)",width: 32,height: 2,background: G,borderRadius: 2}}/>
+          )}
+        </button>
+      ))}
     </div>
   </div>
+
+  {view==="moodboard"&&(
+    <div style={{background:"#F5F0E8",padding:16}}>
+      {withPhoto.length===0
+        ? <div style={{padding:"40px 0",textAlign:"center"}}>
+            <div style={{fontSize:44,marginBottom:12}}>👗</div>
+            <div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#999"}}>Add photos to your closet items to see them here</div>
+          </div>
+        : <div style={{display:"grid",gridTemplateColumns:withPhoto.length===1?"1fr":"1fr 1fr",gap:12}}>
+            {withPhoto.map((item,i)=>(
+              <div key={i} style={{background:"#fff",borderRadius:12,overflow:"hidden",boxShadow:"0 4px 16px #00000018"}}>
+                <img src={item.image} alt={item.name} style={{width:"100%",display:"block",objectFit:"contain",background:"#f8f8f8",maxHeight:withPhoto.length===1?380:200}}/>
+                <div style={{padding:"8px 10px",borderTop:"1px solid #eee"}}>
+                  <div style={{fontFamily:"'DM Mono'",fontSize:9,color:"#999",textAlign:"center"}}>{item.name}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+      }
+    </div>
+  )}
+
+  {view==="avatar"&&<AvatarView outfit={outfit}/>}
+
+  <div style={{background:BG,padding:"14px 20px",borderRadius:"0 0 20px 20px"}}>
+    <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:withPhoto.length>0?10:0}}>
+      {items.map((it,j)=>(
+        <span key={j} style={{padding:"4px 10px",background:CARD,borderRadius:100,fontFamily:"'DM Mono'",fontSize:10,color:"#8A7A68",border:"1px solid "+BORDER,display:"flex",alignItems:"center",gap:5}}>
+          {it.image&&<img src={it.image} alt={it.name} style={{width:16,height:16,borderRadius:"50%",objectFit:"cover"}}/>}
+          {it.name}
+        </span>
+      ))}
+    </div>
+    {outfit.description&&<div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:12,color:"#7A6A58",lineHeight:1.5}}>{outfit.description}</div>}
+  </div>
+
+</div>
 </div>
 );
 }
@@ -1047,6 +1044,97 @@ Generate outfits and tap <span style={{color:G}}>❤️ Save</span> to keep them
 </div>
 </div>
 );
+}
+
+// ── SHARE OUTFIT FUNCTION ─────────────────────────────────────────────────────
+// Opens camera, user takes selfie, then shares via phone's native share menu
+const shareRef = { current: null };
+
+function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
+  const inputRef = useRef();
+
+  const handleShare = () => {
+    inputRef.current.click();
+  };
+
+  const handleSelfie = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    e.target.value = "";
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const imageDataUrl = ev.target.result;
+
+      // Build the share message
+      const name = userName || "Your friend";
+      const outfitLines = allOutfits.map((o, i) => {
+        const items = (o.itemObjects || []).map(it => it.name).join(", ");
+        return `Outfit ${i + 1}: ${items}`;
+      }).join("\n");
+
+      const message = `${name} needs your help getting dressed! 👗👔✨ Which outfit should she wear? Reply 1, 2 or 3!\n\n${outfitLines}\n\nStyled by Clozie ✦ https://clozie.vercel.app`;
+
+      // Convert dataURL to blob for sharing
+      const res = await fetch(imageDataUrl);
+      const blob = await res.blob();
+      const imageFile = new File([blob], "my-outfit.jpg", { type: "image/jpeg" });
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+        try {
+          await navigator.share({
+            text: message,
+            files: [imageFile],
+          });
+        } catch (err) {
+          // User cancelled or error — fall back to text only share
+          if (navigator.share) {
+            try { await navigator.share({ text: message }); } catch(e) {}
+          }
+        }
+      } else if (navigator.share) {
+        // Share text only if file sharing not supported
+        try { await navigator.share({ text: message }); } catch(e) {}
+      } else {
+        // Last fallback — copy to clipboard
+        try {
+          await navigator.clipboard.writeText(message);
+          alert("Message copied! Paste it into WhatsApp or iMessage 💛");
+        } catch(e) {}
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="user"
+        style={{ display: "none" }}
+        onChange={handleSelfie}
+      />
+      <button
+        onClick={handleShare}
+        style={{
+          flex: 1,
+          padding: "9px 4px",
+          borderRadius: 9,
+          fontSize: 11,
+          fontFamily: "'DM Mono'",
+          cursor: "pointer",
+          border: "1px solid " + G + "60",
+          background: G + "15",
+          color: G,
+          transition: "all 0.15s",
+        }}
+      >
+        📸 Share with Friends
+      </button>
+    </>
+  );
 }
 
 function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset, profile, setProfile, learnings, setLearnings, favOutfits, setFavOutfits, saveStatus}) {
@@ -1440,6 +1528,13 @@ style={{flex:1,color:step===s?G:"#333",borderBottomColor:step===s?G:"transparent
           </div>
         )}
 
+        {/* ── Gentle share prompt — shows once outfits are ready ── */}
+        {!loading&&outfits.length>0&&(
+          <div style={{textAlign:"center",padding:"10px 16px 20px",fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:13,color:"#6A6058"}}>
+            ✦ Love one of these? Share with friends and let them decide! 💛
+          </div>
+        )}
+
         {!loading&&outfits.map((outfit,i)=>{
           const isFav=favOutfits.some(o=>o.id===outfit.id);
           return (
@@ -1474,12 +1569,22 @@ style={{flex:1,color:step===s?G:"#333",borderBottomColor:step===s?G:"transparent
                   ))}
                 </div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontWeight:300,fontSize:14,color:"#7A6A58",lineHeight:1.65,marginBottom:18}}>{outfit.description}</div>
+                {/* ── Rating buttons + Share button ── */}
                 <div style={{display:"flex",gap:6}}>
                   {[["love","❤️ Love it"],["like","👍 Like it"],["dislike","👎 Not for me"]].map(([val,label])=>(
                     <button key={val} onClick={()=>setFeedback(p=>({...p,[i]:val}))} style={{flex:1,padding:"9px 4px",borderRadius:9,fontSize:11,fontFamily:"'DM Mono'",cursor:"pointer",border:"1px solid "+(feedback[i]===val?"transparent":BORDER),background:feedback[i]===val?(val==="love"?G:val==="like"?"#152515":"#2A1010"):BG,color:feedback[i]===val?(val==="love"?BG:"#DDD5C5"):"#3A3530",transition:"all 0.15s"}}>
                       {label}
                     </button>
                   ))}
+                </div>
+                {/* ── Share button row ── */}
+                <div style={{display:"flex",gap:6,marginTop:8}}>
+                  <ShareButton
+                    outfit={outfit}
+                    outfitNumber={i+1}
+                    userName={user.name}
+                    allOutfits={outfits}
+                  />
                 </div>
               </div>
             </div>
@@ -1496,6 +1601,7 @@ style={{flex:1,color:step===s?G:"#333",borderBottomColor:step===s?G:"transparent
         )}
       </div>
     )}
+
   </div>
 </div>
 );
