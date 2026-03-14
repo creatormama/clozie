@@ -1047,11 +1047,12 @@ Generate outfits and tap <span style={{color:G}}>❤️ Save</span> to keep them
 }
 
 // ── SHARE OUTFIT FUNCTION ─────────────────────────────────────────────────────
-// Opens camera, user takes selfie, then shares via phone's native share menu
-const shareRef = { current: null };
+// Step 1: Opens front camera for selfie → saves photo to camera roll
+// Step 2: Opens share sheet with pre-filled message (iPhone-safe approach)
 
 function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
   const inputRef = useRef();
+  const [step, setStep] = useState(null); // null | "photo-saved"
 
   const handleShare = () => {
     inputRef.current.click();
@@ -1066,7 +1067,15 @@ function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
     reader.onload = async (ev) => {
       const imageDataUrl = ev.target.result;
 
-      // Build the share message
+      // Step 1 — Save photo to camera roll by triggering a download
+      try {
+        const a = document.createElement("a");
+        a.href = imageDataUrl;
+        a.download = "my-clozie-outfit.jpg";
+        a.click();
+      } catch(e) {}
+
+      // Step 2 — Build message and open share sheet (text only — reliable on iPhone)
       const name = userName || "Your friend";
       const outfitLines = allOutfits.map((o, i) => {
         const items = (o.itemObjects || []).map(it => it.name).join(", ");
@@ -1075,33 +1084,23 @@ function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
 
       const message = `${name} needs your help getting dressed! 👗👔✨ Which outfit should she wear? Reply 1, 2 or 3!\n\n${outfitLines}\n\nStyled by Clozie ✦ https://clozie.vercel.app`;
 
-      // Convert dataURL to blob for sharing
-      const res = await fetch(imageDataUrl);
-      const blob = await res.blob();
-      const imageFile = new File([blob], "my-outfit.jpg", { type: "image/jpeg" });
+      // Show the "photo saved" prompt so user knows to attach it
+      setStep("photo-saved");
 
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+      // Open native share with text message
+      if (navigator.share) {
         try {
-          await navigator.share({
-            text: message,
-            files: [imageFile],
-          });
-        } catch (err) {
-          // User cancelled or error — fall back to text only share
-          if (navigator.share) {
-            try { await navigator.share({ text: message }); } catch(e) {}
-          }
-        }
-      } else if (navigator.share) {
-        // Share text only if file sharing not supported
-        try { await navigator.share({ text: message }); } catch(e) {}
+          await navigator.share({ text: message });
+        } catch(e) {}
       } else {
-        // Last fallback — copy to clipboard
+        // Fallback — copy to clipboard
         try {
           await navigator.clipboard.writeText(message);
           alert("Message copied! Paste it into WhatsApp or iMessage 💛");
         } catch(e) {}
       }
+
+      setStep(null);
     };
     reader.readAsDataURL(file);
   };
@@ -1116,23 +1115,39 @@ function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
         style={{ display: "none" }}
         onChange={handleSelfie}
       />
-      <button
-        onClick={handleShare}
-        style={{
-          flex: 1,
-          padding: "9px 4px",
-          borderRadius: 9,
-          fontSize: 11,
-          fontFamily: "'DM Mono'",
-          cursor: "pointer",
-          border: "1px solid " + G + "60",
-          background: G + "15",
-          color: G,
-          transition: "all 0.15s",
-        }}
-      >
-        📸 Share with Friends
-      </button>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+        <button
+          onClick={handleShare}
+          style={{
+            width: "100%",
+            padding: "9px 4px",
+            borderRadius: 9,
+            fontSize: 11,
+            fontFamily: "'DM Mono'",
+            cursor: "pointer",
+            border: "1px solid " + G + "60",
+            background: G + "15",
+            color: G,
+            transition: "all 0.15s",
+          }}
+        >
+          📸 Share with Friends
+        </button>
+        {step === "photo-saved" && (
+          <div style={{
+            padding: "7px 10px",
+            background: "#0A1A0A",
+            borderRadius: 8,
+            border: "1px solid #1A3A1A",
+            fontFamily: "'DM Mono'",
+            fontSize: 10,
+            color: "#5BA85A",
+            lineHeight: 1.6,
+          }}>
+            ✅ Photo saved to your camera roll! Attach it to the message you just sent 💛
+          </div>
+        )}
+      </div>
     </>
   );
 }
