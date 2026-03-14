@@ -96,11 +96,10 @@ async function loadCloset(userId) {
 // ── AI PHOTO RECOGNITION ──────────────────────────────────────────────────────
 async function analyseClothingPhoto(imageBase64) {
   if (!ANTHROPIC_KEY) return null;
- 
-  // Strip the data URL prefix to get just the base64 data
+
   const base64Data = imageBase64.includes(",") ? imageBase64.split(",")[1] : imageBase64;
   const mediaType = imageBase64.includes("image/png") ? "image/png" :
-                    imageBase64.includes("image/webp") ? "image/webp" : "image/jpeg";
+    imageBase64.includes("image/webp") ? "image/webp" : "image/jpeg";
 
   const prompt = `You are a fashion expert analysing a clothing item photo for a wardrobe app called Clozie.
 
@@ -152,12 +151,11 @@ Respond ONLY with valid JSON, nothing else. Example:
     const text = data.content?.[0]?.text || "";
     const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
-   
-    // Validate category is one of the allowed ones
+
     if (!CATEGORIES.includes(parsed.category)) {
-      parsed.category = "Tops"; // safe fallback
+      parsed.category = "Tops";
     }
-   
+
     return parsed;
   } catch(e) {
     console.error("Photo analysis failed:", e);
@@ -350,7 +348,6 @@ Respond ONLY with valid JSON:
         description: ai.description || "A perfect look for "+occasion+" in "+weather+" weather."
       };
     });
-
   } catch(e) {
     console.error("AI naming failed, using defaults:", e);
     return outfitCombinations.map((itemObjects, i) => ({
@@ -446,14 +443,10 @@ function PeekInside({onSignup, onLogin}) {
     <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"32px 24px"}}>
       <style>{css}</style>
       <div style={{width:"100%",maxWidth:400}} className="fade">
-
-        {/* Header */}
         <div style={{textAlign:"center",marginBottom:28}}>
           <Logo/>
           <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.2em",marginTop:12}}>✦ HERE'S HOW IT WORKS ✦</div>
         </div>
-
-        {/* Step tabs */}
         <div style={{display:"flex",gap:6,marginBottom:20}}>
           {steps.map((_,i)=>(
             <button key={i} onClick={()=>setActive(i)} style={{
@@ -468,22 +461,16 @@ function PeekInside({onSignup, onLogin}) {
             </button>
           ))}
         </div>
-
-        {/* Active step */}
         <div className="card" style={{padding:20,marginBottom:16,borderColor:G+"30"}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontWeight:300,fontSize:22,color:"#EDE5D8",marginBottom:8}}>{s.title}</div>
           <div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#6A6058",lineHeight:1.8,marginBottom:16}}>{s.desc}</div>
           {s.visual}
         </div>
-
-        {/* Step dots */}
         <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:24}}>
           {steps.map((_,i)=>(
             <div key={i} onClick={()=>setActive(i)} style={{width:i===active?24:8,height:8,borderRadius:100,background:i===active?G:"#252320",transition:"all 0.3s",cursor:"pointer"}}/>
           ))}
         </div>
-
-        {/* CTA */}
         <GBtn onClick={onSignup} style={{marginBottom:12}}>
           ✦ Start Styling — It's Free
         </GBtn>
@@ -491,7 +478,6 @@ function PeekInside({onSignup, onLogin}) {
           Already have an account?{" "}
           <span onClick={onLogin} style={{color:G,cursor:"pointer"}}>Sign in</span>
         </div>
-
       </div>
     </div>
   );
@@ -916,8 +902,6 @@ function MoodBoard({outfit, onClose}) {
   return (
     <div style={{position:"fixed",inset:0,background:"#000000EE",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16,overflowY:"auto"}} onClick={onClose}>
       <div style={{background:"#F5F0E8",borderRadius:20,width:"100%",maxWidth:460,position:"relative",boxShadow:"0 32px 80px #000000AA"}} onClick={e=>e.stopPropagation()}>
-
-        {/* Header */}
         <div style={{background:BG,padding:"18px 22px",display:"flex",justifyContent:"space-between",alignItems:"center",borderRadius:"20px 20px 0 0"}}>
           <div>
             <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.15em"}}>{(outfit.vibe||"OUTFIT").toUpperCase()}</div>
@@ -925,72 +909,18 @@ function MoodBoard({outfit, onClose}) {
           </div>
           <button onClick={onClose} style={{background:"#1A1815",border:"1px solid "+BORDER,borderRadius:10,color:"#888",fontFamily:"'DM Mono'",fontSize:11,padding:"7px 14px",cursor:"pointer",transition:"all 0.15s"}}>✕ Close</button>
         </div>
-
-        {/* ── TAB SWITCHER — big, bold, impossible to miss ── */}
         <div style={{background:BG,padding:"14px 16px 0",borderBottom:"2px solid "+BORDER}}>
           <div style={{display:"flex",gap:8}}>
             {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setView(tab.id)}
-                style={{
-                  flex: 1,
-                  padding: "12px 8px 14px",
-                  border: "none",
-                  cursor: "pointer",
-                  borderRadius: "10px 10px 0 0",
-                  background: view === tab.id ? "#F5F0E8" : "#111009",
-                  borderTop: "2px solid " + (view === tab.id ? G : "transparent"),
-                  borderLeft: "1px solid " + (view === tab.id ? BORDER : "transparent"),
-                  borderRight: "1px solid " + (view === tab.id ? BORDER : "transparent"),
-                  transition: "all 0.2s",
-                  position: "relative",
-                  marginBottom: view === tab.id ? "-2px" : "0",
-                }}
-              >
-                <div style={{
-                  fontSize: 20,
-                  marginBottom: 4,
-                  filter: view === tab.id ? "none" : "grayscale(1) opacity(0.4)"
-                }}>
-                  {tab.icon}
-                </div>
-                <div style={{
-                  fontFamily: "'DM Mono'",
-                  fontSize: 11,
-                  fontWeight: view === tab.id ? "bold" : "normal",
-                  color: view === tab.id ? "#1A1612" : "#555",
-                  letterSpacing: "0.04em",
-                  marginBottom: 2,
-                }}>
-                  {tab.label}
-                </div>
-                <div style={{
-                  fontFamily: "'DM Mono'",
-                  fontSize: 9,
-                  color: view === tab.id ? "#8A7A68" : "#333",
-                  letterSpacing: "0.02em",
-                }}>
-                  {tab.sub}
-                </div>
-                {view === tab.id && (
-                  <div style={{
-                    position: "absolute",
-                    top: -2,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: 32,
-                    height: 2,
-                    background: G,
-                    borderRadius: 2,
-                  }}/>
-                )}
+              <button key={tab.id} onClick={() => setView(tab.id)} style={{flex:1,padding:"12px 8px 14px",border:"none",cursor:"pointer",borderRadius:"10px 10px 0 0",background:view===tab.id?"#F5F0E8":"#111009",borderTop:"2px solid "+(view===tab.id?G:"transparent"),borderLeft:"1px solid "+(view===tab.id?BORDER:"transparent"),borderRight:"1px solid "+(view===tab.id?BORDER:"transparent"),transition:"all 0.2s",position:"relative",marginBottom:view===tab.id?"-2px":"0"}}>
+                <div style={{fontSize:20,marginBottom:4,filter:view===tab.id?"none":"grayscale(1) opacity(0.4)"}}>{tab.icon}</div>
+                <div style={{fontFamily:"'DM Mono'",fontSize:11,fontWeight:view===tab.id?"bold":"normal",color:view===tab.id?"#1A1612":"#555",letterSpacing:"0.04em",marginBottom:2}}>{tab.label}</div>
+                <div style={{fontFamily:"'DM Mono'",fontSize:9,color:view===tab.id?"#8A7A68":"#333",letterSpacing:"0.02em"}}>{tab.sub}</div>
+                {view===tab.id&&<div style={{position:"absolute",top:-2,left:"50%",transform:"translateX(-50%)",width:32,height:2,background:G,borderRadius:2}}/>}
               </button>
             ))}
           </div>
         </div>
-
-        {/* Mood Board view */}
         {view==="moodboard"&&(
           <div style={{background:"#F5F0E8",padding:16}}>
             {withPhoto.length===0
@@ -1011,11 +941,7 @@ function MoodBoard({outfit, onClose}) {
             }
           </div>
         )}
-
-        {/* Avatar / On Body view */}
         {view==="avatar"&&<AvatarView outfit={outfit}/>}
-
-        {/* Items list footer */}
         <div style={{background:BG,padding:"14px 20px",borderRadius:"0 0 20px 20px"}}>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:withPhoto.length>0?10:0}}>
             {items.map((it,j)=>(
@@ -1060,20 +986,14 @@ function Favorites({favOutfits, onRemove, onBack}) {
               </div>
             : favOutfits.map((o,i)=>(
                 <div key={o.id||i} className="card" style={{marginBottom:14,overflow:"hidden",cursor:"pointer"}} onClick={()=>setViewing(o)}>
-                  {true ? (
-                    <div style={{display:"flex",gap:8,padding:"10px 10px 0",background:CARD,position:"relative"}}>
-                      {(o.itemObjects||[]).filter(it=>it&&it.image).slice(0,4).map((item,j)=>(
-                        <div key={j} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                          <img src={item.image} alt={item.name} style={{width:"100%",maxHeight:120,objectFit:"contain",borderRadius:6,background:"#111009"}}/>
-                          <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",paddingBottom:6,textAlign:"center"}}>{item.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{height:60,background:"#111009",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                      <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666"}}>Tap to view mood board ✦</span>
-                    </div>
-                  )}
+                  <div style={{display:"flex",gap:8,padding:"10px 10px 0",background:CARD,position:"relative"}}>
+                    {(o.itemObjects||[]).filter(it=>it&&it.image).slice(0,4).map((item,j)=>(
+                      <div key={j} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                        <img src={item.image} alt={item.name} style={{width:"100%",maxHeight:120,objectFit:"contain",borderRadius:6,background:"#111009"}}/>
+                        <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",paddingBottom:6,textAlign:"center"}}>{item.name}</span>
+                      </div>
+                    ))}
+                  </div>
                   <div style={{padding:16}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                       <div>
@@ -1108,7 +1028,6 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
   const [editingItem,setEditingItem]=useState(null);
   const [moodBoard,setMoodBoard]=useState(null);
   const [showFavs,setShowFavs]=useState(false);
-  // AI photo recognition state
   const [aiScanning,setAiScanning]=useState(false);
   const [aiScanResult,setAiScanResult]=useState(null);
   const fileRef=useRef();
@@ -1116,20 +1035,16 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
 
   const toggle=(key,val)=>setProfile(p=>({...p,[key]:p[key].includes(val)?p[key].filter(x=>x!==val):[...p[key],val]}));
 
-  // ── handleImg: shows photo instantly, then AI scans ──────────────────────
   const handleImg = (e) => {
     const f = e.target.files[0];
     if (!f) return;
-    // Reset input so same file can be re-selected if needed
     e.target.value = "";
     const r = new FileReader();
     r.onload = (ev) => {
       const imageData = ev.target.result;
-      // Show photo immediately
       setNewItem(p => ({...p, image: imageData}));
       setAiScanning(true);
       setAiScanResult(null);
-      // Run AI analysis async (don't block UI)
       analyseClothingPhoto(imageData).then(result => {
         if (result) {
           setAiScanResult(result);
@@ -1295,12 +1210,7 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
                   <div key={item.id} className="card" style={{padding:14,position:"relative"}}>
                     {item.image&&<img src={item.image} alt={item.name} style={{width:"100%",maxHeight:140,objectFit:"contain",borderRadius:8,marginBottom:10,background:"#111009"}}/>}
                     <div style={{display:"flex",alignItems:"center",marginBottom:4}}>
-                      <span style={{
-                        padding:"2px 8px",borderRadius:100,fontSize:9,
-                        fontFamily:"'DM Mono'",letterSpacing:"0.06em",
-                        background:{"Tops":"#4A90D920","Bottoms":"#7B68EE20","Dresses":"#E8739A20","Outerwear":"#5BA85A20","Shoes":"#E8A44420","Accessories":"#C9A96E20"}[item.category]||"#C9A96E20",
-                        color:{"Tops":"#4A90D9","Bottoms":"#9B88EE","Dresses":"#E8739A","Outerwear":"#5BA85A","Shoes":"#E8A444","Accessories":"#C9A96E"}[item.category]||G
-                      }}>{item.category}</span>
+                      <span style={{padding:"2px 8px",borderRadius:100,fontSize:9,fontFamily:"'DM Mono'",letterSpacing:"0.06em",background:{"Tops":"#4A90D920","Bottoms":"#7B68EE20","Dresses":"#E8739A20","Outerwear":"#5BA85A20","Shoes":"#E8A44420","Accessories":"#C9A96E20"}[item.category]||"#C9A96E20",color:{"Tops":"#4A90D9","Bottoms":"#9B88EE","Dresses":"#E8739A","Outerwear":"#5BA85A","Shoes":"#E8A444","Accessories":"#C9A96E"}[item.category]||G}}>{item.category}</span>
                     </div>
                     <div style={{fontSize:15,fontWeight:300}}>{item.name}</div>
                     {item.color&&<div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#6A6058",marginTop:2}}>{item.color}</div>}
@@ -1333,16 +1243,7 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
               <div className="card" style={{padding:22,marginBottom:12}}>
                 <Label text="NEW ITEM"/>
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
-
-                  {/* ── AI PHOTO UPLOAD — camera + gallery options ── */}
-                  <div style={{
-                    border: "2px dashed " + (newItem.image ? G : BORDER),
-                    borderRadius: 12,
-                    overflow: "hidden",
-                    transition: "border-color 0.2s",
-                    position: "relative",
-                  }}>
-                    {/* State: no photo yet, not scanning */}
+                  <div style={{border:"2px dashed "+(newItem.image?G:BORDER),borderRadius:12,overflow:"hidden",transition:"border-color 0.2s",position:"relative"}}>
                     {!newItem.image && !aiScanning && (
                       <div style={{padding:"20px 16px"}}>
                         <div style={{textAlign:"center",marginBottom:14}}>
@@ -1350,27 +1251,18 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
                           <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:15,color:"#EDE5D8",marginBottom:3}}>Add a Photo</div>
                           <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.06em"}}>✦ AI fills in all details automatically</div>
                         </div>
-                        {/* Two clear buttons */}
                         <div style={{display:"flex",gap:8}}>
-                          <button
-                            onClick={()=>cameraRef.current.click()}
-                            style={{flex:1,padding:"10px 8px",background:"#111009",border:"1px solid "+BORDER,borderRadius:9,cursor:"pointer",fontFamily:"'DM Mono'",fontSize:11,color:"#AAA",display:"flex",flexDirection:"column",alignItems:"center",gap:4,transition:"all 0.18s"}}
-                          >
+                          <button onClick={()=>cameraRef.current.click()} style={{flex:1,padding:"10px 8px",background:"#111009",border:"1px solid "+BORDER,borderRadius:9,cursor:"pointer",fontFamily:"'DM Mono'",fontSize:11,color:"#AAA",display:"flex",flexDirection:"column",alignItems:"center",gap:4,transition:"all 0.18s"}}>
                             <span style={{fontSize:18}}>📸</span>
                             <span>Take Photo</span>
                           </button>
-                          <button
-                            onClick={()=>fileRef.current.click()}
-                            style={{flex:1,padding:"10px 8px",background:"#111009",border:"1px solid "+BORDER,borderRadius:9,cursor:"pointer",fontFamily:"'DM Mono'",fontSize:11,color:"#AAA",display:"flex",flexDirection:"column",alignItems:"center",gap:4,transition:"all 0.18s"}}
-                          >
+                          <button onClick={()=>fileRef.current.click()} style={{flex:1,padding:"10px 8px",background:"#111009",border:"1px solid "+BORDER,borderRadius:9,cursor:"pointer",fontFamily:"'DM Mono'",fontSize:11,color:"#AAA",display:"flex",flexDirection:"column",alignItems:"center",gap:4,transition:"all 0.18s"}}>
                             <span style={{fontSize:18}}>🖼</span>
                             <span>Upload File</span>
                           </button>
                         </div>
                       </div>
                     )}
-
-                    {/* State: scanning but photo not loaded yet */}
                     {!newItem.image && aiScanning && (
                       <div style={{textAlign:"center",padding:"28px 16px"}}>
                         <div className="spin" style={{fontSize:28,color:G,display:"block",margin:"0 auto 12px"}}>✦</div>
@@ -1378,8 +1270,6 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
                         <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#444",marginTop:6}}>Detecting category, color & style</div>
                       </div>
                     )}
-
-                    {/* State: photo loaded */}
                     {newItem.image && (
                       <div>
                         <img src={newItem.image} alt="preview" style={{width:"100%",maxHeight:220,objectFit:"contain",background:"#111009",display:"block"}}/>
@@ -1406,31 +1296,21 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
                         </div>
                       </div>
                     )}
-
-                    {/* Hidden inputs — camera and gallery */}
                     <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handleImg}/>
                     <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleImg}/>
                   </div>
-
-                  {/* Photo tip — shown when no photo yet */}
                   {!newItem.image && (
                     <div style={{display:"flex",alignItems:"flex-start",gap:6,padding:"8px 10px",background:"#0D0C0A",borderRadius:8,border:"1px solid #1E1C18"}}>
                       <span style={{color:G,fontSize:12,flexShrink:0}}>💡</span>
                       <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#555",lineHeight:1.7}}>Best results: photograph on a <span style={{color:G}}>white or light background</span> — AI reads colors more accurately.</span>
                     </div>
                   )}
-
-                  {/* Fields — always shown, AI fills them in */}
-                  <input className="inp" placeholder="Name * (e.g. White linen shirt)" value={newItem.name} onChange={e=>setNewItem(p=>({...p,name:e.target.value}))}
-                    style={{borderColor: aiScanResult && newItem.name ? G+"60" : undefined}}/>
+                  <input className="inp" placeholder="Name * (e.g. White linen shirt)" value={newItem.name} onChange={e=>setNewItem(p=>({...p,name:e.target.value}))} style={{borderColor:aiScanResult&&newItem.name?G+"60":undefined}}/>
                   <select className="inp" value={newItem.category} onChange={e=>setNewItem(p=>({...p,category:e.target.value}))}>
                     {CATEGORIES.map(c=><option key={c}>{c}</option>)}
                   </select>
-                  <input className="inp" placeholder="Colour / pattern (e.g. navy blue)" value={newItem.color} onChange={e=>setNewItem(p=>({...p,color:e.target.value}))}
-                    style={{borderColor: aiScanResult && newItem.color ? G+"60" : undefined}}/>
-                  <input className="inp" placeholder="Notes — fit, fabric (optional)" value={newItem.description} onChange={e=>setNewItem(p=>({...p,description:e.target.value}))}
-                    style={{borderColor: aiScanResult && newItem.description ? G+"60" : undefined}}/>
-
+                  <input className="inp" placeholder="Colour / pattern (e.g. navy blue)" value={newItem.color} onChange={e=>setNewItem(p=>({...p,color:e.target.value}))} style={{borderColor:aiScanResult&&newItem.color?G+"60":undefined}}/>
+                  <input className="inp" placeholder="Notes — fit, fabric (optional)" value={newItem.description} onChange={e=>setNewItem(p=>({...p,description:e.target.value}))} style={{borderColor:aiScanResult&&newItem.description?G+"60":undefined}}/>
                   <div style={{display:"flex",gap:8,marginTop:4}}>
                     <GBtn onClick={addItem} disabled={!newItem.name.trim()||aiScanning} style={{padding:12,fontSize:15}}>
                       {aiScanning ? "Scanning..." : "Add to Closet"}
@@ -1496,14 +1376,12 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
                 {learnings.length===0&&<span> Rate an outfit to help Clozie learn your taste.</span>}
               </p>
             </div>
-
             {loading&&(
               <div style={{textAlign:"center",padding:"80px 0"}}>
                 <div className="spin" style={{fontSize:32,color:G}}>✦</div>
                 <div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#666",marginTop:20}}><span className="pulse">Styling your outfits...</span></div>
               </div>
             )}
-
             {!loading&&outfits.length===0&&(
               <div className="card" style={{padding:48,textAlign:"center"}}>
                 <div style={{fontSize:36,marginBottom:12}}>🤔</div>
@@ -1511,7 +1389,6 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
                 <GBtn onClick={()=>setStep("closet")} style={{maxWidth:220,margin:"0 auto",padding:12,fontSize:14}}>Add More Clothes</GBtn>
               </div>
             )}
-
             {!loading&&outfits.map((outfit,i)=>{
               const isFav=favOutfits.some(o=>o.id===outfit.id);
               return (
@@ -1557,7 +1434,6 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
                 </div>
               );
             })}
-
             {!loading&&outfits.length>0&&(
               <div style={{display:"flex",gap:10,marginTop:8}}>
                 <button onClick={doGenerate} style={{flex:1,padding:14,background:CARD,color:G,borderRadius:12,fontSize:15,border:"1px solid "+BORDER,cursor:"pointer",fontFamily:"'Playfair Display',serif"}}>🔄 Regenerate</button>
@@ -1634,7 +1510,7 @@ export default function Root() {
     if(page==="splash") return <Splash onDone={()=>setPage("onboarding")}/>;
     if(page==="onboarding") return <Onboarding onDone={()=>setPage("welcome")}/>;
     if(page==="peek") return <PeekInside onSignup={()=>setPage("signup")} onLogin={()=>setPage("login")}/>;
-    if(page==="signup") return <AuthPage mode="signup" onDone={handleAuth} onSwitch={()=>setPage("login")} onForgot={()=>setPage("forgot")}/> ;
+    if(page==="signup") return <AuthPage mode="signup" onDone={handleAuth} onSwitch={()=>setPage("login")} onForgot={()=>setPage("forgot")}/>;
     if(page==="forgot") return forgotSent
       ? <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:40}}>
           <style>{css}</style>
@@ -1665,7 +1541,7 @@ export default function Root() {
         </div>
       )}
       {page==="subscription"&&(
-        <div style={{position:"fixed",inset:0,zIndex:500,overflowY:"auto",background:BG}}>
+        <div style={{position:"fixed",inset:0,zIndex:500,overflowY:"auto",background:BG}>
           <Subscription user={user} onBack={()=>setPage("settings")}/>
         </div>
       )}
