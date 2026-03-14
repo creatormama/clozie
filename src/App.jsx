@@ -1541,7 +1541,7 @@ export default function Root() {
         </div>
       )}
       {page==="subscription"&&(
-        <div style={{position:"fixed",inset:0,zIndex:500,overflowY:"auto",background:BG}>
+        <div style={{position:"fixed",inset:0,zIndex:500,overflowY:"auto",background:BG}}>
           <Subscription user={user} onBack={()=>setPage("settings")}/>
         </div>
       )}
