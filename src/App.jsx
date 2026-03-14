@@ -1149,25 +1149,28 @@ function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset,
     const r = new FileReader();
     r.onload = (ev) => {
       const imageData = ev.target.result;
-      // Show photo immediately
+      // Show photo immediately while background removal + AI runs
       setNewItem(p => ({...p, image: imageData}));
       setAiScanning(true);
       setAiScanResult(null);
-      // Run AI analysis async (don't block UI)
-      analyseClothingPhoto(imageData).then(result => {
-        if (result) {
-          setAiScanResult(result);
-          setNewItem(p => ({
-            ...p,
-            image: imageData,
-            name: result.name || p.name,
-            category: result.category || p.category,
-            color: result.color || p.color,
-            description: result.description || p.description,
-          }));
-        }
+      // Remove background first, then AI scan
+      removeBackground(imageData).then(cleanImage => {
+        setNewItem(p => ({...p, image: cleanImage}));
+        return analyseClothingPhoto(cleanImage).then(result => {
+          if (result) {
+            setAiScanResult(result);
+            setNewItem(p => ({
+              ...p,
+              image: cleanImage,
+              name: result.name || p.name,
+              category: result.category || p.category,
+              color: result.color || p.color,
+              description: result.description || p.description,
+            }));
+          }
+        });
       }).catch(err => {
-        console.error("Photo scan failed:", err);
+        console.error("Photo processing failed:", err);
       }).finally(() => {
         setAiScanning(false);
       });
