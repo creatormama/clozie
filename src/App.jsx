@@ -676,12 +676,6 @@ return (
 }
 
 function Subscription({user, onBack}) {
-const [billing,setBilling]=useState("monthly");
-const [proMsg,setProMsg]=useState(false);
-const plans=[
-{id:"free",name:"Free",monthly:0,yearly:0,features:["Up to 20 closet items","3 outfits per week","AI styling + learning","Saved favourites","Style profile","📸 AI photo recognition","Share outfits with friends"],current:!user.pro},
-{id:"pro",name:"Pro",monthly:6.99,yearly:4.16,badge:"Most Popular",features:["Everything in Free — unlimited","🧳 Trip Packer","🎉 Event Planner","🔔 Sale alerts","📅 Outfit wear history","📸 Photo Outfit Matching","👗 Virtual Try-On","📸 AI Editorial Photos","🌍 Trend Awareness","🧹 Clear Out"],comingSoon:["🧳 Trip Packer","🎉 Event Planner","🔔 Sale alerts","📅 Outfit wear history","📸 Photo Outfit Matching","👗 Virtual Try-On","📸 AI Editorial Photos","🌍 Trend Awareness","🧹 Clear Out"],current:user.pro},
-];
 return (
 <div style={{minHeight:"100vh",background:BG,color:"#DDD5C5",fontFamily:"'Playfair Display',serif"}}>
 <style>{css}</style>
@@ -692,53 +686,38 @@ return (
 </div>
 <div style={{textAlign:"center",marginBottom:44}} className="fade">
 <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.2em",marginBottom:12}}>✦ PLANS & PRICING ✦</div>
-<h2 style={{fontWeight:300,fontSize:36,marginBottom:20}}>Choose Your <em>Plan</em></h2>
-<div style={{display:"inline-flex",background:"#111009",borderRadius:100,padding:4,border:"1px solid "+BORDER}}>
-{["monthly","yearly"].map(b=>(
-<button key={b} onClick={()=>setBilling(b)} style={{padding:"8px 22px",borderRadius:100,border:"none",cursor:"pointer",fontFamily:"'DM Mono'",fontSize:12,background:billing===b?G:"transparent",color:billing===b?BG:"#444",transition:"all 0.18s"}}>
-{b==="monthly"?"Monthly":"Yearly"}{b==="yearly"&&<span style={{marginLeft:6,fontSize:10,color:billing==="yearly"?BG:G}}> −20%</span>}
-</button>
-))}
+<h2 style={{fontWeight:300,fontSize:36,marginBottom:8}}>Choose Your <em>Plan</em></h2>
+<div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#666"}}>Simple, honest pricing. No surprises.</div>
 </div>
+<div className="card" style={{padding:28,marginBottom:14,borderColor:G+"60"}}>
+<div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.15em",marginBottom:8}}>FREE</div>
+<div style={{fontSize:42,fontWeight:300,color:"#EDE5D8",lineHeight:1,marginBottom:4}}>
+$0<span style={{fontFamily:"'DM Mono'",fontSize:12,color:"#777"}}>/forever</span>
 </div>
-{proMsg&&(
-<div className="fade" style={{background:"#C9A96E20",border:"1px solid #C9A96E60",borderRadius:12,padding:"14px 20px",marginBottom:16,textAlign:"center"}}>
-<div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:16,color:"#EDE5D8",marginBottom:4}}>Pro plan coming soon ✦</div>
-<div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#888"}}>We'll notify you when payments are live!</div>
-</div>
-)}
-<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-{plans.map(plan=>(
-<div key={plan.id} className="card" style={{padding:26,position:"relative",borderColor:plan.current?G+"60":BORDER}}>
-{plan.badge&&<div style={{position:"absolute",top:-12,left:"50%",transform:"translateX(-50%)",background:G,color:BG,fontFamily:"'DM Mono'",fontSize:10,padding:"4px 14px",borderRadius:100,whiteSpace:"nowrap"}}>{plan.badge}</div>}
-<div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.15em",marginBottom:8}}>{plan.name.toUpperCase()}</div>
-<div style={{fontSize:42,fontWeight:300,color:"#EDE5D8",lineHeight:1}}>
-${billing==="yearly"?plan.yearly:plan.monthly}
-<span style={{fontFamily:"'DM Mono'",fontSize:12,color:"#777"}}>/mo</span>
-</div>
-{billing==="yearly"&&plan.yearly>0&&<div style={{fontFamily:"'DM Mono'",fontSize:11,color:G,marginTop:4}}>Billed ${(plan.yearly*12).toFixed(0)}/year</div>}
-{billing==="monthly"&&plan.id==="pro"&&<div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#666",marginTop:4}}>or $49.99/year</div>}
 <div style={{height:1,background:BORDER,margin:"18px 0"}}/>
 <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:22}}>
-{plan.features.map(f=>{
-  const isComingSoon = plan.comingSoon && plan.comingSoon.includes(f);
-  return (
-  <div key={f} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-    <span style={{color:G,marginTop:1,flexShrink:0}}>✓</span>
-    <span style={{fontFamily:"'DM Mono'",fontSize:11,color: isComingSoon ? "#555" : "#888",lineHeight:1.5}}>
-      {f}{isComingSoon && <span style={{color:"#C9A96E",fontSize:9,marginLeft:4}}>· soon</span>}
-    </span>
-  </div>
-  );
-})}
-</div>
-<button
-onClick={()=>{ if(!plan.current && plan.name==="Pro") { setProMsg(true); setTimeout(()=>setProMsg(false),3000); }}}
-style={{width:"100%",padding:12,background:plan.current?"transparent":G,color:plan.current?"#444":BG,border:"1px solid "+(plan.current?BORDER:G),borderRadius:10,fontFamily:"'DM Mono'",fontSize:12,cursor:plan.current?"default":"pointer"}}>
-{plan.current?"✓ Current Plan":plan.name==="Pro"?"Upgrade to Pro — Coming Soon ✦":"Get Started"}
-</button>
+{["Up to 20 closet items","3 outfits per week","AI styling + learning","Saved favourites","Style profile","📸 AI photo recognition","Share outfits with friends"].map(f=>(
+<div key={f} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+<span style={{color:G,marginTop:1,flexShrink:0}}>✓</span>
+<span style={{fontFamily:"'DM Mono'",fontSize:11,color:"#888",lineHeight:1.5}}>{f}</span>
 </div>
 ))}
+</div>
+<div style={{width:"100%",padding:12,background:"transparent",color:"#444",border:"1px solid "+BORDER,borderRadius:10,fontFamily:"'DM Mono'",fontSize:12,textAlign:"center"}}>
+✓ Your Current Plan
+</div>
+</div>
+<div className="card" style={{padding:28,borderColor:"#2A2820",background:"#0F0E0B"}}>
+<div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.15em",marginBottom:8}}>PRO & ELITE</div>
+<div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontWeight:300,fontSize:28,color:"#EDE5D8",marginBottom:12}}>
+Great things are coming ✦
+</div>
+<div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#555",lineHeight:1.9,marginBottom:24}}>
+We are working on Pro and Elite plans with powerful features — unlimited styling, trip packing, event planning, virtual try-on and much more.
+</div>
+<div style={{width:"100%",padding:14,background:"#1A1815",color:G,border:"1px solid "+G+"40",borderRadius:10,fontFamily:"'DM Mono'",fontSize:12,textAlign:"center",letterSpacing:"0.06em"}}>
+✦ Coming Soon — Stay Tuned
+</div>
 </div>
 <div style={{textAlign:"center",marginTop:28,fontFamily:"'DM Mono'",fontSize:11,color:"#252320"}}>
 Secure payment · Cancel anytime · No hidden fees
