@@ -856,57 +856,49 @@ function AvatarView({outfit}) {
           <div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#999"}}>Add photos to your closet items to see them here</div>
         </div>
       ) : (
-        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
 
           {/* TOP or DRESS — large */}
           {top && (
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,width:"70%"}}>
+            <div style={{width:"70%"}}>
               <div style={{width:"100%",height:200,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:12,overflow:"hidden"}}>
                 {top.image
                   ? <img src={top.image} alt={top.name} style={{width:"100%",height:"100%",objectFit:"contain"}}/>
                   : <div style={{fontSize:48,opacity:0.2}}>👕</div>
                 }
               </div>
-              <div style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",textAlign:"center"}}>{top.name}</div>
             </div>
           )}
 
           {/* BOTTOM — large, directly below top */}
           {bottom && (
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,width:"70%"}}>
+            <div style={{width:"70%"}}>
               <div style={{width:"100%",height:200,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:12,overflow:"hidden"}}>
                 {bottom.image
                   ? <img src={bottom.image} alt={bottom.name} style={{width:"100%",height:"100%",objectFit:"contain"}}/>
                   : <div style={{fontSize:48,opacity:0.2}}>👖</div>
                 }
               </div>
-              <div style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",textAlign:"center"}}>{bottom.name}</div>
             </div>
           )}
 
           {/* SHOES + ACCESSORIES — small, side by side in a row */}
           {(shoes || accessories.length > 0) && (
-            <div style={{display:"flex",justifyContent:"center",gap:10,width:"100%",marginTop:4}}>
+            <div style={{display:"flex",justifyContent:"center",gap:6,width:"100%",marginTop:2}}>
               {shoes && (
-                <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,width:90}}>
-                  <div style={{width:90,height:90,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,overflow:"hidden"}}>
-                    {shoes.image
-                      ? <img src={shoes.image} alt={shoes.name} style={{width:"100%",height:"100%",objectFit:"contain"}}/>
-                      : <div style={{fontSize:28,opacity:0.2}}>👟</div>
-                    }
-                  </div>
-                  <div style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",textAlign:"center"}}>{shoes.name}</div>
+                <div style={{width:90,height:90,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,overflow:"hidden"}}>
+                  {shoes.image
+                    ? <img src={shoes.image} alt={shoes.name} style={{width:"100%",height:"100%",objectFit:"contain"}}/>
+                    : <div style={{fontSize:28,opacity:0.2}}>👟</div>
+                  }
                 </div>
               )}
               {accessories.map((acc,i)=>(
-                <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,width:90}}>
-                  <div style={{width:90,height:90,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,overflow:"hidden"}}>
-                    {acc.image
-                      ? <img src={acc.image} alt={acc.name} style={{width:"100%",height:"100%",objectFit:"contain"}}/>
-                      : <div style={{fontSize:28,opacity:0.2}}>✨</div>
-                    }
-                  </div>
-                  <div style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",textAlign:"center"}}>{acc.name}</div>
+                <div key={i} style={{width:90,height:90,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10,overflow:"hidden"}}>
+                  {acc.image
+                    ? <img src={acc.image} alt={acc.name} style={{width:"100%",height:"100%",objectFit:"contain"}}/>
+                    : <div style={{fontSize:28,opacity:0.2}}>✨</div>
+                  }
                 </div>
               ))}
             </div>
