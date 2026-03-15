@@ -1047,11 +1047,12 @@ Generate outfits and tap <span style={{color:G}}>❤️ Save</span> to keep them
 }
 
 // ── SHARE OUTFIT FUNCTION ─────────────────────────────────────────────────────
-// Button 1: Opens front camera → shares photo immediately via share sheet
-// Button 2: Opens share sheet with pre-filled message + Clozie link
+// Takes selfie → shows photo on screen → screenshot instructions + copy message
 
 function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
   const inputRef = useRef();
+  const [selfieData, setSelfieData] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   // Get first name only — never show email
   const getFirstName = () => {
@@ -1060,47 +1061,30 @@ function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
     return name.split(" ")[0] || "Your friend";
   };
 
+  const message = `${getFirstName()} needs your help getting dressed! 👗👔✨ Which outfit should she wear? Reply 1, 2 or 3!\n\nStyled by Clozie ✦ https://clozie.vercel.app`;
+
   const handleTakePhoto = () => {
     inputRef.current.click();
   };
 
-  const handleSelfie = async (e) => {
+  const handleSelfie = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     e.target.value = "";
 
     const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const imageDataUrl = ev.target.result;
-      const res = await fetch(imageDataUrl);
-      const blob = await res.blob();
-      const imageFile = new File([blob], "clozie-outfit.jpg", { type: "image/jpeg" });
-
-      // Share photo immediately via native share sheet
-      try {
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
-          await navigator.share({ files: [imageFile] });
-        } else if (navigator.share) {
-          await navigator.share({ url: "https://clozie.vercel.app" });
-        }
-      } catch(e) {
-        // User cancelled — do nothing
-      }
+    reader.onload = (ev) => {
+      setSelfieData(ev.target.result);
+      setCopied(false);
     };
     reader.readAsDataURL(file);
   };
 
-  const handleSendMessage = async () => {
-    const firstName = getFirstName();
-    const message = `${firstName} needs your help getting dressed! 👗👔✨ Which outfit should she wear? Reply 1, 2 or 3!\n\nStyled by Clozie ✦ https://clozie.vercel.app`;
-
+  const handleCopy = async () => {
     try {
-      if (navigator.share) {
-        await navigator.share({ text: message });
-      } else {
-        await navigator.clipboard.writeText(message);
-        alert("Message copied! Paste it into WhatsApp or iMessage 💛");
-      }
+      await navigator.clipboard.writeText(message);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
     } catch(e) {}
   };
 
@@ -1114,9 +1098,9 @@ function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
         style={{ display: "none" }}
         onChange={handleSelfie}
       />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
 
-        {/* Button 1 — Snap & share photo immediately */}
+        {/* Take photo button — always visible */}
         <button
           onClick={handleTakePhoto}
           style={{
@@ -1127,32 +1111,95 @@ function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
             fontFamily: "'DM Mono'",
             cursor: "pointer",
             border: "1px solid " + G + "60",
-            background: G + "15",
+            background: selfieData ? G + "25" : G + "15",
             color: G,
             transition: "all 0.15s",
           }}
         >
-          📸 Step 1: Send My Photo
+          {selfieData ? "📸 Retake Photo" : "📸 Share with Friends"}
         </button>
 
-        {/* Button 2 — Send message with Clozie link */}
-        <button
-          onClick={handleSendMessage}
-          style={{
-            width: "100%",
-            padding: "9px 4px",
-            borderRadius: 9,
-            fontSize: 11,
-            fontFamily: "'DM Mono'",
-            cursor: "pointer",
-            border: "1px solid " + G + "60",
-            background: G + "15",
-            color: G,
-            transition: "all 0.15s",
-          }}
-        >
-          💬 Step 2: Send Message
-        </button>
+        {/* After selfie taken — show photo + instructions */}
+        {selfieData && (
+          <div style={{
+            background: CARD,
+            border: "1px solid " + G + "40",
+            borderRadius: 12,
+            overflow: "hidden",
+          }}>
+            {/* Selfie preview */}
+            <img
+              src={selfieData}
+              alt="Your outfit selfie"
+              style={{
+                width: "100%",
+                maxHeight: 280,
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+
+            {/* Instructions */}
+            <div style={{ padding: "12px 14px" }}>
+              <div style={{
+                fontFamily: "'DM Mono'",
+                fontSize: 10,
+                color: G,
+                letterSpacing: "0.1em",
+                marginBottom: 8,
+              }}>
+                ✦ SHARE YOUR LOOK
+              </div>
+              <div style={{
+                fontFamily: "'DM Mono'",
+                fontSize: 11,
+                color: "#8A7A68",
+                lineHeight: 1.8,
+                marginBottom: 12,
+              }}>
+                1. Screenshot this screen 📱<br/>
+                2. Copy the message below 👇<br/>
+                3. Send both to your friend!
+              </div>
+
+              {/* Message box */}
+              <div style={{
+                background: BG,
+                border: "1px solid " + BORDER,
+                borderRadius: 8,
+                padding: "10px 12px",
+                fontFamily: "'DM Mono'",
+                fontSize: 11,
+                color: "#8A7A68",
+                lineHeight: 1.8,
+                marginBottom: 8,
+                whiteSpace: "pre-line",
+              }}>
+                {message}
+              </div>
+
+              {/* Copy button */}
+              <button
+                onClick={handleCopy}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: 9,
+                  fontSize: 12,
+                  fontFamily: "'DM Mono'",
+                  cursor: "pointer",
+                  border: "1px solid " + G + "60",
+                  background: copied ? G : G + "20",
+                  color: copied ? BG : G,
+                  transition: "all 0.2s",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {copied ? "✅ Copied! Now screenshot & send 💛" : "📋 Copy Message"}
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
     </>
