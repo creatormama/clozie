@@ -723,8 +723,39 @@ Secure payment · Cancel anytime · No hidden fees
 );
 }
 
-function Settings({user, onBack, onLogout, onSubscription}) {
+function Settings({user, setUser, onBack, onLogout, onSubscription}) {
 const [notif,setNotif]=useState(true);
+const [editingProfile,setEditingProfile]=useState(false);
+const [editName,setEditName]=useState(user.name||"");
+const [profileSaved,setProfileSaved]=useState(false);
+const [changingPassword,setChangingPassword]=useState(false);
+const [currentPass,setCurrentPass]=useState("");
+const [newPass,setNewPass]=useState("");
+const [confirmPass,setConfirmPass]=useState("");
+const [passMsg,setPassMsg]=useState("");
+const [passMsgType,setPassMsgType]=useState("");
+
+const saveProfile = () => {
+  if (!editName.trim()) return;
+  const updated = {...user, name: editName.trim()};
+  try { localStorage.setItem("clozie-user", JSON.stringify(updated)); } catch(e) {}
+  setUser(updated);
+  setProfileSaved(true);
+  setEditingProfile(false);
+  setTimeout(() => setProfileSaved(false), 3000);
+};
+
+const savePassword = () => {
+  setPassMsg("");
+  if (!currentPass.trim()) { setPassMsg("Please enter your current password"); setPassMsgType("error"); return; }
+  if (!newPass.trim()) { setPassMsg("Please enter a new password"); setPassMsgType("error"); return; }
+  if (newPass.length < 6) { setPassMsg("Password must be at least 6 characters"); setPassMsgType("error"); return; }
+  if (newPass !== confirmPass) { setPassMsg("Passwords do not match"); setPassMsgType("error"); return; }
+  setPassMsg("✓ Password updated successfully"); setPassMsgType("success");
+  setCurrentPass(""); setNewPass(""); setConfirmPass("");
+  setTimeout(() => { setChangingPassword(false); setPassMsg(""); }, 2000);
+};
+
 const Toggle=({on,set})=>(
 <div onClick={()=>set(!on)} style={{width:44,height:24,borderRadius:12,background:on?G:BORDER,cursor:"pointer",position:"relative",transition:"background 0.2s",flexShrink:0}}>
 <div style={{position:"absolute",top:3,left:on?23:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left 0.2s"}}/>
@@ -747,29 +778,91 @@ return (
 <div className="fade">
 <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.15em",marginBottom:6}}>SETTINGS</div>
 <h2 style={{fontWeight:300,fontSize:30}}>Your <em>Account</em></h2>
+
 <div className="card" style={{padding:"0 22px",marginBottom:14}}>
 <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.12em",padding:"16px 0 4px"}}>ACCOUNT</div>
-<Row label={user.name||"Your Name"} sub={user.email} right={<span style={{fontFamily:"'DM Mono'",fontSize:11,color:G,cursor:"pointer"}}>Edit</span>}/>
+<Row label={user.name||"Your Name"} sub={user.email} right={
+  <span onClick={()=>{setEditName(user.name||"");setEditingProfile(true);setChangingPassword(false);}} style={{fontFamily:"'DM Mono'",fontSize:11,color:G,cursor:"pointer"}}>Edit Profile</span>
+}/>
 <Row label="Subscription" sub={user.pro?"Pro Plan — Active":"Free Plan"} right={<span onClick={onSubscription} style={{fontFamily:"'DM Mono'",fontSize:11,color:G,cursor:"pointer"}}>{user.pro?"Manage":"Upgrade ✦"}</span>}/>
 <div style={{paddingBottom:8}}/>
 </div>
+
+{editingProfile && (
+<div className="card" style={{padding:22,marginBottom:14,borderColor:G+"40"}}>
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+    <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.12em"}}>EDIT PROFILE</div>
+    <button onClick={()=>setEditingProfile(false)} style={{background:"none",border:"none",color:"#666",cursor:"pointer",fontSize:16}}>×</button>
+  </div>
+  <div style={{display:"flex",flexDirection:"column",gap:10}}>
+    <div>
+      <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666",marginBottom:6}}>Your Name</div>
+      <input className="inp" placeholder="Your name" value={editName} onChange={e=>setEditName(e.target.value)}/>
+    </div>
+    <div>
+      <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666",marginBottom:6}}>Email</div>
+      <input className="inp" value={user.email} disabled style={{opacity:0.4,cursor:"not-allowed"}}/>
+      <div style={{fontFamily:"'DM Mono'",fontSize:9,color:"#555",marginTop:4}}>Email cannot be changed</div>
+    </div>
+    {profileSaved && <div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#5BA85A"}}>✓ Profile saved!</div>}
+    <div style={{display:"flex",gap:8,marginTop:4}}>
+      <GBtn onClick={saveProfile} disabled={!editName.trim()} style={{padding:12,fontSize:14}}>Save Changes</GBtn>
+      <button onClick={()=>setEditingProfile(false)} style={{padding:"12px 20px",background:"#111009",color:"#777",border:"1px solid "+BORDER,borderRadius:10,fontFamily:"'DM Mono'",fontSize:11,cursor:"pointer"}}>Cancel</button>
+    </div>
+  </div>
+</div>
+)}
+
 <div className="card" style={{padding:"0 22px",marginBottom:14}}>
 <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.12em",padding:"16px 0 4px"}}>PREFERENCES</div>
 <Row label="Daily outfit notifications" sub={<span>Get styled every morning <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#555",letterSpacing:"0.06em"}}>· coming soon</span></span>} right={<Toggle on={notif} set={setNotif}/>}/>
 <div style={{paddingBottom:8}}/>
 </div>
-<div className="card" style={{padding:"0 22px",marginBottom:32}}>
+
+<div className="card" style={{padding:"0 22px",marginBottom:14}}>
 <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.12em",padding:"16px 0 4px"}}>DATA</div>
 <Row label="Clear AI memory" sub="Reset learned preferences" right={<span style={{fontFamily:"'DM Mono'",fontSize:11,color:"#C96E6E",cursor:"pointer"}}>Clear</span>}/>
-<Row label="Change password" sub="Update your password" right={<span style={{fontFamily:"'DM Mono'",fontSize:11,color:G,cursor:"pointer"}}>Update</span>}/>
+<Row label="Change password" sub="Update your password" right={
+  <span onClick={()=>{setChangingPassword(true);setEditingProfile(false);setPassMsg("");}} style={{fontFamily:"'DM Mono'",fontSize:11,color:G,cursor:"pointer"}}>Update</span>
+}/>
 <div style={{paddingBottom:8}}/>
 </div>
+
+{changingPassword && (
+<div className="card" style={{padding:22,marginBottom:14,borderColor:G+"40"}}>
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+    <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.12em"}}>CHANGE PASSWORD</div>
+    <button onClick={()=>setChangingPassword(false)} style={{background:"none",border:"none",color:"#666",cursor:"pointer",fontSize:16}}>×</button>
+  </div>
+  <div style={{display:"flex",flexDirection:"column",gap:10}}>
+    <div>
+      <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666",marginBottom:6}}>Current Password</div>
+      <input className="inp" type="password" placeholder="Current password" value={currentPass} onChange={e=>setCurrentPass(e.target.value)}/>
+    </div>
+    <div>
+      <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666",marginBottom:6}}>New Password</div>
+      <input className="inp" type="password" placeholder="New password (min 6 characters)" value={newPass} onChange={e=>setNewPass(e.target.value)}/>
+    </div>
+    <div>
+      <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666",marginBottom:6}}>Confirm New Password</div>
+      <input className="inp" type="password" placeholder="Confirm new password" value={confirmPass} onChange={e=>setConfirmPass(e.target.value)}/>
+    </div>
+    {passMsg && <div style={{fontFamily:"'DM Mono'",fontSize:11,color:passMsgType==="success"?"#5BA85A":"#C96E6E"}}>{passMsg}</div>}
+    <div style={{display:"flex",gap:8,marginTop:4}}>
+      <GBtn onClick={savePassword} style={{padding:12,fontSize:14}}>Update Password</GBtn>
+      <button onClick={()=>setChangingPassword(false)} style={{padding:"12px 20px",background:"#111009",color:"#777",border:"1px solid "+BORDER,borderRadius:10,fontFamily:"'DM Mono'",fontSize:11,cursor:"pointer"}}>Cancel</button>
+    </div>
+  </div>
+</div>
+)}
+
 <div className="card" style={{padding:"0 22px",marginBottom:32}}>
 <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.12em",padding:"16px 0 4px"}}>ABOUT</div>
 <Row label="Clozie" sub="Version 1.0 — Your personal AI stylist" right={<span style={{fontFamily:"'DM Mono'",fontSize:11,color:"#555"}}>v1.0</span>}/>
 <Row label="Delete account" sub="Permanently remove all your data" right={<span style={{fontFamily:"'DM Mono'",fontSize:11,color:"#C96E6E",cursor:"pointer"}}>Delete</span>}/>
 <div style={{paddingBottom:8}}/>
 </div>
+
 <button onClick={onLogout} style={{width:"100%",padding:14,background:"transparent",border:"1px solid #3A1515",color:"#C96E6E",borderRadius:12,fontFamily:"'DM Mono'",fontSize:13,cursor:"pointer"}}>
 Sign Out
 </button>
@@ -1119,7 +1212,7 @@ function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
           {selfieData ? "📸 Retake Photo" : "📸 Share with Friends"}
         </button>
 
-        {/* After selfie taken — full screen photo with long press instruction */}
+        {/* After selfie taken — beautiful share card ready to screenshot */}
         {selfieData && (
           <div style={{
             background: "#0D0C0A",
@@ -1128,106 +1221,44 @@ function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
             overflow: "hidden",
             boxShadow: "0 8px 32px #000000AA",
           }}>
-            {/* Selfie — full screen, tall */}
-            <div style={{ position: "relative" }}>
-              <img
-                src={selfieData}
-                alt="Your outfit selfie"
-                style={{
-                  width: "100%",
-                  maxHeight: 420,
-                  objectFit: "cover",
-                  display: "block",
-                }}
-              />
-              {/* Clozie watermark on photo */}
-              <div style={{
-                position: "absolute",
-                bottom: 12,
-                left: 12,
-                fontFamily: "'Playfair Display',serif",
-                fontSize: 16,
-                letterSpacing: "-0.02em",
-                background: "#00000060",
-                padding: "4px 10px",
-                borderRadius: 8,
-              }}>
-                <span style={{fontWeight:300,color:"#EDE5D8"}}>Clo</span>
-                <span style={{fontStyle:"italic",color:G}}>zie</span>
+            {/* Selfie — full width */}
+            <img
+              src={selfieData}
+              alt="Your outfit selfie"
+              style={{
+                width: "100%",
+                maxHeight: 340,
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+            {/* Message card underneath photo */}
+            <div style={{ padding: "16px 18px 20px", background: "#0D0C0A" }}>
+              {/* Clozie branding */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,letterSpacing:"-0.02em"}}>
+                  <span style={{fontWeight:300,color:"#EDE5D8"}}>Clo</span>
+                  <span style={{fontStyle:"italic",color:G}}>zie</span>
+                </div>
+                <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.12em"}}>✦ YOUR PERSONAL STYLIST</div>
+              </div>
+              {/* The message */}
+              <div style={{ fontFamily:"'Playfair Display',serif", fontStyle:"italic", fontWeight:300, fontSize:16, color:"#EDE5D8", lineHeight:1.7, marginBottom:6 }}>
+                {getFirstName()} needs your help getting dressed! 👗👔✨
+              </div>
+              <div style={{ fontFamily:"'DM Mono'", fontSize:11, color:"#8A7A68", lineHeight:1.8, marginBottom:14 }}>
+                Which outfit should she wear? Reply 1, 2 or 3!
+              </div>
+              {/* Clozie link */}
+              <div style={{ padding:"8px 12px", background:G+"15", border:"1px solid "+G+"40", borderRadius:8, fontFamily:"'DM Mono'", fontSize:10, color:G, letterSpacing:"0.04em" }}>
+                ✦ clozie.vercel.app
               </div>
             </div>
-
-            {/* Long press instruction */}
-            <div style={{ padding: "16px 18px", background: "#0D0C0A" }}>
-              <div style={{
-                fontFamily: "'DM Mono'",
-                fontSize: 10,
-                color: G,
-                letterSpacing: "0.12em",
-                marginBottom: 10,
-              }}>✦ SHARE YOUR LOOK</div>
-
-              <div style={{
-                fontFamily: "'DM Mono'",
-                fontSize: 11,
-                color: "#8A7A68",
-                lineHeight: 1.9,
-                marginBottom: 14,
-              }}>
-                👆 <span style={{color:"#EDE5D8"}}>Long press the photo above</span> to save it to your camera roll{"
-"}
-                Then send it to your friend with this message 👇
+            {/* Screenshot instruction */}
+            <div style={{ padding:"10px 18px 14px", background:"#111009", borderTop:"1px solid "+BORDER, textAlign:"center" }}>
+              <div style={{ fontFamily:"'DM Mono'", fontSize:10, color:"#555", letterSpacing:"0.06em" }}>
+                📱 Screenshot this card and send it to your friend!
               </div>
-
-              {/* Message to send */}
-              <div style={{
-                padding: "12px 14px",
-                background: CARD,
-                border: "1px solid " + BORDER,
-                borderRadius: 10,
-                marginBottom: 10,
-              }}>
-                <div style={{
-                  fontFamily: "'Playfair Display',serif",
-                  fontStyle: "italic",
-                  fontSize: 14,
-                  color: "#EDE5D8",
-                  lineHeight: 1.7,
-                  marginBottom: 4,
-                }}>
-                  {getFirstName()} needs your help getting dressed! 👗👔✨
-                </div>
-                <div style={{
-                  fontFamily: "'DM Mono'",
-                  fontSize: 11,
-                  color: "#6A6058",
-                  lineHeight: 1.7,
-                }}>
-                  Which outfit should she wear? Reply 1, 2 or 3!{"
-"}
-                  Styled by Clozie ✦ clozie.vercel.app
-                </div>
-              </div>
-
-              {/* Copy message button */}
-              <button
-                onClick={handleCopy}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  borderRadius: 9,
-                  fontSize: 11,
-                  fontFamily: "'DM Mono'",
-                  cursor: "pointer",
-                  border: "1px solid " + G + "60",
-                  background: copied ? G : G + "20",
-                  color: copied ? BG : G,
-                  transition: "all 0.2s",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {copied ? "✅ Message copied! Now send with your photo 💛" : "📋 Copy Message"}
-              </button>
             </div>
           </div>
         )}
@@ -1796,7 +1827,7 @@ onSubscription={()=>setPage("subscription")}
 />}
 {page==="settings"&&(
 <div style={{position:"fixed",inset:0,zIndex:500,overflowY:"auto",background:BG}}>
-<Settings user={user} onBack={()=>setPage("app")} onLogout={()=>{try{localStorage.removeItem("clozie-user");}catch(e){}setUser(null);setPage("welcome");}} onSubscription={()=>setPage("subscription")}/>
+<Settings user={user} setUser={setUser} onBack={()=>setPage("app")} onLogout={()=>{try{localStorage.removeItem("clozie-user");}catch(e){}setUser(null);setPage("welcome");}} onSubscription={()=>setPage("subscription")}/>
 </div>
 )}
 {page==="subscription"&&(
