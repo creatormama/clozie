@@ -1119,84 +1119,53 @@ function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
           {selfieData ? "📸 Retake Photo" : "📸 Share with Friends"}
         </button>
 
-        {/* After selfie taken — show photo + instructions */}
+        {/* After selfie taken — beautiful share card ready to screenshot */}
         {selfieData && (
           <div style={{
-            background: CARD,
-            border: "1px solid " + G + "40",
-            borderRadius: 12,
+            background: "#0D0C0A",
+            border: "1px solid " + G + "60",
+            borderRadius: 16,
             overflow: "hidden",
+            boxShadow: "0 8px 32px #000000AA",
           }}>
-            {/* Selfie preview */}
+            {/* Selfie — full width */}
             <img
               src={selfieData}
               alt="Your outfit selfie"
               style={{
                 width: "100%",
-                maxHeight: 280,
+                maxHeight: 340,
                 objectFit: "cover",
                 display: "block",
               }}
             />
-
-            {/* Instructions */}
-            <div style={{ padding: "12px 14px" }}>
-              <div style={{
-                fontFamily: "'DM Mono'",
-                fontSize: 10,
-                color: G,
-                letterSpacing: "0.1em",
-                marginBottom: 8,
-              }}>
-                ✦ SHARE YOUR LOOK
+            {/* Message card underneath photo */}
+            <div style={{ padding: "16px 18px 20px", background: "#0D0C0A" }}>
+              {/* Clozie branding */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,letterSpacing:"-0.02em"}}>
+                  <span style={{fontWeight:300,color:"#EDE5D8"}}>Clo</span>
+                  <span style={{fontStyle:"italic",color:G}}>zie</span>
+                </div>
+                <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.12em"}}>✦ YOUR PERSONAL STYLIST</div>
               </div>
-              <div style={{
-                fontFamily: "'DM Mono'",
-                fontSize: 11,
-                color: "#8A7A68",
-                lineHeight: 1.8,
-                marginBottom: 12,
-              }}>
-                1. Screenshot this screen 📱<br/>
-                2. Copy the message below 👇<br/>
-                3. Send both to your friend!
+              {/* The message */}
+              <div style={{ fontFamily:"'Playfair Display',serif", fontStyle:"italic", fontWeight:300, fontSize:16, color:"#EDE5D8", lineHeight:1.7, marginBottom:6 }}>
+                {getFirstName()} needs your help getting dressed! 👗👔✨
               </div>
-
-              {/* Message box */}
-              <div style={{
-                background: BG,
-                border: "1px solid " + BORDER,
-                borderRadius: 8,
-                padding: "10px 12px",
-                fontFamily: "'DM Mono'",
-                fontSize: 11,
-                color: "#8A7A68",
-                lineHeight: 1.8,
-                marginBottom: 8,
-                whiteSpace: "pre-line",
-              }}>
-                {message}
+              <div style={{ fontFamily:"'DM Mono'", fontSize:11, color:"#8A7A68", lineHeight:1.8, marginBottom:14 }}>
+                Which outfit should she wear? Reply 1, 2 or 3!
               </div>
-
-              {/* Copy button */}
-              <button
-                onClick={handleCopy}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  borderRadius: 9,
-                  fontSize: 12,
-                  fontFamily: "'DM Mono'",
-                  cursor: "pointer",
-                  border: "1px solid " + G + "60",
-                  background: copied ? G : G + "20",
-                  color: copied ? BG : G,
-                  transition: "all 0.2s",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {copied ? "✅ Copied! Now screenshot & send 💛" : "📋 Copy Message"}
-              </button>
+              {/* Clozie link */}
+              <div style={{ padding:"8px 12px", background:G+"15", border:"1px solid "+G+"40", borderRadius:8, fontFamily:"'DM Mono'", fontSize:10, color:G, letterSpacing:"0.04em" }}>
+                ✦ clozie.vercel.app
+              </div>
+            </div>
+            {/* Screenshot instruction */}
+            <div style={{ padding:"10px 18px 14px", background:"#111009", borderTop:"1px solid "+BORDER, textAlign:"center" }}>
+              <div style={{ fontFamily:"'DM Mono'", fontSize:10, color:"#555", letterSpacing:"0.06em" }}>
+                📱 Screenshot this card and send it to your friend!
+              </div>
             </div>
           </div>
         )}
