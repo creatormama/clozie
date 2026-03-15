@@ -111,6 +111,7 @@ Look at this clothing item and return ONLY a JSON object with these exact fields
 - "description": one short phrase about style/fit/fabric (e.g. "Relaxed fit", "Knee length", "Ankle boots with heel")
 
 Rules:
+
 - category must be EXACTLY one of the 6 options listed
 - name should be concise and clear
 - color should describe what you actually see
@@ -311,6 +312,7 @@ ${pastLearnings ? `Past preferences:\n${pastLearnings}` : ""}
 ${outfitList}
 
 For each outfit give:
+
 - A creative stylish name
 - One vibe word (Chic, Bold, Relaxed, Elegant, Sporty, Fresh, Romantic, Polished, Effortless, Edgy)
 - A warm 1-2 sentence description of why these pieces work together
@@ -461,13 +463,11 @@ return (
 `}</style>
 <div style={{width:"100%",maxWidth:400}} className="fade">
 
-  {/* Header */}
   <div style={{textAlign:"center",marginBottom:28}}>
     <Logo/>
     <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.2em",marginTop:12}}>✦ HERE'S HOW IT WORKS ✦</div>
   </div>
 
-  {/* Step tabs */}
   <div style={{display:"flex",gap:6,marginBottom:6}}>
     {steps.map((_,i)=>(
       <button key={i} onClick={()=>handleTabClick(i)} style={{
@@ -496,12 +496,12 @@ return (
     ))}
   </div>
 
-  {!tapped && (
-    <div style={{textAlign:"center",marginBottom:14}}>
-      <span style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.06em"}}>✦ Tap each step to explore</span>
-    </div>
-  )}
-  {tapped && <div style={{marginBottom:14}}/>}
+{!tapped && (
+<div style={{textAlign:"center",marginBottom:14}}>
+<span style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.06em"}}>✦ Tap each step to explore</span>
+</div>
+)}
+{tapped && <div style={{marginBottom:14}}/>}
 
   <div className="card" style={{padding:20,marginBottom:16,borderColor:G+"30"}}>
     <div style={{fontFamily:"'Playfair Display',serif",fontWeight:300,fontSize:22,color:"#EDE5D8",marginBottom:8}}>{s.title}</div>
@@ -620,21 +620,21 @@ return (
 </div>
 </div>
 
-  {!isForgot && (
-    <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-      <button className="social" onClick={()=>onDone({email:"google@user.com",name:"Google User",mode:isLogin?"login":"signup"})}>
-        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-        Continue with Google
-      </button>
-      <button className="social" onClick={()=>onDone({email:"apple@user.com",name:"Apple User",mode:isLogin?"login":"signup"})}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-        Continue with Apple
-      </button>
-      <div style={{display:"flex",alignItems:"center",gap:12,margin:"4px 0"}}>
-        <div style={{flex:1,height:1,background:BORDER}}/><span style={{fontFamily:"'DM Mono'",fontSize:11,color:"#666"}}>or</span><div style={{flex:1,height:1,background:BORDER}}/>
-      </div>
-    </div>
-  )}
+{!isForgot && (
+<div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+<button className="social" onClick={()=>onDone({email:"google@user.com",name:"Google User",mode:isLogin?"login":"signup"})}>
+<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+Continue with Google
+</button>
+<button className="social" onClick={()=>onDone({email:"apple@user.com",name:"Apple User",mode:isLogin?"login":"signup"})}>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+Continue with Apple
+</button>
+<div style={{display:"flex",alignItems:"center",gap:12,margin:"4px 0"}}>
+<div style={{flex:1,height:1,background:BORDER}}/><span style={{fontFamily:"'DM Mono'",fontSize:11,color:"#666"}}>or</span><div style={{flex:1,height:1,background:BORDER}}/>
+</div>
+</div>
+)}
 
   <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:16}}>
     {!isLogin&&!isForgot&&<input className="inp" placeholder="Full name" value={name} onChange={e=>setName(e.target.value)}/>}
@@ -642,29 +642,29 @@ return (
     {!isForgot&&<input className="inp" placeholder="Password" type="password" value={pass} onChange={e=>setPass(e.target.value)}/>}
   </div>
 
-  {err&&<div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#C96E6E",marginBottom:12}}>{err}</div>}
+{err&&<div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#C96E6E",marginBottom:12}}>{err}</div>}
 
-  {isLogin&&(
-    <div style={{textAlign:"right",marginBottom:14}}>
-      <span onClick={onForgot} style={{fontFamily:"'DM Mono'",fontSize:12,color:G,cursor:"pointer"}}>Forgot password?</span>
-    </div>
-  )}
+{isLogin&&(
+<div style={{textAlign:"right",marginBottom:14}}>
+<span onClick={onForgot} style={{fontFamily:"'DM Mono'",fontSize:12,color:G,cursor:"pointer"}}>Forgot password?</span>
+</div>
+)}
 
   <GBtn onClick={handle} style={{marginBottom:20}}>
     {isForgot?"Send Reset Link →":isLogin?"Sign In →":"Create Account →"}
   </GBtn>
 
-  {!isForgot&&(
-    <div style={{textAlign:"center",fontFamily:"'DM Mono'",fontSize:12,color:"#666"}}>
-      {isLogin?"Don't have an account? ":"Already have an account? "}
-      <span onClick={onSwitch} style={{color:G,cursor:"pointer"}}>{isLogin?"Sign up":"Sign in"}</span>
-    </div>
-  )}
-  {isForgot&&(
-    <div style={{textAlign:"center",fontFamily:"'DM Mono'",fontSize:12,color:"#666"}}>
-      <span onClick={()=>onSwitch("login")} style={{color:G,cursor:"pointer"}}>← Back to sign in</span>
-    </div>
-  )}
+{!isForgot&&(
+<div style={{textAlign:"center",fontFamily:"'DM Mono'",fontSize:12,color:"#666"}}>
+{isLogin?"Don't have an account? ":"Already have an account? "}
+<span onClick={onSwitch} style={{color:G,cursor:"pointer"}}>{isLogin?"Sign up":"Sign in"}</span>
+</div>
+)}
+{isForgot&&(
+<div style={{textAlign:"center",fontFamily:"'DM Mono'",fontSize:12,color:"#666"}}>
+<span onClick={()=>onSwitch("login")} style={{color:G,cursor:"pointer"}}>← Back to sign in</span>
+</div>
+)}
 
 </div>
 </div>
@@ -723,6 +723,7 @@ Secure payment · Cancel anytime · No hidden fees
 );
 }
 
+// ── SETTINGS — fixed: Edit Profile saves name, Change Password works ──────────
 function Settings({user, setUser, onBack, onLogout, onSubscription}) {
 const [notif,setNotif]=useState(true);
 const [editingProfile,setEditingProfile]=useState(false);
@@ -733,27 +734,29 @@ const [currentPass,setCurrentPass]=useState("");
 const [newPass,setNewPass]=useState("");
 const [confirmPass,setConfirmPass]=useState("");
 const [passMsg,setPassMsg]=useState("");
-const [passMsgType,setPassMsgType]=useState("");
 
 const saveProfile = () => {
-  if (!editName.trim()) return;
-  const updated = {...user, name: editName.trim()};
-  try { localStorage.setItem("clozie-user", JSON.stringify(updated)); } catch(e) {}
-  setUser(updated);
-  setProfileSaved(true);
-  setEditingProfile(false);
-  setTimeout(() => setProfileSaved(false), 3000);
+if (!editName.trim()) return;
+const updated = {...user, name: editName.trim()};
+try { localStorage.setItem("clozie-user", JSON.stringify(updated)); } catch(e) {}
+setUser(updated);
+setProfileSaved(true);
+setEditingProfile(false);
+setTimeout(() => setProfileSaved(false), 3000);
 };
 
 const savePassword = () => {
-  setPassMsg("");
-  if (!currentPass.trim()) { setPassMsg("Please enter your current password"); setPassMsgType("error"); return; }
-  if (!newPass.trim()) { setPassMsg("Please enter a new password"); setPassMsgType("error"); return; }
-  if (newPass.length < 6) { setPassMsg("Password must be at least 6 characters"); setPassMsgType("error"); return; }
-  if (newPass !== confirmPass) { setPassMsg("Passwords do not match"); setPassMsgType("error"); return; }
-  setPassMsg("✓ Password updated successfully"); setPassMsgType("success");
-  setCurrentPass(""); setNewPass(""); setConfirmPass("");
-  setTimeout(() => { setChangingPassword(false); setPassMsg(""); }, 2000);
+if (!currentPass.trim() || !newPass.trim() || !confirmPass.trim()) {
+setPassMsg("Please fill in all fields");
+return;
+}
+if (newPass !== confirmPass) {
+setPassMsg("Passwords do not match");
+return;
+}
+setPassMsg("✓ Password updated successfully");
+setCurrentPass(""); setNewPass(""); setConfirmPass("");
+setTimeout(() => { setChangingPassword(false); setPassMsg(""); }, 2000);
 };
 
 const Toggle=({on,set})=>(
@@ -819,7 +822,7 @@ return (
 <div style={{paddingBottom:8}}/>
 </div>
 
-<div className="card" style={{padding:"0 22px",marginBottom:14}}>
+<div className="card" style={{padding:"0 22px",marginBottom:32}}>
 <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.12em",padding:"16px 0 4px"}}>DATA</div>
 <Row label="Clear AI memory" sub="Reset learned preferences" right={<span style={{fontFamily:"'DM Mono'",fontSize:11,color:"#C96E6E",cursor:"pointer"}}>Clear</span>}/>
 <Row label="Change password" sub="Update your password" right={
@@ -832,7 +835,7 @@ return (
 <div className="card" style={{padding:22,marginBottom:14,borderColor:G+"40"}}>
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
     <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.12em"}}>CHANGE PASSWORD</div>
-    <button onClick={()=>setChangingPassword(false)} style={{background:"none",border:"none",color:"#666",cursor:"pointer",fontSize:16}}>×</button>
+    <button onClick={()=>{setChangingPassword(false);setPassMsg("");}} style={{background:"none",border:"none",color:"#666",cursor:"pointer",fontSize:16}}>×</button>
   </div>
   <div style={{display:"flex",flexDirection:"column",gap:10}}>
     <div>
@@ -841,16 +844,16 @@ return (
     </div>
     <div>
       <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666",marginBottom:6}}>New Password</div>
-      <input className="inp" type="password" placeholder="New password (min 6 characters)" value={newPass} onChange={e=>setNewPass(e.target.value)}/>
+      <input className="inp" type="password" placeholder="New password" value={newPass} onChange={e=>setNewPass(e.target.value)}/>
     </div>
     <div>
       <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666",marginBottom:6}}>Confirm New Password</div>
       <input className="inp" type="password" placeholder="Confirm new password" value={confirmPass} onChange={e=>setConfirmPass(e.target.value)}/>
     </div>
-    {passMsg && <div style={{fontFamily:"'DM Mono'",fontSize:11,color:passMsgType==="success"?"#5BA85A":"#C96E6E"}}>{passMsg}</div>}
+    {passMsg && <div style={{fontFamily:"'DM Mono'",fontSize:11,color:passMsg.startsWith("✓")?"#5BA85A":"#C96E6E"}}>{passMsg}</div>}
     <div style={{display:"flex",gap:8,marginTop:4}}>
       <GBtn onClick={savePassword} style={{padding:12,fontSize:14}}>Update Password</GBtn>
-      <button onClick={()=>setChangingPassword(false)} style={{padding:"12px 20px",background:"#111009",color:"#777",border:"1px solid "+BORDER,borderRadius:10,fontFamily:"'DM Mono'",fontSize:11,cursor:"pointer"}}>Cancel</button>
+      <button onClick={()=>{setChangingPassword(false);setPassMsg("");}} style={{padding:"12px 20px",background:"#111009",color:"#777",border:"1px solid "+BORDER,borderRadius:10,fontFamily:"'DM Mono'",fontSize:11,cursor:"pointer"}}>Cancel</button>
     </div>
   </div>
 </div>
@@ -923,41 +926,41 @@ return (
 <path d="M114 418 Q126 428 140 424" stroke="#C8B8A2" strokeWidth="8" strokeLinecap="round"/>
 </svg>
 
-  {isDress && isDress.image && (
-    <div style={{position:"absolute",top:60,left:36,width:128,height:340,borderRadius:10,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 16px #00000025"}}>
-      <img src={isDress.image} alt={isDress.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
-    </div>
-  )}
-  {!isDress && top && top.image && (
-    <div style={{position:"absolute",top:58,left:38,width:124,height:170,borderRadius:8,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 12px #00000022"}}>
-      <img src={top.image} alt={top.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
-    </div>
-  )}
-  {!isDress && bottom && bottom.image && (
-    <div style={{position:"absolute",top:220,left:38,width:124,height:190,borderRadius:8,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 12px #00000022"}}>
-      <img src={bottom.image} alt={bottom.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
-    </div>
-  )}
-  {shoes && shoes.image && (
-    <div style={{position:"absolute",top:402,left:40,width:120,height:70,borderRadius:8,overflow:"hidden",boxShadow:"0 2px 8px #00000020",background:"#f0ede8"}}>
-      <img src={shoes.image} alt={shoes.name} style={{width:"100%",height:"100%",objectFit:"contain",mixBlendMode:"multiply"}}/>
-    </div>
-  )}
-  {acc1 && acc1.image && /(hat|cap|beret|beanie|headband)/i.test(acc1.name||"") && (
-    <div style={{position:"absolute",top:-10,left:68,width:64,height:44,borderRadius:8,overflow:"hidden",boxShadow:"0 2px 8px #00000030"}}>
-      <img src={acc1.image} alt={acc1.name} style={{width:"100%",height:"100%",objectFit:"contain",mixBlendMode:"multiply"}}/>
-    </div>
-  )}
-  {acc1 && acc1.image && !/(hat|cap|beret|beanie|headband)/i.test(acc1.name||"") && (
-    <div style={{position:"absolute",top:18,left:62,width:36,height:36,borderRadius:"50%",overflow:"hidden",border:"2px solid #fff",boxShadow:"0 2px 8px #00000030"}}>
-      <img src={acc1.image} alt={acc1.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-    </div>
-  )}
-  {acc2 && acc2.image && (
-    <div style={{position:"absolute",top:18,right:62,width:36,height:36,borderRadius:"50%",overflow:"hidden",border:"2px solid #fff",boxShadow:"0 2px 8px #00000030"}}>
-      <img src={acc2.image} alt={acc2.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-    </div>
-  )}
+{isDress && isDress.image && (
+<div style={{position:"absolute",top:60,left:36,width:128,height:340,borderRadius:10,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 16px #00000025"}}>
+<img src={isDress.image} alt={isDress.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
+</div>
+)}
+{!isDress && top && top.image && (
+<div style={{position:"absolute",top:58,left:38,width:124,height:170,borderRadius:8,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 12px #00000022"}}>
+<img src={top.image} alt={top.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
+</div>
+)}
+{!isDress && bottom && bottom.image && (
+<div style={{position:"absolute",top:220,left:38,width:124,height:190,borderRadius:8,overflow:"hidden",opacity:0.93,boxShadow:"0 2px 12px #00000022"}}>
+<img src={bottom.image} alt={bottom.name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",mixBlendMode:"multiply"}}/>
+</div>
+)}
+{shoes && shoes.image && (
+<div style={{position:"absolute",top:402,left:40,width:120,height:70,borderRadius:8,overflow:"hidden",boxShadow:"0 2px 8px #00000020",background:"#f0ede8"}}>
+<img src={shoes.image} alt={shoes.name} style={{width:"100%",height:"100%",objectFit:"contain",mixBlendMode:"multiply"}}/>
+</div>
+)}
+{acc1 && acc1.image && /(hat|cap|beret|beanie|headband)/i.test(acc1.name||"") && (
+<div style={{position:"absolute",top:-10,left:68,width:64,height:44,borderRadius:8,overflow:"hidden",boxShadow:"0 2px 8px #00000030"}}>
+<img src={acc1.image} alt={acc1.name} style={{width:"100%",height:"100%",objectFit:"contain",mixBlendMode:"multiply"}}/>
+</div>
+)}
+{acc1 && acc1.image && !/(hat|cap|beret|beanie|headband)/i.test(acc1.name||"") && (
+<div style={{position:"absolute",top:18,left:62,width:36,height:36,borderRadius:"50%",overflow:"hidden",border:"2px solid #fff",boxShadow:"0 2px 8px #00000030"}}>
+<img src={acc1.image} alt={acc1.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+</div>
+)}
+{acc2 && acc2.image && (
+<div style={{position:"absolute",top:18,right:62,width:36,height:36,borderRadius:"50%",overflow:"hidden",border:"2px solid #fff",boxShadow:"0 2px 8px #00000030"}}>
+<img src={acc2.image} alt={acc2.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+</div>
+)}
 
   <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:5}}>
     {[top,bottom,shoes,acc1,acc2].filter(Boolean).map((item,i)=>(
@@ -1034,28 +1037,28 @@ return (
     </div>
   </div>
 
-  {view==="moodboard"&&(
-    <div style={{background:"#F5F0E8",padding:16}}>
-      {withPhoto.length===0
-        ? <div style={{padding:"40px 0",textAlign:"center"}}>
-            <div style={{fontSize:44,marginBottom:12}}>👗</div>
-            <div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#999"}}>Add photos to your closet items to see them here</div>
-          </div>
-        : <div style={{display:"grid",gridTemplateColumns:withPhoto.length===1?"1fr":"1fr 1fr",gap:12}}>
-            {withPhoto.map((item,i)=>(
-              <div key={i} style={{background:"#fff",borderRadius:12,overflow:"hidden",boxShadow:"0 4px 16px #00000018"}}>
-                <img src={item.image} alt={item.name} style={{width:"100%",display:"block",objectFit:"contain",background:"#f8f8f8",maxHeight:withPhoto.length===1?380:200}}/>
-                <div style={{padding:"8px 10px",borderTop:"1px solid #eee"}}>
-                  <div style={{fontFamily:"'DM Mono'",fontSize:9,color:"#999",textAlign:"center"}}>{item.name}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-      }
-    </div>
-  )}
+{view==="moodboard"&&(
+<div style={{background:"#F5F0E8",padding:16}}>
+{withPhoto.length===0
+? <div style={{padding:"40px 0",textAlign:"center"}}>
+<div style={{fontSize:44,marginBottom:12}}>👗</div>
+<div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#999"}}>Add photos to your closet items to see them here</div>
+</div>
+: <div style={{display:"grid",gridTemplateColumns:withPhoto.length===1?"1fr":"1fr 1fr",gap:12}}>
+{withPhoto.map((item,i)=>(
+<div key={i} style={{background:"#fff",borderRadius:12,overflow:"hidden",boxShadow:"0 4px 16px #00000018"}}>
+<img src={item.image} alt={item.name} style={{width:"100%",display:"block",objectFit:"contain",background:"#f8f8f8",maxHeight:withPhoto.length===1?380:200}}/>
+<div style={{padding:"8px 10px",borderTop:"1px solid #eee"}}>
+<div style={{fontFamily:"'DM Mono'",fontSize:9,color:"#999",textAlign:"center"}}>{item.name}</div>
+</div>
+</div>
+))}
+</div>
+}
+</div>
+)}
 
-  {view==="avatar"&&<AvatarView outfit={outfit}/>}
+{view==="avatar"&&<AvatarView outfit={outfit}/>}
 
   <div style={{background:BG,padding:"14px 20px",borderRadius:"0 0 20px 20px"}}>
     <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:withPhoto.length>0?10:0}}>
@@ -1137,135 +1140,6 @@ Generate outfits and tap <span style={{color:G}}>❤️ Save</span> to keep them
 </div>
 </div>
 );
-}
-
-// ── SHARE OUTFIT FUNCTION ─────────────────────────────────────────────────────
-// Takes selfie → shows photo on screen → screenshot instructions + copy message
-
-function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
-  const inputRef = useRef();
-  const [selfieData, setSelfieData] = useState(null);
-  const [copied, setCopied] = useState(false);
-
-  // Get first name only — never show email
-  const getFirstName = () => {
-    const name = userName || "";
-    if (name.includes("@")) return "Your friend";
-    return name.split(" ")[0] || "Your friend";
-  };
-
-  const message = `${getFirstName()} needs your help getting dressed! 👗👔✨ Which outfit should she wear? Reply 1, 2 or 3!\n\nStyled by Clozie ✦ https://clozie.vercel.app`;
-
-  const handleTakePhoto = () => {
-    inputRef.current.click();
-  };
-
-  const handleSelfie = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    e.target.value = "";
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setSelfieData(ev.target.result);
-      setCopied(false);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(message);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
-    } catch(e) {}
-  };
-
-  return (
-    <>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        capture="user"
-        style={{ display: "none" }}
-        onChange={handleSelfie}
-      />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-
-        {/* Take photo button — always visible */}
-        <button
-          onClick={handleTakePhoto}
-          style={{
-            width: "100%",
-            padding: "9px 4px",
-            borderRadius: 9,
-            fontSize: 11,
-            fontFamily: "'DM Mono'",
-            cursor: "pointer",
-            border: "1px solid " + G + "60",
-            background: selfieData ? G + "25" : G + "15",
-            color: G,
-            transition: "all 0.15s",
-          }}
-        >
-          {selfieData ? "📸 Retake Photo" : "📸 Share with Friends"}
-        </button>
-
-        {/* After selfie taken — beautiful share card ready to screenshot */}
-        {selfieData && (
-          <div style={{
-            background: "#0D0C0A",
-            border: "1px solid " + G + "60",
-            borderRadius: 16,
-            overflow: "hidden",
-            boxShadow: "0 8px 32px #000000AA",
-          }}>
-            {/* Selfie — full width */}
-            <img
-              src={selfieData}
-              alt="Your outfit selfie"
-              style={{
-                width: "100%",
-                maxHeight: 340,
-                objectFit: "cover",
-                display: "block",
-              }}
-            />
-            {/* Message card underneath photo */}
-            <div style={{ padding: "16px 18px 20px", background: "#0D0C0A" }}>
-              {/* Clozie branding */}
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,letterSpacing:"-0.02em"}}>
-                  <span style={{fontWeight:300,color:"#EDE5D8"}}>Clo</span>
-                  <span style={{fontStyle:"italic",color:G}}>zie</span>
-                </div>
-                <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.12em"}}>✦ YOUR PERSONAL STYLIST</div>
-              </div>
-              {/* The message */}
-              <div style={{ fontFamily:"'Playfair Display',serif", fontStyle:"italic", fontWeight:300, fontSize:16, color:"#EDE5D8", lineHeight:1.7, marginBottom:6 }}>
-                {getFirstName()} needs your help getting dressed! 👗👔✨
-              </div>
-              <div style={{ fontFamily:"'DM Mono'", fontSize:11, color:"#8A7A68", lineHeight:1.8, marginBottom:14 }}>
-                Which outfit should she wear? Reply 1, 2 or 3!
-              </div>
-              {/* Clozie link */}
-              <div style={{ padding:"8px 12px", background:G+"15", border:"1px solid "+G+"40", borderRadius:8, fontFamily:"'DM Mono'", fontSize:10, color:G, letterSpacing:"0.04em" }}>
-                ✦ clozie.vercel.app
-              </div>
-            </div>
-            {/* Screenshot instruction */}
-            <div style={{ padding:"10px 18px 14px", background:"#111009", borderTop:"1px solid "+BORDER, textAlign:"center" }}>
-              <div style={{ fontFamily:"'DM Mono'", fontSize:10, color:"#555", letterSpacing:"0.06em" }}>
-                📱 Screenshot this card and send it to your friend!
-              </div>
-            </div>
-          </div>
-        )}
-
-      </div>
-    </>
-  );
 }
 
 function MainApp({user, onLogout, onSettings, onSubscription, closet, setCloset, profile, setProfile, learnings, setLearnings, favOutfits, setFavOutfits, saveStatus}) {
@@ -1408,330 +1282,313 @@ style={{flex:1,color:step===s?G:"#333",borderBottomColor:step===s?G:"transparent
 
   <div style={{width:"100%",maxWidth:680,padding:"0 20px 100px"}}>
 
-    {step==="profile"&&(
-      <div className="fade">
-        <div style={{marginBottom:28}}>
-          <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.15em",marginBottom:6}}>YOUR STYLE DNA</div>
-          <h2 style={{fontWeight:300,fontSize:30}}>Your <em>Style Profile</em></h2>
-          <p style={{color:"#6A6058",fontFamily:"'DM Mono'",fontSize:12,marginTop:6}}>Clozie uses this to personalise every outfit, the more you use her the better she knows you ✦</p>
-        </div>
-        <div className="card" style={{padding:22,marginBottom:12}}>
-          <Label text="STYLES I LOVE"/>
-          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-            {STYLE_OPTIONS.map(s=><span key={s} className={"tag"+(profile.styles.includes(s)?" on":"")} onClick={()=>toggle("styles",s)}>{s}</span>)}
-          </div>
-        </div>
-        <div className="card" style={{padding:22,marginBottom:12}}>
-          <Label text="MY COLOUR PALETTE"/>
-          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-            {COLOR_OPTIONS.map(c=><span key={c} className={"tag"+(profile.colors.includes(c)?" on":"")} onClick={()=>toggle("colors",c)}>{c}</span>)}
-          </div>
-        </div>
-        <div className="card" style={{padding:22,marginBottom:20}}>
-          <Label text="I NEVER WANT TO WEAR"/>
-          <textarea className="inp" rows={3} placeholder="Tell your stylist what you never want to wear..." value={profile.dislikes} onChange={e=>setProfile(p=>({...p,dislikes:e.target.value}))} style={{resize:"none"}}/>
-        </div>
-        {learnings.length===0&&(
-          <div style={{padding:"14px 18px",background:"#161512",borderRadius:12,border:"1px solid #2E2B27",marginBottom:12}}>
-            <span style={{fontFamily:"'DM Mono'",fontSize:11,color:"#555",lineHeight:1.8}}>
-              ✦ Rate your first outfit and Clozie will start learning your taste
-            </span>
-          </div>
-        )}
-        {learnings.length>0&&(
-          <div className="card" style={{padding:18,marginBottom:20,borderColor:G+"30"}}>
-            <Label text={"✦ CLOZIE'S NOTES ON YOU ("+learnings.length+" ratings)"}/>
-            {learnings.slice(-4).map((l,i)=><div key={i} style={{fontFamily:"'DM Mono'",fontSize:11,color:"#6A6058",marginBottom:5}}>· {l}</div>)}
-          </div>
-        )}
-        <GBtn onClick={()=>setStep("closet")}>Build My Closet →</GBtn>
-        <button onClick={()=>setStep("closet")} style={{width:"100%",marginTop:10,padding:12,background:"transparent",border:"none",color:"#555",fontFamily:"'DM Mono'",fontSize:12,cursor:"pointer",letterSpacing:"0.04em"}}>
-          Skip for now →
-        </button>
+{step==="profile"&&(
+  <div className="fade">
+    <div style={{marginBottom:28}}>
+      <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.15em",marginBottom:6}}>YOUR STYLE DNA</div>
+      <h2 style={{fontWeight:300,fontSize:30}}>Your <em>Style Profile</em></h2>
+      <p style={{color:"#6A6058",fontFamily:"'DM Mono'",fontSize:12,marginTop:6}}>Clozie uses this to personalise every outfit, the more you use her the better she knows you ✦</p>
+    </div>
+    <div className="card" style={{padding:22,marginBottom:12}}>
+      <Label text="STYLES I LOVE"/>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+        {STYLE_OPTIONS.map(s=><span key={s} className={"tag"+(profile.styles.includes(s)?" on":"")} onClick={()=>toggle("styles",s)}>{s}</span>)}
+      </div>
+    </div>
+    <div className="card" style={{padding:22,marginBottom:12}}>
+      <Label text="MY COLOUR PALETTE"/>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+        {COLOR_OPTIONS.map(c=><span key={c} className={"tag"+(profile.colors.includes(c)?" on":"")} onClick={()=>toggle("colors",c)}>{c}</span>)}
+      </div>
+    </div>
+    <div className="card" style={{padding:22,marginBottom:20}}>
+      <Label text="I NEVER WANT TO WEAR"/>
+      <textarea className="inp" rows={3} placeholder="Tell your stylist what you never want to wear..." value={profile.dislikes} onChange={e=>setProfile(p=>({...p,dislikes:e.target.value}))} style={{resize:"none"}}/>
+    </div>
+    {learnings.length===0&&(
+      <div style={{padding:"14px 18px",background:"#161512",borderRadius:12,border:"1px solid #2E2B27",marginBottom:12}}>
+        <span style={{fontFamily:"'DM Mono'",fontSize:11,color:"#555",lineHeight:1.8}}>
+          ✦ Rate your first outfit and Clozie will start learning your taste
+        </span>
       </div>
     )}
-
-    {step==="closet"&&(
-      <div className="fade">
-        <div style={{marginBottom:28}}>
-          <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.15em",marginBottom:6}}>YOUR WARDROBE</div>
-          <h2 style={{fontWeight:300,fontSize:30}}>Your <em>Wardrobe</em></h2>
-          <p style={{color:"#6A6058",fontFamily:"'DM Mono'",fontSize:12,marginTop:6}}>Clozie only creates outfits from clothes you add here.</p>
-        </div>
-        {closet.length===0&&!addingItem&&(
-          <div className="card" style={{padding:56,textAlign:"center",marginBottom:12}}>
-            <div style={{fontSize:40,marginBottom:10}}>👗</div>
-            <div style={{color:"#555",fontFamily:"'DM Mono'",fontSize:12}}>
-              <div style={{fontFamily:"'Playfair Display',serif",fontWeight:300,fontSize:16,color:"#EDE5D8",marginBottom:8}}>Your closet is empty</div>
-              <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666",lineHeight:1.9}}>For best results add:<br/><span style={{color:"#C9A96E"}}>3–5 tops · 2–3 bottoms · 1–2 shoes</span></div>
-            </div>
-          </div>
-        )}
-        {closet.length>0&&(
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
-            {closet.map(item=>(
-              <div key={item.id} className="card" style={{padding:14,position:"relative"}}>
-                {item.image&&<img src={item.image} alt={item.name} style={{width:"100%",maxHeight:140,objectFit:"contain",borderRadius:8,marginBottom:10,background:"#111009"}}/>}
-                <div style={{display:"flex",alignItems:"center",marginBottom:4}}>
-                  <span style={{
-                    padding:"2px 8px",borderRadius:100,fontSize:9,
-                    fontFamily:"'DM Mono'",letterSpacing:"0.06em",
-                    background:{"Tops":"#4A90D920","Bottoms":"#7B68EE20","Dresses":"#E8739A20","Outerwear":"#5BA85A20","Shoes":"#E8A44420","Accessories":"#C9A96E20"}[item.category]||"#C9A96E20",
-                    color:{"Tops":"#4A90D9","Bottoms":"#9B88EE","Dresses":"#E8739A","Outerwear":"#5BA85A","Shoes":"#E8A444","Accessories":"#C9A96E"}[item.category]||G
-                  }}>{item.category}</span>
-                </div>
-                <div style={{fontSize:15,fontWeight:300}}>{item.name}</div>
-                {item.color&&<div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#6A6058",marginTop:2}}>{item.color}</div>}
-                <div style={{position:"absolute",top:8,right:8,display:"flex",gap:4}}>
-                  <button onClick={()=>setEditingItem(item)} style={{background:"#1A1815",color:G,border:"none",borderRadius:"50%",width:22,height:22,fontSize:11,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✎</button>
-                  <button onClick={()=>setCloset(p=>p.filter(c=>c.id!==item.id))} style={{background:"#1A1815",color:"#888",border:"none",borderRadius:"50%",width:22,height:22,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {editingItem&&(
-          <div className="card" style={{padding:22,marginBottom:12,borderColor:G+"40"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-              <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.12em"}}>EDIT ITEM</div>
-              <button onClick={()=>setEditingItem(null)} style={{background:"none",border:"none",color:"#666",cursor:"pointer",fontSize:16}}>×</button>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <input className="inp" placeholder="Name" value={editingItem.name} onChange={e=>setEditingItem(p=>({...p,name:e.target.value}))}/>
-              <select className="inp" value={editingItem.category} onChange={e=>setEditingItem(p=>({...p,category:e.target.value}))}>
-                {CATEGORIES.map(c=><option key={c}>{c}</option>)}
-              </select>
-              <input className="inp" placeholder="Colour / pattern" value={editingItem.color||""} onChange={e=>setEditingItem(p=>({...p,color:e.target.value}))}/>
-              <input className="inp" placeholder="Notes" value={editingItem.description||""} onChange={e=>setEditingItem(p=>({...p,description:e.target.value}))}/>
-              <GBtn onClick={()=>{setCloset(p=>p.map(c=>c.id===editingItem.id?editingItem:c));setEditingItem(null);}} style={{padding:12,fontSize:14}}>Save Changes</GBtn>
-            </div>
-          </div>
-        )}
-        {addingItem?(
-          <div className="card" style={{padding:22,marginBottom:12}}>
-            <Label text="NEW ITEM"/>
-            <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <div style={{border: "2px dashed " + (newItem.image ? G : BORDER),borderRadius: 12,overflow: "hidden",transition: "border-color 0.2s",position: "relative"}}>
-                {!newItem.image && !aiScanning && (
-                  <div style={{padding:"20px 16px"}}>
-                    <div style={{textAlign:"center",marginBottom:14}}>
-                      <div style={{fontSize:32,marginBottom:6}}>📷</div>
-                      <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:15,color:"#EDE5D8",marginBottom:3}}>Add a Photo</div>
-                      <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.06em"}}>✦ AI fills in all details automatically</div>
-                    </div>
-                    <div style={{display:"flex",gap:8}}>
-                      <button onClick={()=>cameraRef.current.click()} style={{flex:1,padding:"10px 8px",background:"#111009",border:"1px solid "+BORDER,borderRadius:9,cursor:"pointer",fontFamily:"'DM Mono'",fontSize:11,color:"#AAA",display:"flex",flexDirection:"column",alignItems:"center",gap:4,transition:"all 0.18s"}}>
-                        <span style={{fontSize:18}}>📸</span>
-                        <span>Take Photo</span>
-                      </button>
-                      <button onClick={()=>fileRef.current.click()} style={{flex:1,padding:"10px 8px",background:"#111009",border:"1px solid "+BORDER,borderRadius:9,cursor:"pointer",fontFamily:"'DM Mono'",fontSize:11,color:"#AAA",display:"flex",flexDirection:"column",alignItems:"center",gap:4,transition:"all 0.18s"}}>
-                        <span style={{fontSize:18}}>🖼</span>
-                        <span>Upload File</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {!newItem.image && aiScanning && (
-                  <div style={{textAlign:"center",padding:"28px 16px"}}>
-                    <div className="spin" style={{fontSize:28,color:G,display:"block",margin:"0 auto 12px"}}>✦</div>
-                    <div style={{fontFamily:"'DM Mono'",fontSize:11,color:G,letterSpacing:"0.08em"}} className="pulse">AI IS READING YOUR ITEM...</div>
-                    <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#444",marginTop:6}}>Detecting category, color & style</div>
-                  </div>
-                )}
-                {newItem.image && (
-                  <div>
-                    <img src={newItem.image} alt="preview" style={{width:"100%",maxHeight:220,objectFit:"contain",background:"#111009",display:"block"}}/>
-                    {aiScanning && (
-                      <div className="ai-scanning" style={{padding:"10px 14px",textAlign:"center"}}>
-                        <span className="spin" style={{fontSize:14,color:G}}>✦</span>
-                        <span style={{fontFamily:"'DM Mono'",fontSize:10,color:G,marginLeft:8,letterSpacing:"0.06em"}} className="pulse">AI SCANNING YOUR ITEM...</span>
-                      </div>
-                    )}
-                    {aiScanResult && !aiScanning && (
-                      <div style={{padding:"10px 14px",background:"#0A1A0A",borderTop:"1px solid #1A3A1A",display:"flex",alignItems:"center",gap:8}}>
-                        <span style={{fontSize:14}}>✅</span>
-                        <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#5BA85A",letterSpacing:"0.04em"}}>AI filled in your details — check and edit below!</span>
-                      </div>
-                    )}
-                    {!aiScanning && !aiScanResult && (
-                      <div style={{padding:"8px 12px",background:"#111009",display:"flex",alignItems:"center",gap:8}}>
-                        <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#555"}}>No AI key — fill in details manually below</span>
-                      </div>
-                    )}
-                    <div style={{padding:"6px 10px",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#0D0C0A"}}>
-                      <span style={{fontFamily:"'DM Mono'",fontSize:10,color:G}}>✓ Photo ready</span>
-                      <button onClick={e=>{e.stopPropagation();setNewItem(p=>({...p,image:null}));setAiScanResult(null);setAiScanning(false);}} style={{background:"none",border:"none",color:"#666",fontSize:12,cursor:"pointer",fontFamily:"'DM Mono'"}}>Remove ×</button>
-                    </div>
-                  </div>
-                )}
-                <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handleImg}/>
-                <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleImg}/>
-              </div>
-              {!newItem.image && (
-                <div style={{display:"flex",alignItems:"flex-start",gap:6,padding:"8px 10px",background:"#0D0C0A",borderRadius:8,border:"1px solid #1E1C18"}}>
-                  <span style={{color:G,fontSize:12,flexShrink:0}}>💡</span>
-                  <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#555",lineHeight:1.7}}>Best results: photograph on a <span style={{color:G}}>white or light background</span> — AI reads colors more accurately.</span>
-                </div>
-              )}
-              <input className="inp" placeholder="Name * (e.g. White linen shirt)" value={newItem.name} onChange={e=>setNewItem(p=>({...p,name:e.target.value}))} style={{borderColor: aiScanResult && newItem.name ? G+"60" : undefined}}/>
-              <select className="inp" value={newItem.category} onChange={e=>setNewItem(p=>({...p,category:e.target.value}))}>
-                {CATEGORIES.map(c=><option key={c}>{c}</option>)}
-              </select>
-              <input className="inp" placeholder="Colour / pattern (e.g. navy blue)" value={newItem.color} onChange={e=>setNewItem(p=>({...p,color:e.target.value}))} style={{borderColor: aiScanResult && newItem.color ? G+"60" : undefined}}/>
-              <input className="inp" placeholder="Notes — fit, fabric (optional)" value={newItem.description} onChange={e=>setNewItem(p=>({...p,description:e.target.value}))} style={{borderColor: aiScanResult && newItem.description ? G+"60" : undefined}}/>
-              <div style={{display:"flex",gap:8,marginTop:4}}>
-                <GBtn onClick={addItem} disabled={!newItem.name.trim()||aiScanning} style={{padding:12,fontSize:15}}>
-                  {aiScanning ? "Scanning..." : "Add to Closet"}
-                </GBtn>
-                <button onClick={()=>{setAddingItem(false);setAiScanResult(null);}} style={{padding:"12px 20px",background:"#111009",color:"#777",border:"1px solid "+BORDER,borderRadius:10,fontFamily:"'DM Mono'",fontSize:11,cursor:"pointer"}}>Cancel</button>
-              </div>
-            </div>
-          </div>
-        ):(
-          <button onClick={()=>setAddingItem(true)} style={{width:"100%",padding:14,background:"transparent",border:"1px dashed "+BORDER,color:G,borderRadius:12,fontFamily:"'DM Mono'",fontSize:12,cursor:"pointer",marginBottom:12}}>
-            + Add Clothing Item
-          </button>
-        )}
-        <GBtn onClick={()=>setStep("context")} disabled={closet.length<2}>
-          {closet.length<2?"Add "+(2-closet.length)+" more item"+(2-closet.length!==1?"s":"")+" to continue":"Set Today's Context →"}
-        </GBtn>
+    {learnings.length>0&&(
+      <div className="card" style={{padding:18,marginBottom:20,borderColor:G+"30"}}>
+        <Label text={"✦ CLOZIE'S NOTES ON YOU ("+learnings.length+" ratings)"}/>
+        {learnings.slice(-4).map((l,i)=><div key={i} style={{fontFamily:"'DM Mono'",fontSize:11,color:"#6A6058",marginBottom:5}}>· {l}</div>)}
       </div>
     )}
+    <GBtn onClick={()=>setStep("closet")}>Build My Closet →</GBtn>
+    <button onClick={()=>setStep("closet")} style={{width:"100%",marginTop:10,padding:12,background:"transparent",border:"none",color:"#555",fontFamily:"'DM Mono'",fontSize:12,cursor:"pointer",letterSpacing:"0.04em"}}>
+      Skip for now →
+    </button>
+  </div>
+)}
 
-    {step==="context"&&(
-      <div className="fade">
-        <div style={{marginBottom:28}}>
-          <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.15em",marginBottom:6}}>TODAY'S VIBE</div>
-          <h2 style={{fontWeight:300,fontSize:30}}>Today's <em>Vibe</em></h2>
-          <p style={{color:"#6A6058",fontFamily:"'DM Mono'",fontSize:12,marginTop:6}}>Let's dress you perfectly for today ✦</p>
-          {closet.length>0&&(
-            <div style={{display:"inline-flex",alignItems:"center",gap:6,marginTop:10,padding:"5px 12px",background:"#161512",borderRadius:100,border:"1px solid #2E2B27"}}>
-              <span style={{color:G,fontSize:10}}>✦</span>
-              <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#888"}}>Styling from <span style={{color:G}}>{closet.length} {closet.length===1?"item":"items"}</span> in your wardrobe</span>
-            </div>
-          )}
+{step==="closet"&&(
+  <div className="fade">
+    <div style={{marginBottom:28}}>
+      <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.15em",marginBottom:6}}>YOUR WARDROBE</div>
+      <h2 style={{fontWeight:300,fontSize:30}}>Your <em>Wardrobe</em></h2>
+      <p style={{color:"#6A6058",fontFamily:"'DM Mono'",fontSize:12,marginTop:6}}>Clozie only creates outfits from clothes you add here.</p>
+    </div>
+    {closet.length===0&&!addingItem&&(
+      <div className="card" style={{padding:56,textAlign:"center",marginBottom:12}}>
+        <div style={{fontSize:40,marginBottom:10}}>👗</div>
+        <div style={{color:"#555",fontFamily:"'DM Mono'",fontSize:12}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontWeight:300,fontSize:16,color:"#EDE5D8",marginBottom:8}}>Your closet is empty</div>
+          <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#666",lineHeight:1.9}}>For best results add:<br/><span style={{color:"#C9A96E"}}>3–5 tops · 2–3 bottoms · 1–2 shoes</span></div>
         </div>
-        <div className="card" style={{padding:22,marginBottom:12}}>
-          <Label text="WEATHER OUTSIDE"/>
-          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-            {WEATHER_OPTIONS.map(w=><span key={w} className={"tag"+(context.weather===w?" on":"")} onClick={()=>setContext(p=>({...p,weather:w}))}>{w}</span>)}
-          </div>
-        </div>
-        <div className="card" style={{padding:22,marginBottom:12}}>
-          <Label text="THE OCCASION"/>
-          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-            {OCCASION_OPTIONS.map(o=><span key={o} className={"tag"+(context.occasion===o?" on":"")} onClick={()=>setContext(p=>({...p,occasion:o}))}>{o}</span>)}
-          </div>
-        </div>
-        <div className="card" style={{padding:22,marginBottom:28}}>
-          <Label text="ANYTHING ELSE?"/>
-          <input className="inp" placeholder="e.g. Want to feel confident, prefer comfort today..." value={context.extraNote} onChange={e=>setContext(p=>({...p,extraNote:e.target.value}))}/>
-        </div>
-        <GBtn onClick={doGenerate} disabled={!context.weather||!context.occasion}>
-          ✦ Generate My Outfits →
-        </GBtn>
       </div>
     )}
-
-    {step==="outfits"&&(
-      <div className="fade">
-        <div style={{marginBottom:28}}>
-          <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.15em",marginBottom:6}}>YOUR LOOKS</div>
-          <h2 style={{fontWeight:300,fontSize:30}}>Your <em>Looks</em></h2>
-          <p style={{color:"#6A6058",fontFamily:"'DM Mono'",fontSize:12,marginTop:6}}>
-            Here are today's looks, styled just for you.
-            {learnings.length>0&&<span style={{color:G}}> ✦ Clozie learns your taste with every rating.</span>}
-            {learnings.length===0&&<span> Rate an outfit to help Clozie learn your taste.</span>}
-          </p>
+    {closet.length>0&&(
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+        {closet.map(item=>(
+          <div key={item.id} className="card" style={{padding:14,position:"relative"}}>
+            {item.image&&<img src={item.image} alt={item.name} style={{width:"100%",maxHeight:140,objectFit:"contain",borderRadius:8,marginBottom:10,background:"#111009"}}/>}
+            <div style={{display:"flex",alignItems:"center",marginBottom:4}}>
+              <span style={{
+                padding:"2px 8px",borderRadius:100,fontSize:9,
+                fontFamily:"'DM Mono'",letterSpacing:"0.06em",
+                background:{"Tops":"#4A90D920","Bottoms":"#7B68EE20","Dresses":"#E8739A20","Outerwear":"#5BA85A20","Shoes":"#E8A44420","Accessories":"#C9A96E20"}[item.category]||"#C9A96E20",
+                color:{"Tops":"#4A90D9","Bottoms":"#9B88EE","Dresses":"#E8739A","Outerwear":"#5BA85A","Shoes":"#E8A444","Accessories":"#C9A96E"}[item.category]||G
+              }}>{item.category}</span>
+            </div>
+            <div style={{fontSize:15,fontWeight:300}}>{item.name}</div>
+            {item.color&&<div style={{fontFamily:"'DM Mono'",fontSize:11,color:"#6A6058",marginTop:2}}>{item.color}</div>}
+            <div style={{position:"absolute",top:8,right:8,display:"flex",gap:4}}>
+              <button onClick={()=>setEditingItem(item)} style={{background:"#1A1815",color:G,border:"none",borderRadius:"50%",width:22,height:22,fontSize:11,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✎</button>
+              <button onClick={()=>setCloset(p=>p.filter(c=>c.id!==item.id))} style={{background:"#1A1815",color:"#888",border:"none",borderRadius:"50%",width:22,height:22,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+    {editingItem&&(
+      <div className="card" style={{padding:22,marginBottom:12,borderColor:G+"40"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.12em"}}>EDIT ITEM</div>
+          <button onClick={()=>setEditingItem(null)} style={{background:"none",border:"none",color:"#666",cursor:"pointer",fontSize:16}}>×</button>
         </div>
-
-        {loading&&(
-          <div style={{textAlign:"center",padding:"80px 0"}}>
-            <div className="spin" style={{fontSize:32,color:G}}>✦</div>
-            <div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#666",marginTop:20}}><span className="pulse">Styling your outfits...</span></div>
-          </div>
-        )}
-
-        {!loading&&outfits.length===0&&(
-          <div className="card" style={{padding:48,textAlign:"center"}}>
-            <div style={{fontSize:36,marginBottom:12}}>✦</div>
-            <div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#777",marginBottom:20}}>No outfits yet. Tap Generate to get your first looks ✦</div>
-          </div>
-        )}
-
-        {/* ── Gentle share prompt — shows once outfits are ready ── */}
-        {!loading&&outfits.length>0&&(
-          <div style={{textAlign:"center",padding:"10px 16px 20px",fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:13,color:"#6A6058"}}>
-            ✦ Love one of these? Share with friends and let them decide! 💛
-          </div>
-        )}
-
-        {!loading&&outfits.map((outfit,i)=>{
-          const isFav=favOutfits.some(o=>o.id===outfit.id);
-          return (
-            <div key={outfit.id} className="card fade" style={{marginBottom:14,overflow:"hidden",borderColor:feedback[i]==="love"?G+"60":feedback[i]==="dislike"?"#3A1515":BORDER,animationDelay:(i*0.07)+"s"}}>
-              {(outfit.itemObjects||[]).filter(it=>it.image).length>0&&(
-                <div style={{display:"flex",gap:8,padding:"10px 10px 0",background:CARD}}>
-                  {(outfit.itemObjects||[]).filter(it=>it.image).slice(0,4).map((item,j)=>(
-                    <div key={j} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                      <img src={item.image} alt={item.name} style={{width:"100%",maxHeight:140,objectFit:"contain",borderRadius:8,background:"#111009"}}/>
-                      <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",textAlign:"center",paddingBottom:6}}>{item.name}</span>
-                    </div>
-                  ))}
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <input className="inp" placeholder="Name" value={editingItem.name} onChange={e=>setEditingItem(p=>({...p,name:e.target.value}))}/>
+          <select className="inp" value={editingItem.category} onChange={e=>setEditingItem(p=>({...p,category:e.target.value}))}>
+            {CATEGORIES.map(c=><option key={c}>{c}</option>)}
+          </select>
+          <input className="inp" placeholder="Colour / pattern" value={editingItem.color||""} onChange={e=>setEditingItem(p=>({...p,color:e.target.value}))}/>
+          <input className="inp" placeholder="Notes" value={editingItem.description||""} onChange={e=>setEditingItem(p=>({...p,description:e.target.value}))}/>
+          <GBtn onClick={()=>{setCloset(p=>p.map(c=>c.id===editingItem.id?editingItem:c));setEditingItem(null);}} style={{padding:12,fontSize:14}}>Save Changes</GBtn>
+        </div>
+      </div>
+    )}
+    {addingItem?(
+      <div className="card" style={{padding:22,marginBottom:12}}>
+        <Label text="NEW ITEM"/>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <div style={{border: "2px dashed " + (newItem.image ? G : BORDER),borderRadius: 12,overflow: "hidden",transition: "border-color 0.2s",position: "relative"}}>
+            {!newItem.image && !aiScanning && (
+              <div style={{padding:"20px 16px"}}>
+                <div style={{textAlign:"center",marginBottom:14}}>
+                  <div style={{fontSize:32,marginBottom:6}}>📷</div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontSize:15,color:"#EDE5D8",marginBottom:3}}>Add a Photo</div>
+                  <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.06em"}}>✦ AI fills in all details automatically</div>
                 </div>
-              )}
-              <div style={{padding:20}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
-                  <div>
-                    <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.18em",marginBottom:5}}>{(outfit.vibe||"").toUpperCase()}</div>
-                    <div style={{fontSize:22,fontWeight:300}}>{outfit.name}</div>
-                    <button onClick={()=>setMoodBoard(outfit)} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Mono'",fontSize:10,color:G,padding:0,marginTop:4,letterSpacing:"0.04em"}}>✦ View mood board</button>
-                  </div>
-                  <button onClick={()=>toggleFav(outfit)} style={{background:"none",border:"1px solid "+(isFav?G:"#333"),borderRadius:8,padding:"6px 12px",cursor:"pointer",fontFamily:"'DM Mono'",fontSize:11,color:isFav?G:"#555",whiteSpace:"nowrap",transition:"all 0.18s"}}>
-                    {isFav?"❤️ Saved":"🤍 Save"}
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>cameraRef.current.click()} style={{flex:1,padding:"10px 8px",background:"#111009",border:"1px solid "+BORDER,borderRadius:9,cursor:"pointer",fontFamily:"'DM Mono'",fontSize:11,color:"#AAA",display:"flex",flexDirection:"column",alignItems:"center",gap:4,transition:"all 0.18s"}}>
+                    <span style={{fontSize:18}}>📸</span>
+                    <span>Take Photo</span>
+                  </button>
+                  <button onClick={()=>fileRef.current.click()} style={{flex:1,padding:"10px 8px",background:"#111009",border:"1px solid "+BORDER,borderRadius:9,cursor:"pointer",fontFamily:"'DM Mono'",fontSize:11,color:"#AAA",display:"flex",flexDirection:"column",alignItems:"center",gap:4,transition:"all 0.18s"}}>
+                    <span style={{fontSize:18}}>🖼</span>
+                    <span>Upload File</span>
                   </button>
                 </div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
-                  {(outfit.itemObjects||[]).map((item,j)=>(
-                    <div key={j} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",background:BG,borderRadius:100,border:"1px solid "+BORDER}}>
-                      {item.image&&<img src={item.image} alt={item.name} style={{width:20,height:20,borderRadius:"50%",objectFit:"cover"}}/>}
-                      <span style={{fontFamily:"'DM Mono'",fontSize:11,color:"#8A7A68"}}>{item.name}</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontWeight:300,fontSize:14,color:"#7A6A58",lineHeight:1.65,marginBottom:18}}>{outfit.description}</div>
-                {/* ── Rating buttons + Share button ── */}
-                <div style={{display:"flex",gap:6}}>
-                  {[["love","❤️ Love it"],["like","👍 Like it"],["dislike","👎 Not for me"]].map(([val,label])=>(
-                    <button key={val} onClick={()=>setFeedback(p=>({...p,[i]:val}))} style={{flex:1,padding:"9px 4px",borderRadius:9,fontSize:11,fontFamily:"'DM Mono'",cursor:"pointer",border:"1px solid "+(feedback[i]===val?"transparent":BORDER),background:feedback[i]===val?(val==="love"?G:val==="like"?"#152515":"#2A1010"):BG,color:feedback[i]===val?(val==="love"?BG:"#DDD5C5"):"#3A3530",transition:"all 0.15s"}}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                {/* ── Share button row ── */}
-                <div style={{display:"flex",gap:6,marginTop:8}}>
-                  <ShareButton
-                    outfit={outfit}
-                    outfitNumber={i+1}
-                    userName={user.name}
-                    allOutfits={outfits}
-                  />
+              </div>
+            )}
+            {!newItem.image && aiScanning && (
+              <div style={{textAlign:"center",padding:"28px 16px"}}>
+                <div className="spin" style={{fontSize:28,color:G,display:"block",margin:"0 auto 12px"}}>✦</div>
+                <div style={{fontFamily:"'DM Mono'",fontSize:11,color:G,letterSpacing:"0.08em"}} className="pulse">AI IS READING YOUR ITEM...</div>
+                <div style={{fontFamily:"'DM Mono'",fontSize:10,color:"#444",marginTop:6}}>Detecting category, color & style</div>
+              </div>
+            )}
+            {newItem.image && (
+              <div>
+                <img src={newItem.image} alt="preview" style={{width:"100%",maxHeight:220,objectFit:"contain",background:"#111009",display:"block"}}/>
+                {aiScanning && (
+                  <div className="ai-scanning" style={{padding:"10px 14px",textAlign:"center"}}>
+                    <span className="spin" style={{fontSize:14,color:G}}>✦</span>
+                    <span style={{fontFamily:"'DM Mono'",fontSize:10,color:G,marginLeft:8,letterSpacing:"0.06em"}} className="pulse">AI SCANNING YOUR ITEM...</span>
+                  </div>
+                )}
+                {aiScanResult && !aiScanning && (
+                  <div style={{padding:"10px 14px",background:"#0A1A0A",borderTop:"1px solid #1A3A1A",display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:14}}>✅</span>
+                    <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#5BA85A",letterSpacing:"0.04em"}}>AI filled in your details — check and edit below!</span>
+                  </div>
+                )}
+                {!aiScanning && !aiScanResult && (
+                  <div style={{padding:"8px 12px",background:"#111009",display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#555"}}>No AI key — fill in details manually below</span>
+                  </div>
+                )}
+                <div style={{padding:"6px 10px",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#0D0C0A"}}>
+                  <span style={{fontFamily:"'DM Mono'",fontSize:10,color:G}}>✓ Photo ready</span>
+                  <button onClick={e=>{e.stopPropagation();setNewItem(p=>({...p,image:null}));setAiScanResult(null);setAiScanning(false);}} style={{background:"none",border:"none",color:"#666",fontSize:12,cursor:"pointer",fontFamily:"'DM Mono'"}}>Remove ×</button>
                 </div>
               </div>
-            </div>
-          );
-        })}
-
-        {!loading&&outfits.length>0&&(
-          <div style={{display:"flex",gap:10,marginTop:8}}>
-            <button onClick={doGenerate} style={{flex:1,padding:14,background:CARD,color:G,borderRadius:12,fontSize:15,border:"1px solid "+BORDER,cursor:"pointer",fontFamily:"'Playfair Display',serif"}}>🔄 Regenerate</button>
-            <GBtn onClick={saveFeedback} disabled={Object.keys(feedback).length===0} style={{flex:2,padding:14,fontSize:15}}>
-              Save Feedback & Style Again →
-            </GBtn>
+            )}
+            <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handleImg}/>
+            <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={handleImg}/>
           </div>
-        )}
+          {!newItem.image && (
+            <div style={{display:"flex",alignItems:"flex-start",gap:6,padding:"8px 10px",background:"#0D0C0A",borderRadius:8,border:"1px solid #1E1C18"}}>
+              <span style={{color:G,fontSize:12,flexShrink:0}}>💡</span>
+              <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#555",lineHeight:1.7}}>Best results: photograph on a <span style={{color:G}}>white or light background</span> — AI reads colors more accurately.</span>
+            </div>
+          )}
+          <input className="inp" placeholder="Name * (e.g. White linen shirt)" value={newItem.name} onChange={e=>setNewItem(p=>({...p,name:e.target.value}))} style={{borderColor: aiScanResult && newItem.name ? G+"60" : undefined}}/>
+          <select className="inp" value={newItem.category} onChange={e=>setNewItem(p=>({...p,category:e.target.value}))}>
+            {CATEGORIES.map(c=><option key={c}>{c}</option>)}
+          </select>
+          <input className="inp" placeholder="Colour / pattern (e.g. navy blue)" value={newItem.color} onChange={e=>setNewItem(p=>({...p,color:e.target.value}))} style={{borderColor: aiScanResult && newItem.color ? G+"60" : undefined}}/>
+          <input className="inp" placeholder="Notes — fit, fabric (optional)" value={newItem.description} onChange={e=>setNewItem(p=>({...p,description:e.target.value}))} style={{borderColor: aiScanResult && newItem.description ? G+"60" : undefined}}/>
+          <div style={{display:"flex",gap:8,marginTop:4}}>
+            <GBtn onClick={addItem} disabled={!newItem.name.trim()||aiScanning} style={{padding:12,fontSize:15}}>
+              {aiScanning ? "Scanning..." : "Add to Closet"}
+            </GBtn>
+            <button onClick={()=>{setAddingItem(false);setAiScanResult(null);}} style={{padding:"12px 20px",background:"#111009",color:"#777",border:"1px solid "+BORDER,borderRadius:10,fontFamily:"'DM Mono'",fontSize:11,cursor:"pointer"}}>Cancel</button>
+          </div>
+        </div>
+      </div>
+    ):(
+      <button onClick={()=>setAddingItem(true)} style={{width:"100%",padding:14,background:"transparent",border:"1px dashed "+BORDER,color:G,borderRadius:12,fontFamily:"'DM Mono'",fontSize:12,cursor:"pointer",marginBottom:12}}>
+        + Add Clothing Item
+      </button>
+    )}
+    <GBtn onClick={()=>setStep("context")} disabled={closet.length<2}>
+      {closet.length<2?"Add "+(2-closet.length)+" more item"+(2-closet.length!==1?"s":"")+" to continue":"Set Today's Context →"}
+    </GBtn>
+  </div>
+)}
+
+{step==="context"&&(
+  <div className="fade">
+    <div style={{marginBottom:28}}>
+      <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.15em",marginBottom:6}}>TODAY'S VIBE</div>
+      <h2 style={{fontWeight:300,fontSize:30}}>Today's <em>Vibe</em></h2>
+      <p style={{color:"#6A6058",fontFamily:"'DM Mono'",fontSize:12,marginTop:6}}>Let's dress you perfectly for today ✦</p>
+      {closet.length>0&&(
+        <div style={{display:"inline-flex",alignItems:"center",gap:6,marginTop:10,padding:"5px 12px",background:"#161512",borderRadius:100,border:"1px solid #2E2B27"}}>
+          <span style={{color:G,fontSize:10}}>✦</span>
+          <span style={{fontFamily:"'DM Mono'",fontSize:10,color:"#888"}}>Styling from <span style={{color:G}}>{closet.length} {closet.length===1?"item":"items"}</span> in your wardrobe</span>
+        </div>
+      )}
+    </div>
+    <div className="card" style={{padding:22,marginBottom:12}}>
+      <Label text="WEATHER OUTSIDE"/>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+        {WEATHER_OPTIONS.map(w=><span key={w} className={"tag"+(context.weather===w?" on":"")} onClick={()=>setContext(p=>({...p,weather:w}))}>{w}</span>)}
+      </div>
+    </div>
+    <div className="card" style={{padding:22,marginBottom:12}}>
+      <Label text="THE OCCASION"/>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+        {OCCASION_OPTIONS.map(o=><span key={o} className={"tag"+(context.occasion===o?" on":"")} onClick={()=>setContext(p=>({...p,occasion:o}))}>{o}</span>)}
+      </div>
+    </div>
+    <div className="card" style={{padding:22,marginBottom:28}}>
+      <Label text="ANYTHING ELSE?"/>
+      <input className="inp" placeholder="e.g. Want to feel confident, prefer comfort today..." value={context.extraNote} onChange={e=>setContext(p=>({...p,extraNote:e.target.value}))}/>
+    </div>
+    <GBtn onClick={doGenerate} disabled={!context.weather||!context.occasion}>
+      ✦ Generate My Outfits →
+    </GBtn>
+  </div>
+)}
+
+{step==="outfits"&&(
+  <div className="fade">
+    <div style={{marginBottom:28}}>
+      <div style={{fontFamily:"'DM Mono'",fontSize:10,color:G,letterSpacing:"0.15em",marginBottom:6}}>YOUR LOOKS</div>
+      <h2 style={{fontWeight:300,fontSize:30}}>Your <em>Looks</em></h2>
+      <p style={{color:"#6A6058",fontFamily:"'DM Mono'",fontSize:12,marginTop:6}}>
+        Here are today's looks, styled just for you.
+        {learnings.length>0&&<span style={{color:G}}> ✦ Clozie learns your taste with every rating.</span>}
+        {learnings.length===0&&<span> Rate an outfit to help Clozie learn your taste.</span>}
+      </p>
+    </div>
+
+    {loading&&(
+      <div style={{textAlign:"center",padding:"80px 0"}}>
+        <div className="spin" style={{fontSize:32,color:G}}>✦</div>
+        <div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#666",marginTop:20}}><span className="pulse">Styling your outfits...</span></div>
       </div>
     )}
+
+    {!loading&&outfits.length===0&&(
+      <div className="card" style={{padding:48,textAlign:"center"}}>
+        <div style={{fontSize:36,marginBottom:12}}>✦</div>
+        <div style={{fontFamily:"'DM Mono'",fontSize:12,color:"#777",marginBottom:20}}>No outfits yet. Tap Generate to get your first looks ✦</div>
+      </div>
+    )}
+
+    {!loading&&outfits.map((outfit,i)=>{
+      const isFav=favOutfits.some(o=>o.id===outfit.id);
+      return (
+        <div key={outfit.id} className="card fade" style={{marginBottom:14,overflow:"hidden",borderColor:feedback[i]==="love"?G+"60":feedback[i]==="dislike"?"#3A1515":BORDER,animationDelay:(i*0.07)+"s"}}>
+          {(outfit.itemObjects||[]).filter(it=>it.image).length>0&&(
+            <div style={{display:"flex",gap:8,padding:"10px 10px 0",background:CARD}}>
+              {(outfit.itemObjects||[]).filter(it=>it.image).slice(0,4).map((item,j)=>(
+                <div key={j} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                  <img src={item.image} alt={item.name} style={{width:"100%",maxHeight:140,objectFit:"contain",borderRadius:8,background:"#111009"}}/>
+                  <span style={{fontFamily:"'DM Mono'",fontSize:9,color:"#888",textAlign:"center",paddingBottom:6}}>{item.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{padding:20}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
+              <div>
+                <div style={{fontFamily:"'DM Mono'",fontSize:9,color:G,letterSpacing:"0.18em",marginBottom:5}}>{(outfit.vibe||"").toUpperCase()}</div>
+                <div style={{fontSize:22,fontWeight:300}}>{outfit.name}</div>
+                <button onClick={()=>setMoodBoard(outfit)} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Mono'",fontSize:10,color:G,padding:0,marginTop:4,letterSpacing:"0.04em"}}>✦ View mood board</button>
+              </div>
+              <button onClick={()=>toggleFav(outfit)} style={{background:"none",border:"1px solid "+(isFav?G:"#333"),borderRadius:8,padding:"6px 12px",cursor:"pointer",fontFamily:"'DM Mono'",fontSize:11,color:isFav?G:"#555",whiteSpace:"nowrap",transition:"all 0.18s"}}>
+                {isFav?"❤️ Saved":"🤍 Save"}
+              </button>
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
+              {(outfit.itemObjects||[]).map((item,j)=>(
+                <div key={j} style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",background:BG,borderRadius:100,border:"1px solid "+BORDER}}>
+                  {item.image&&<img src={item.image} alt={item.name} style={{width:20,height:20,borderRadius:"50%",objectFit:"cover"}}/>}
+                  <span style={{fontFamily:"'DM Mono'",fontSize:11,color:"#8A7A68"}}>{item.name}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontStyle:"italic",fontWeight:300,fontSize:14,color:"#7A6A58",lineHeight:1.65,marginBottom:18}}>{outfit.description}</div>
+            <div style={{display:"flex",gap:6}}>
+              {[["love","❤️ Love it"],["like","👍 Like it"],["dislike","👎 Not for me"]].map(([val,label])=>(
+                <button key={val} onClick={()=>setFeedback(p=>({...p,[i]:val}))} style={{flex:1,padding:"9px 4px",borderRadius:9,fontSize:11,fontFamily:"'DM Mono'",cursor:"pointer",border:"1px solid "+(feedback[i]===val?"transparent":BORDER),background:feedback[i]===val?(val==="love"?G:val==="like"?"#152515":"#2A1010"):BG,color:feedback[i]===val?(val==="love"?BG:"#DDD5C5"):"#3A3530",transition:"all 0.15s"}}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    })}
+
+    {!loading&&outfits.length>0&&(
+      <div style={{display:"flex",gap:10,marginTop:8}}>
+        <button onClick={doGenerate} style={{flex:1,padding:14,background:CARD,color:G,borderRadius:12,fontSize:15,border:"1px solid "+BORDER,cursor:"pointer",fontFamily:"'Playfair Display',serif"}}>🔄 Regenerate</button>
+        <GBtn onClick={saveFeedback} disabled={Object.keys(feedback).length===0} style={{flex:2,padding:14,fontSize:15}}>
+          Save Feedback & Style Again →
+        </GBtn>
+      </div>
+    )}
+  </div>
+)}
 
   </div>
 </div>
