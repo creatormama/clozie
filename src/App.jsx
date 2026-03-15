@@ -1047,43 +1047,52 @@ Generate outfits and tap <span style={{color:G}}>❤️ Save</span> to keep them
 }
 
 // ── SHARE OUTFIT FUNCTION ─────────────────────────────────────────────────────
-// Button 1: Opens front camera → saves photo to camera roll
-// Button 2: Opens share sheet with pre-filled message — user attaches photo manually
+// Button 1: Opens front camera → shares photo immediately via share sheet
+// Button 2: Opens share sheet with pre-filled message + Clozie link
 
 function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
   const inputRef = useRef();
-  const [photoSaved, setPhotoSaved] = useState(false);
+
+  // Get first name only — never show email
+  const getFirstName = () => {
+    const name = userName || "";
+    if (name.includes("@")) return "Your friend";
+    return name.split(" ")[0] || "Your friend";
+  };
 
   const handleTakePhoto = () => {
     inputRef.current.click();
   };
 
-  const handleSelfie = (e) => {
+  const handleSelfie = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     e.target.value = "";
 
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       const imageDataUrl = ev.target.result;
+      const res = await fetch(imageDataUrl);
+      const blob = await res.blob();
+      const imageFile = new File([blob], "clozie-outfit.jpg", { type: "image/jpeg" });
 
-      // Save photo to camera roll by creating a download link
-      const a = document.createElement("a");
-      a.href = imageDataUrl;
-      a.download = "clozie-outfit.jpg";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
-      // Show that photo is saved
-      setPhotoSaved(true);
+      // Share photo immediately via native share sheet
+      try {
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+          await navigator.share({ files: [imageFile] });
+        } else if (navigator.share) {
+          await navigator.share({ url: "https://clozie.vercel.app" });
+        }
+      } catch(e) {
+        // User cancelled — do nothing
+      }
     };
     reader.readAsDataURL(file);
   };
 
   const handleSendMessage = async () => {
-    const name = userName || "Your friend";
-    const message = `${name} needs your help getting dressed! 👗👔✨ Which outfit should she wear? Reply 1, 2 or 3!\n\nStyled by Clozie ✦ https://clozie.vercel.app`;
+    const firstName = getFirstName();
+    const message = `${firstName} needs your help getting dressed! 👗👔✨ Which outfit should she wear? Reply 1, 2 or 3!\n\nStyled by Clozie ✦ https://clozie.vercel.app`;
 
     try {
       if (navigator.share) {
@@ -1107,7 +1116,7 @@ function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
       />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
 
-        {/* Button 1 — Take photo */}
+        {/* Button 1 — Snap & share photo immediately */}
         <button
           onClick={handleTakePhoto}
           style={{
@@ -1117,33 +1126,16 @@ function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
             fontSize: 11,
             fontFamily: "'DM Mono'",
             cursor: "pointer",
-            border: "1px solid " + (photoSaved ? G : G + "60"),
-            background: photoSaved ? G + "25" : G + "15",
+            border: "1px solid " + G + "60",
+            background: G + "15",
             color: G,
             transition: "all 0.15s",
           }}
         >
-          {photoSaved ? "✅ Photo Saved — Retake?" : "📸 Step 1: Take My Photo"}
+          📸 Step 1: Send My Photo
         </button>
 
-        {/* Tip — shows after photo saved */}
-        {photoSaved && (
-          <div style={{
-            padding: "7px 10px",
-            background: "#0A1A0A",
-            borderRadius: 8,
-            border: "1px solid #1A3A1A",
-            fontFamily: "'DM Mono'",
-            fontSize: 10,
-            color: "#5BA85A",
-            lineHeight: 1.6,
-            textAlign: "center",
-          }}>
-            ✅ Photo saved! Now send the message and attach your photo 👇
-          </div>
-        )}
-
-        {/* Button 2 — Send message */}
+        {/* Button 2 — Send message with Clozie link */}
         <button
           onClick={handleSendMessage}
           style={{
@@ -1154,12 +1146,12 @@ function ShareButton({ outfit, outfitNumber, userName, allOutfits }) {
             fontFamily: "'DM Mono'",
             cursor: "pointer",
             border: "1px solid " + G + "60",
-            background: photoSaved ? G : G + "15",
-            color: photoSaved ? BG : G,
+            background: G + "15",
+            color: G,
             transition: "all 0.15s",
           }}
         >
-          💬 {photoSaved ? "Step 2: Send Message" : "Share with Friends"}
+          💬 Step 2: Send Message
         </button>
 
       </div>
