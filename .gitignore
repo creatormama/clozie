@@ -1,0 +1,21 @@
+# Environment variables — NEVER upload to GitHub
+.env
+.env.local
+.env*.local
+
+# Expo
+.expo/
+dist/
+node_modules/
+
+# iOS / Android builds
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Mac
+.DS_Store
