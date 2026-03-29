@@ -6,6 +6,9 @@ export default {
     slug: 'clozie',
     version: '1.0.0',
     orientation: 'portrait',
+    plugins: [
+      "expo-font",
+    ],
     extra: {
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
