@@ -7,6 +7,9 @@ import {
   Animated,
   Dimensions,
   ScrollView,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -140,14 +143,12 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
   const bounceAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Fade in content
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 600,
       useNativeDriver: true,
     }).start();
 
-    // Pulse the hint text 3 times then stay still
     Animated.sequence([
       Animated.timing(hintPulse, { toValue: 0.4, duration: 600, useNativeDriver: true }),
       Animated.timing(hintPulse, { toValue: 1, duration: 600, useNativeDriver: true }),
@@ -157,7 +158,6 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
       Animated.timing(hintPulse, { toValue: 1, duration: 600, useNativeDriver: true }),
     ]).start();
 
-    // Bounce the gold dot on Step 1
     Animated.loop(
       Animated.sequence([
         Animated.timing(bounceAnim, { toValue: -5, duration: 500, useNativeDriver: true }),
@@ -171,10 +171,8 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
     setHasTapped(true);
   };
 
-  // ── Step 1 Visual: Snap & Add ──
   const Step1Visual = () => (
     <View style={peekStyles.visualCard}>
-      {/* Item row */}
       <View style={peekStyles.itemRow}>
         <View style={peekStyles.itemIcon}>
           <Text style={{ fontSize: 28 }}>👗</Text>
@@ -188,7 +186,6 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
           <Text style={{ fontSize: 11 }}>✅</Text>
         </View>
       </View>
-      {/* Category tags row */}
       <View style={peekStyles.tagRow}>
         {['👗 Tops · 3', '👖 Bottoms · 2', '👠 Shoes · 3'].map((tag, i) => (
           <View key={i} style={peekStyles.tagChip}>
@@ -199,45 +196,34 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
     </View>
   );
 
-  // ── Step 2 Visual: Tell Clozie Your Day ──
   const Step2Visual = () => (
     <View style={peekStyles.visualCard}>
       <Text style={peekStyles.vibeLabel}>TODAY'S VIBE</Text>
-      {/* Weather chips */}
       <View style={peekStyles.chipRow}>
         {['Sunny & Hot', 'Warm & Breezy', 'Cold & Dry'].map((w, i) => (
           <View key={i} style={[
             peekStyles.chip,
             i === 0 ? peekStyles.chipSelected : peekStyles.chipDefault,
           ]}>
-            <Text style={[
-              peekStyles.chipText,
-              { color: i === 0 ? BG : '#555' },
-            ]}>{w}</Text>
+            <Text style={[peekStyles.chipText, { color: i === 0 ? BG : '#555' }]}>{w}</Text>
           </View>
         ))}
       </View>
-      {/* Occasion chips */}
       <View style={peekStyles.chipRow}>
         {['Date Night', 'Casual Day', 'Work / Office'].map((o, i) => (
           <View key={i} style={[
             peekStyles.chip,
             i === 0 ? peekStyles.chipAccent : peekStyles.chipDefault,
           ]}>
-            <Text style={[
-              peekStyles.chipText,
-              { color: i === 0 ? G : '#555' },
-            ]}>{o}</Text>
+            <Text style={[peekStyles.chipText, { color: i === 0 ? G : '#555' }]}>{o}</Text>
           </View>
         ))}
       </View>
     </View>
   );
 
-  // ── Step 3 Visual: Get 3 Perfect Outfits ──
   const Step3Visual = () => (
     <View style={[peekStyles.visualCard, { borderColor: G + '40' }]}>
-      {/* Header row */}
       <View style={peekStyles.outfitHeader}>
         <View>
           <Text style={peekStyles.outfitVibe}>ROMANTIC</Text>
@@ -252,7 +238,6 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
           </View>
         </View>
       </View>
-      {/* Item chips */}
       <View style={peekStyles.tagRow}>
         {['Navy Wrap Dress', 'Brown Flats', 'Gold Earrings'].map((item, i) => (
           <View key={i} style={peekStyles.outfitChip}>
@@ -260,7 +245,6 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
           </View>
         ))}
       </View>
-      {/* Italic description */}
       <Text style={peekStyles.outfitDesc}>
         "The wrap silhouette is perfect for date night — elegant and effortless."
       </Text>
@@ -285,7 +269,6 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
       >
         <Animated.View style={{ opacity: fadeAnim, width: '100%', alignItems: 'center' }}>
 
-          {/* Logo + label */}
           <View style={peekStyles.headerBlock}>
             <Text style={[styles.logo, { marginBottom: 4 }]}>
               <Text style={[styles.logoClo, { fontSize: 36 }]}>Clo</Text>
@@ -294,7 +277,6 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
             <Text style={peekStyles.howLabel}>✦ HERE'S HOW IT WORKS ✦</Text>
           </View>
 
-          {/* 3 step tabs */}
           <View style={peekStyles.tabRow}>
             {icons.map((icon, i) => (
               <TouchableOpacity
@@ -309,7 +291,6 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
                   },
                 ]}
               >
-                {/* Bouncing gold dot on Step 1 — disappears after first tap */}
                 {i === 0 && !hasTapped && (
                   <Animated.View
                     style={[
@@ -327,7 +308,6 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
             ))}
           </View>
 
-          {/* Hint text — pulses 3 times, disappears after first tap */}
           {!hasTapped && (
             <Animated.View style={{ opacity: hintPulse, marginBottom: 14 }}>
               <Text style={peekStyles.hintText}>✦ Tap each step to explore</Text>
@@ -335,14 +315,12 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
           )}
           {hasTapped && <View style={{ marginBottom: 14 }} />}
 
-          {/* Content card */}
           <View style={peekStyles.contentCard}>
             <Text style={peekStyles.cardTitle}>{titles[activeStep]}</Text>
             <Text style={peekStyles.cardDesc}>{descs[activeStep]}</Text>
             {visuals[activeStep]}
           </View>
 
-          {/* Navigation dots */}
           <View style={peekStyles.dotRow}>
             {[0, 1, 2].map((i) => (
               <TouchableOpacity
@@ -361,12 +339,10 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
             ))}
           </View>
 
-          {/* Gold button — Start Styling */}
           <TouchableOpacity style={[styles.goldButton, { width: '100%' }]} activeOpacity={0.8} onPress={onStartStyling}>
             <Text style={styles.goldButtonText}>✦ Start Styling — It's Free</Text>
           </TouchableOpacity>
 
-          {/* Sign in link */}
           <Text style={[styles.signInRow, { marginTop: 12 }]}>
             Already have an account?{' '}
             <Text style={styles.signInLink} onPress={onSignIn}>Sign in</Text>
@@ -378,9 +354,296 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
   );
 }
 
-// ── Main App — navigation: Splash → Welcome → Peek Inside ───────────────────
+// ── Auth Screen (Login / Sign Up / Forgot Password) ──────────────────────────
+function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const isLogin = mode === 'login';
+  const isForgot = mode === 'forgot';
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  // Clear error when user starts typing
+  useEffect(() => {
+    if (error) setError('');
+  }, [name, email, password]);
+
+  const handleSubmit = () => {
+    setError('');
+
+    // ── Sign Up validation ──
+    if (!isLogin && !isForgot) {
+      if (!name.trim()) {
+        setError('Please tell us your name ✦');
+        return;
+      }
+      if (!email.trim() || !email.includes('@') || !email.includes('.')) {
+        setError("That email doesn't look right — please check it ✦");
+        return;
+      }
+      if (password.length < 8) {
+        setError('Password needs at least 8 characters ✦');
+        return;
+      }
+      // Pass data up — Supabase integration comes in Phase 2
+      onDone({ name: name.trim(), email: email.trim(), password, mode: 'signup' });
+      return;
+    }
+
+    // ── Login validation ──
+    if (isLogin) {
+      if (!email.trim() || !password.trim()) {
+        setError('Please enter your email and password ✦');
+        return;
+      }
+      onDone({ email: email.trim(), password, mode: 'login' });
+      return;
+    }
+
+    // ── Forgot Password validation ──
+    if (isForgot) {
+      if (!email.trim() || !email.includes('@') || !email.includes('.')) {
+        setError("That email doesn't look right — please check it ✦");
+        return;
+      }
+      setResetSent(true);
+      return;
+    }
+  };
+
+  // Heading text per mode
+  const headingLabel = isForgot
+    ? '✦ RESET YOUR PASSWORD ✦'
+    : isLogin
+      ? '✦ WELCOME BACK ✦'
+      : '✦ CREATE YOUR ACCOUNT ✦';
+
+  const subtitle = isForgot
+    ? "Enter your email and we'll send you a reset link"
+    : isLogin
+      ? 'Sign in to your wardrobe'
+      : 'Your personal stylist awaits';
+
+  const buttonLabel = isForgot
+    ? 'Send Reset Link →'
+    : isLogin
+      ? 'Sign In →'
+      : 'Create Account →';
+
+  return (
+    <View style={[styles.screen, { justifyContent: 'flex-start' }]}>
+      <StatusBar style="light" />
+      <KeyboardAvoidingView
+        style={{ flex: 1, width: '100%' }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={authStyles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Animated.View style={{ opacity: fadeAnim, width: '100%', alignItems: 'center' }}>
+
+            {/* ← Back button — top left */}
+            <TouchableOpacity
+              style={authStyles.backButton}
+              activeOpacity={0.7}
+              onPress={onBack}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={authStyles.backArrow}>←</Text>
+            </TouchableOpacity>
+
+            {/* Logo + heading */}
+            <View style={authStyles.headerBlock}>
+              <Text style={[styles.logo, { marginBottom: 4 }]}>
+                <Text style={[styles.logoClo, { fontSize: 36 }]}>Clo</Text>
+                <Text style={[styles.logoZie, { fontSize: 36 }]}>zie</Text>
+              </Text>
+              <Text style={authStyles.headingLabel}>{headingLabel}</Text>
+              <Text style={authStyles.subtitle}>{subtitle}</Text>
+            </View>
+
+            {/* Social buttons — NOT shown on Forgot Password */}
+            {!isForgot && (
+              <View style={authStyles.socialBlock}>
+                {/* Continue with Google */}
+                <TouchableOpacity
+                  style={authStyles.socialButton}
+                  activeOpacity={0.7}
+                  onPress={() => onDone({ email: 'google@user.com', name: 'Google User', mode: isLogin ? 'login' : 'signup' })}
+                >
+                  <Text style={authStyles.socialIcon}>G</Text>
+                  <Text style={authStyles.socialText}>Continue with Google</Text>
+                </TouchableOpacity>
+
+                {/* Continue with Apple */}
+                <TouchableOpacity
+                  style={authStyles.socialButton}
+                  activeOpacity={0.7}
+                  onPress={() => onDone({ email: 'apple@user.com', name: 'Apple User', mode: isLogin ? 'login' : 'signup' })}
+                >
+                  <Text style={authStyles.socialIcon}></Text>
+                  <Text style={authStyles.socialText}>Continue with Apple</Text>
+                </TouchableOpacity>
+
+                {/* OR divider */}
+                <View style={authStyles.dividerRow}>
+                  <View style={authStyles.dividerLine} />
+                  <Text style={authStyles.dividerText}>or</Text>
+                  <View style={authStyles.dividerLine} />
+                </View>
+              </View>
+            )}
+
+            {/* ── Forgot Password: reset sent confirmation ── */}
+            {isForgot && resetSent ? (
+              <View style={authStyles.resetSentBlock}>
+                <Text style={authStyles.resetSentText}>
+                  ✦ Check your email — We've sent a reset link to {email}
+                </Text>
+                <TouchableOpacity
+                  style={{ marginTop: 24 }}
+                  activeOpacity={0.7}
+                  onPress={() => onSwitchMode('login')}
+                >
+                  <Text style={authStyles.forgotBackLink}>← Back to Sign In</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                {/* ── Input fields ── */}
+                <View style={authStyles.fieldsBlock}>
+                  {/* Full name — Sign Up only */}
+                  {!isLogin && !isForgot && (
+                    <TextInput
+                      style={authStyles.input}
+                      placeholder="Full name"
+                      placeholderTextColor="#555"
+                      value={name}
+                      onChangeText={setName}
+                      autoCapitalize="words"
+                      returnKeyType="next"
+                    />
+                  )}
+
+                  {/* Email — all modes */}
+                  <TextInput
+                    style={authStyles.input}
+                    placeholder="Email address"
+                    placeholderTextColor="#555"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    returnKeyType={isForgot ? 'done' : 'next'}
+                  />
+
+                  {/* Password — Login and Sign Up only */}
+                  {!isForgot && (
+                    <View style={authStyles.passwordContainer}>
+                      <TextInput
+                        style={[authStyles.input, { flex: 1, marginBottom: 0 }]}
+                        placeholder="Password"
+                        placeholderTextColor="#555"
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry={!showPassword}
+                        autoCapitalize="none"
+                        returnKeyType="done"
+                      />
+                      <TouchableOpacity
+                        style={authStyles.eyeButton}
+                        activeOpacity={0.7}
+                        onPress={() => setShowPassword(!showPassword)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Text style={authStyles.eyeIcon}>{showPassword ? '👁' : '👁‍🗨'}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {/* "At least 8 characters" — Sign Up only */}
+                  {!isLogin && !isForgot && (
+                    <Text style={authStyles.passwordHint}>At least 8 characters</Text>
+                  )}
+                </View>
+
+                {/* Error message — warm gold */}
+                {error !== '' && (
+                  <Text style={authStyles.errorText}>{error}</Text>
+                )}
+
+                {/* Forgot password? — Login only */}
+                {isLogin && (
+                  <TouchableOpacity
+                    style={authStyles.forgotRow}
+                    activeOpacity={0.7}
+                    onPress={onForgot}
+                  >
+                    <Text style={authStyles.forgotLink}>Forgot password?</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Submit button */}
+                <TouchableOpacity
+                  style={[styles.goldButton, { width: '100%', marginTop: 4 }]}
+                  activeOpacity={0.8}
+                  onPress={handleSubmit}
+                >
+                  <Text style={styles.goldButtonText}>{buttonLabel}</Text>
+                </TouchableOpacity>
+
+                {/* Switch mode link — Login ↔ Sign Up */}
+                {!isForgot && (
+                  <Text style={[styles.signInRow, { marginTop: 16 }]}>
+                    {isLogin ? "Don't have an account? " : 'Already have an account? '}
+                    <Text
+                      style={styles.signInLink}
+                      onPress={() => onSwitchMode(isLogin ? 'signup' : 'login')}
+                    >
+                      {isLogin ? 'Sign up' : 'Sign in'}
+                    </Text>
+                  </Text>
+                )}
+
+                {/* Back to Sign In — Forgot Password only */}
+                {isForgot && (
+                  <TouchableOpacity
+                    style={{ marginTop: 16 }}
+                    activeOpacity={0.7}
+                    onPress={() => onSwitchMode('login')}
+                  >
+                    <Text style={authStyles.forgotBackLink}>← Back to Sign In</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
+  );
+}
+
+// ── Main App — navigation ────────────────────────────────────────────────────
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('splash');
+  const [authMode, setAuthMode] = useState('signup'); // 'signup', 'login', or 'forgot'
 
   const [fontsLoaded] = useFonts({
     PlayfairDisplay_400Regular,
@@ -398,6 +661,12 @@ export default function App() {
     return null;
   }
 
+  // Navigate to auth screen with a specific mode
+  const goToAuth = (mode) => {
+    setAuthMode(mode);
+    setCurrentScreen('auth');
+  };
+
   return (
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       {currentScreen === 'splash' && (
@@ -406,13 +675,37 @@ export default function App() {
       {currentScreen === 'welcome' && (
         <WelcomeScreen
           onNext={() => setCurrentScreen('peek')}
-          onSignIn={() => {/* Login screen — built in next phase */}}
+          onSignIn={() => goToAuth('login')}
         />
       )}
       {currentScreen === 'peek' && (
         <PeekInsideScreen
-          onStartStyling={() => {/* Sign Up screen — built in next phase */}}
-          onSignIn={() => {/* Login screen — built in next phase */}}
+          onStartStyling={() => goToAuth('signup')}
+          onSignIn={() => goToAuth('login')}
+        />
+      )}
+      {currentScreen === 'auth' && (
+        <AuthScreen
+          mode={authMode}
+          onDone={(data) => {
+            // Supabase auth integration comes in Phase 2
+            // For now, just log the data
+            console.log('Auth:', data);
+          }}
+          onSwitchMode={(newMode) => {
+            setAuthMode(newMode);
+          }}
+          onForgot={() => {
+            setAuthMode('forgot');
+          }}
+          onBack={() => {
+            // Go back to the previous screen
+            if (authMode === 'forgot') {
+              setAuthMode('login');
+            } else {
+              setCurrentScreen('peek');
+            }
+          }}
         />
       )}
     </View>
@@ -556,7 +849,6 @@ const peekStyles = StyleSheet.create({
     marginTop: 12,
   },
 
-  // ── Step tabs ──
   tabRow: {
     flexDirection: 'row',
     gap: 6,
@@ -578,7 +870,6 @@ const peekStyles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // Bouncing gold dot on Step 1
   bounceDot: {
     position: 'absolute',
     top: -6,
@@ -591,7 +882,6 @@ const peekStyles = StyleSheet.create({
     borderColor: BG,
   },
 
-  // Hint text
   hintText: {
     fontFamily: 'DMMono_400Regular',
     fontSize: 10,
@@ -600,7 +890,6 @@ const peekStyles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // ── Content card ──
   contentCard: {
     backgroundColor: CARD,
     borderRadius: 12,
@@ -624,7 +913,6 @@ const peekStyles = StyleSheet.create({
     marginBottom: 16,
   },
 
-  // ── Navigation dots ──
   dotRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -636,7 +924,6 @@ const peekStyles = StyleSheet.create({
     borderRadius: 100,
   },
 
-  // ── Step 1 Visual ──
   visualCard: {
     backgroundColor: CARD,
     borderRadius: 12,
@@ -702,7 +989,6 @@ const peekStyles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // ── Step 2 Visual ──
   vibeLabel: {
     fontFamily: 'DMMono_400Regular',
     fontSize: 9,
@@ -739,7 +1025,6 @@ const peekStyles = StyleSheet.create({
     fontSize: 10,
   },
 
-  // ── Step 3 Visual ──
   outfitHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -805,5 +1090,198 @@ const peekStyles = StyleSheet.create({
     color: '#7A6A58',
     marginTop: 8,
     lineHeight: 17,
+  },
+});
+
+// ── Auth Screen styles ───────────────────────────────────────────────────────
+const authStyles = StyleSheet.create({
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 40,
+    alignItems: 'center',
+    maxWidth: 480,
+    alignSelf: 'center',
+    width: '100%',
+  },
+
+  // ← Back button
+  backButton: {
+    alignSelf: 'flex-start',
+    paddingTop: 40,
+    paddingBottom: 10,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  backArrow: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 24,
+    color: G,
+  },
+
+  // Header
+  headerBlock: {
+    alignItems: 'center',
+    marginBottom: 32,
+    marginTop: 8,
+  },
+  headingLabel: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 10,
+    color: G,
+    letterSpacing: 3,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#666',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+
+  // Social buttons
+  socialBlock: {
+    width: '100%',
+    marginBottom: 8,
+  },
+  socialButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: CARD,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 12,
+    paddingVertical: 16,
+    marginBottom: 10,
+    width: '100%',
+  },
+  socialIcon: {
+    fontSize: 18,
+    color: '#fff',
+  },
+  socialText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: CREAM,
+  },
+
+  // OR divider
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginVertical: 8,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: BORDER,
+  },
+  dividerText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: '#666',
+  },
+
+  // Input fields
+  fieldsBlock: {
+    width: '100%',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: CARD,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 14,
+    color: CREAM,
+    marginBottom: 10,
+    width: '100%',
+  },
+
+  // Password container with eye icon
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: CARD,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 12,
+    marginBottom: 4,
+    width: '100%',
+  },
+  eyeButton: {
+    paddingHorizontal: 16,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eyeIcon: {
+    fontSize: 18,
+  },
+
+  // Password hint
+  passwordHint: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 10,
+    color: '#555',
+    marginTop: 2,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+
+  // Error message — warm gold
+  errorText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: G,
+    marginBottom: 12,
+    textAlign: 'left',
+    width: '100%',
+  },
+
+  // Forgot password link — right aligned, clearly visible
+  forgotRow: {
+    alignSelf: 'flex-end',
+    marginBottom: 14,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  forgotLink: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: G,
+    textDecorationLine: 'underline',
+  },
+
+  // Forgot password — back to sign in
+  forgotBackLink: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: G,
+    textAlign: 'center',
+  },
+
+  // Reset sent confirmation
+  resetSentBlock: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  resetSentText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: G,
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });
