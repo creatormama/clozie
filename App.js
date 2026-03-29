@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,47 +11,100 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { PlayfairDisplay_400Regular, PlayfairDisplay_400Regular_Italic } from '@expo-google-fonts/playfair-display';
 import { DMMono_400Regular } from '@expo-google-fonts/dm-mono';
-import * as SplashScreen from 'expo-splash-screen';
+import * as NativeSplash from 'expo-splash-screen';
 
 // ── Design tokens — sacred, never change ─────────────────────────────────────
 const G = '#C9A96E';       // gold accent
 const BG = '#0D0C0A';      // background
 const CREAM = '#EDE5D8';    // logo "Clo" color
 
-// Keep splash visible while fonts load
-SplashScreen.preventAutoHideAsync();
+// Keep native splash visible while fonts load
+NativeSplash.preventAutoHideAsync();
 
-// ── Welcome Screen ───────────────────────────────────────────────────────────
-export default function App() {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+// ── Splash Screen ───────────────────────────────────────────────────────────
+function SplashScreenView({ onFinished }) {
+  const logoFade = useRef(new Animated.Value(0)).current;
+  const labelFade = useRef(new Animated.Value(0)).current;
+  const labelPulse = useRef(new Animated.Value(0.4)).current;
 
-  const [fontsLoaded] = useFonts({
-    PlayfairDisplay_400Regular,
-    PlayfairDisplay_400Regular_Italic,
-    DMMono_400Regular,
-  });
+  useEffect(() => {
+    // 1. Fade in logo over 600ms
+    Animated.timing(logoFade, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
 
-  const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded) {
-      await SplashScreen.hideAsync();
-      // Start fade-in animation
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [fontsLoaded]);
+    // 2. Fade in label slightly after logo starts
+    Animated.timing(labelFade, {
+      toValue: 1,
+      duration: 500,
+      delay: 300,
+      useNativeDriver: true,
+    }).start();
 
-  if (!fontsLoaded) {
-    return null;
-  }
+    // 3. Pulse the label gently
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(labelPulse, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(labelPulse, {
+          toValue: 0.4,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // 4. Auto-advance after 1.8 seconds
+    const timer = setTimeout(() => {
+      onFinished();
+    }, 1800);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
-    <View style={styles.screen} onLayout={onLayoutRootView}>
+    <View style={styles.screen}>
       <StatusBar style="light" />
 
-      {/* Subtle radial gold glow in centre */}
+      {/* Logo — fades in — "Clo" cream + "zie" italic gold */}
+      <Animated.View style={{ opacity: logoFade }}>
+        <Text style={styles.splashLogo}>
+          <Text style={styles.logoClo}>Clo</Text>
+          <Text style={styles.logoZie}>zie</Text>
+        </Text>
+      </Animated.View>
+
+      {/* ✦ YOUR PERSONAL STYLIST ✦ — pulses in gold below */}
+      <Animated.View style={{ opacity: Animated.multiply(labelFade, labelPulse) }}>
+        <Text style={styles.splashLabel}>✦ YOUR PERSONAL STYLIST ✦</Text>
+      </Animated.View>
+    </View>
+  );
+}
+
+// ── Welcome Screen ───────────────────────────────────────────────────────────
+function WelcomeScreen() {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Start fade-in animation when Welcome mounts
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  return (
+    <View style={styles.screen}>
+      <StatusBar style="light" />
+
+      {/* Subtle radial gold glow in centre — Welcome screen ONLY */}
       <View style={styles.glowContainer}>
         <View style={styles.glow} />
       </View>
@@ -93,6 +146,37 @@ export default function App() {
   );
 }
 
+// ── Main App — shows Splash first, then Welcome ─────────────────────────────
+export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  const [fontsLoaded] = useFonts({
+    PlayfairDisplay_400Regular,
+    PlayfairDisplay_400Regular_Italic,
+    DMMono_400Regular,
+  });
+
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded) {
+      await NativeSplash.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
+  return (
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      {showSplash ? (
+        <SplashScreenView onFinished={() => setShowSplash(false)} />
+      ) : (
+        <WelcomeScreen />
+      )}
+    </View>
+  );
+}
+
 // ── Styles ───────────────────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -104,7 +188,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // Radial gold glow — very subtle, matches web app
+  // ── Splash Screen styles ────────────────────────────────────────────────
+  splashLogo: {
+    flexDirection: 'row',
+    marginBottom: 20,
+  },
+  splashLabel: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    letterSpacing: 3,
+    color: G,
+    textAlign: 'center',
+  },
+
+  // ── Welcome Screen styles ──────────────────────────────────────────────
+
+  // Radial gold glow — very subtle, Welcome screen only
   glowContainer: {
     position: 'absolute',
     top: '50%',
