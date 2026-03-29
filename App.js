@@ -640,6 +640,51 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
   );
 }
 
+// ── Post-Login Welcome Screen ─────────────────────────────────────────────────
+function PostLoginWelcomeScreen({ onStart }) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  return (
+    <View style={styles.screen}>
+      <StatusBar style="light" />
+      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+
+        {/* Emoji row */}
+        <Text style={styles.emojis}>👗 👔</Text>
+
+        {/* Welcome heading */}
+        <Text style={postLoginStyles.heading}>Welcome to{' '}
+          <Text style={postLoginStyles.headingClo}>Clo</Text>
+          <Text style={postLoginStyles.headingZie}>zie</Text>
+        </Text>
+
+        {/* Warm subtitle */}
+        <Text style={postLoginStyles.subtitle}>
+          The more you use Clozie, the better she knows you
+        </Text>
+
+        {/* Let's Start button */}
+        <TouchableOpacity
+          style={[styles.goldButton, { marginTop: 40 }]}
+          activeOpacity={0.8}
+          onPress={onStart}
+        >
+          <Text style={styles.goldButtonText}>Let's Start ✦</Text>
+        </TouchableOpacity>
+
+      </Animated.View>
+    </View>
+  );
+}
+
 // ── Main App — navigation ────────────────────────────────────────────────────
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('splash');
@@ -684,13 +729,28 @@ export default function App() {
           onSignIn={() => goToAuth('login')}
         />
       )}
+      {currentScreen === 'postlogin' && (
+        <PostLoginWelcomeScreen
+          onStart={() => {
+            // Main app tabs will go here — placeholder for now
+            console.log('Main app starts here');
+            setCurrentScreen('splash'); // Temporary: loops back so app doesn't get stuck
+          }}
+        />
+      )}
       {currentScreen === 'auth' && (
         <AuthScreen
           mode={authMode}
           onDone={(data) => {
             // Supabase auth integration comes in Phase 2
-            // For now, just log the data
-            console.log('Auth:', data);
+            if (data.mode === 'signup') {
+              // New users see Post-Login Welcome Screen
+              setCurrentScreen('postlogin');
+            } else {
+              // Returning users skip straight to main app (placeholder for now)
+              console.log('Login — main app starts here');
+              setCurrentScreen('splash'); // Temporary: loops back so app doesn't get stuck
+            }
           }}
           onSwitchMode={(newMode) => {
             setAuthMode(newMode);
@@ -1090,6 +1150,34 @@ const peekStyles = StyleSheet.create({
     color: '#7A6A58',
     marginTop: 8,
     lineHeight: 17,
+  },
+});
+
+// ── Post-Login Welcome Screen styles ─────────────────────────────────────────
+const postLoginStyles = StyleSheet.create({
+  heading: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 32,
+    color: CREAM,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  headingClo: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 32,
+    color: CREAM,
+  },
+  headingZie: {
+    fontFamily: 'PlayfairDisplay_400Regular_Italic',
+    fontSize: 32,
+    color: G,
+  },
+  subtitle: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 14,
+    color: '#6A6058',
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });
 
