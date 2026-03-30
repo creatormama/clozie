@@ -685,6 +685,71 @@ function PostLoginWelcomeScreen({ onStart }) {
   );
 }
 
+// ── Main App Screen — 4 bottom tabs ─────────────────────────────────────────
+function MainAppScreen() {
+  const [activeTab, setActiveTab] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const tabs = [
+    { label: 'Style DNA', icon: '✦' },
+    { label: 'Wardrobe (0)', icon: '👗' },
+    { label: "Today's Vibe", icon: '🌤' },
+    { label: 'Your Looks', icon: '◈' },
+  ];
+
+  const tabTitles = ['YOUR STYLE DNA', 'YOUR WARDROBE', "TODAY'S VIBE", 'YOUR LOOKS'];
+
+  return (
+    <View style={mainStyles.container}>
+      <StatusBar style="light" />
+
+      {/* Tab content area */}
+      <Animated.View style={[mainStyles.contentArea, { opacity: fadeAnim }]}>
+        <Text style={mainStyles.tabTitle}>{tabTitles[activeTab]}</Text>
+        <Text style={mainStyles.placeholderText}>
+          {activeTab === 0 && 'Your style preferences will live here ✦'}
+          {activeTab === 1 && 'Your wardrobe items will live here ✦'}
+          {activeTab === 2 && 'Set your weather and occasion here ✦'}
+          {activeTab === 3 && 'Your generated outfits will live here ✦'}
+        </Text>
+      </Animated.View>
+
+      {/* Bottom tab bar */}
+      <View style={mainStyles.tabBar}>
+        {tabs.map((tab, i) => {
+          const isActive = activeTab === i;
+          return (
+            <TouchableOpacity
+              key={i}
+              style={mainStyles.tabItem}
+              activeOpacity={0.7}
+              onPress={() => setActiveTab(i)}
+            >
+              {isActive && <View style={mainStyles.tabActiveBar} />}
+              <Text style={[
+                isActive ? mainStyles.tabIconActive : mainStyles.tabIcon,
+                { color: isActive ? G : '#555' },
+              ]}>{tab.icon}</Text>
+              <Text style={[
+                mainStyles.tabLabel,
+                { color: isActive ? G : '#555' },
+              ]}>{tab.label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 // ── Main App — navigation ────────────────────────────────────────────────────
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('splash');
@@ -732,11 +797,12 @@ export default function App() {
       {currentScreen === 'postlogin' && (
         <PostLoginWelcomeScreen
           onStart={() => {
-            // Main app tabs will go here — placeholder for now
-            console.log('Main app starts here');
-            setCurrentScreen('splash'); // Temporary: loops back so app doesn't get stuck
+            setCurrentScreen('main');
           }}
         />
+      )}
+      {currentScreen === 'main' && (
+        <MainAppScreen />
       )}
       {currentScreen === 'auth' && (
         <AuthScreen
@@ -747,9 +813,8 @@ export default function App() {
               // New users see Post-Login Welcome Screen
               setCurrentScreen('postlogin');
             } else {
-              // Returning users skip straight to main app (placeholder for now)
-              console.log('Login — main app starts here');
-              setCurrentScreen('splash'); // Temporary: loops back so app doesn't get stuck
+              // Returning users skip straight to main app
+              setCurrentScreen('main');
             }
           }}
           onSwitchMode={(newMode) => {
@@ -1371,5 +1436,73 @@ const authStyles = StyleSheet.create({
     color: G,
     textAlign: 'center',
     lineHeight: 22,
+  },
+});
+
+// ── Main App Screen styles ──────────────────────────────────────────────────
+const mainStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: BG,
+  },
+  contentArea: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  tabTitle: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    letterSpacing: 3,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  placeholderText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: '#6A6058',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: CARD,
+    borderTopWidth: 1,
+    borderTopColor: BORDER,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 14,
+    paddingTop: 12,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingVertical: 4,
+  },
+  tabIcon: {
+    fontSize: 20,
+    marginBottom: 5,
+  },
+  tabIconActive: {
+    fontSize: 20,
+    marginBottom: 5,
+    textShadowColor: G + '60',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 6,
+  },
+  tabLabel: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 10,
+    letterSpacing: 0.5,
+  },
+  tabActiveBar: {
+    position: 'absolute',
+    top: 0,
+    width: 24,
+    height: 2,
+    backgroundColor: G,
+    borderRadius: 1,
   },
 });
