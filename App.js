@@ -685,6 +685,151 @@ function PostLoginWelcomeScreen({ onStart }) {
   );
 }
 
+// ── Style DNA Tab ───────────────────────────────────────────────────────────
+function StyleDNATab({ onBuildCloset }) {
+  const [selectedStyles, setSelectedStyles] = useState([]);
+  const [selectedColours, setSelectedColours] = useState([]);
+  const [neverWear, setNeverWear] = useState('');
+  const scaleAnims = useRef(
+    ['Minimalist', 'Streetwear', 'Classic', 'Bohemian', 'Sporty', 'Romantic', 'Edgy', 'Business']
+      .map(() => new Animated.Value(1))
+  ).current;
+  const colourScaleAnims = useRef(
+    ['Neutrals', 'Earth Tones', 'Bold Colors', 'Pastels', 'Monochrome', 'Black & White', 'Warm Tones', 'Cool Tones']
+      .map(() => new Animated.Value(1))
+  ).current;
+
+  const styleOptions = ['Minimalist', 'Streetwear', 'Classic', 'Bohemian', 'Sporty', 'Romantic', 'Edgy', 'Business'];
+  const colourOptions = ['Neutrals', 'Earth Tones', 'Bold Colors', 'Pastels', 'Monochrome', 'Black & White', 'Warm Tones', 'Cool Tones'];
+
+  const toggleStyle = (style, index) => {
+    Animated.sequence([
+      Animated.timing(scaleAnims[index], { toValue: 0.92, duration: 80, useNativeDriver: true }),
+      Animated.timing(scaleAnims[index], { toValue: 1, duration: 80, useNativeDriver: true }),
+    ]).start();
+
+    setSelectedStyles((prev) =>
+      prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style]
+    );
+  };
+
+  const toggleColour = (colour, index) => {
+    Animated.sequence([
+      Animated.timing(colourScaleAnims[index], { toValue: 0.92, duration: 80, useNativeDriver: true }),
+      Animated.timing(colourScaleAnims[index], { toValue: 1, duration: 80, useNativeDriver: true }),
+    ]).start();
+
+    setSelectedColours((prev) =>
+      prev.includes(colour) ? prev.filter((c) => c !== colour) : [...prev, colour]
+    );
+  };
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: BG }}
+      contentContainerStyle={dnaStyles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text style={dnaStyles.label}>YOUR STYLE DNA</Text>
+      <Text style={dnaStyles.heading}>Your Style Profile</Text>
+      <Text style={dnaStyles.subtitle}>
+        Clozie uses this to personalize every outfit, the more you use her the better she knows you ✦
+      </Text>
+
+      {/* STYLES I LOVE card */}
+      <View style={dnaStyles.card}>
+        <Text style={dnaStyles.cardHeading}>STYLES I LOVE</Text>
+        <View style={dnaStyles.chipRow}>
+          {styleOptions.map((style, i) => {
+            const isSelected = selectedStyles.includes(style);
+            return (
+              <Animated.View key={style} style={{ transform: [{ scale: scaleAnims[i] }] }}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => toggleStyle(style, i)}
+                  style={[
+                    dnaStyles.chip,
+                    isSelected ? dnaStyles.chipSelected : dnaStyles.chipDefault,
+                  ]}
+                >
+                  <Text style={[
+                    dnaStyles.chipText,
+                    { color: isSelected ? BG : G },
+                  ]}>{style}</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* MY COLOUR PALETTE card */}
+      <View style={dnaStyles.card}>
+        <Text style={dnaStyles.cardHeading}>MY COLOUR PALETTE</Text>
+        <View style={dnaStyles.chipRow}>
+          {colourOptions.map((colour, i) => {
+            const isSelected = selectedColours.includes(colour);
+            return (
+              <Animated.View key={colour} style={{ transform: [{ scale: colourScaleAnims[i] }] }}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => toggleColour(colour, i)}
+                  style={[
+                    dnaStyles.chip,
+                    isSelected ? dnaStyles.chipSelected : dnaStyles.chipDefault,
+                  ]}
+                >
+                  <Text style={[
+                    dnaStyles.chipText,
+                    { color: isSelected ? BG : G },
+                  ]}>{colour}</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* I NEVER WANT TO WEAR card */}
+      <View style={dnaStyles.card}>
+        <Text style={dnaStyles.cardHeading}>I NEVER WANT TO WEAR</Text>
+        <TextInput
+          style={dnaStyles.textInput}
+          placeholder="e.g. neon colours, crop tops, animal print..."
+          placeholderTextColor="#555"
+          value={neverWear}
+          onChangeText={setNeverWear}
+          multiline={true}
+          numberOfLines={3}
+          textAlignVertical="top"
+        />
+      </View>
+
+      {/* Learning notes — no ratings yet */}
+      <Text style={dnaStyles.learningNote}>
+        ✦ Rate your first outfit and Clozie will start learning your taste
+      </Text>
+
+      {/* Build My Closet button */}
+      <TouchableOpacity
+        style={dnaStyles.buildButton}
+        activeOpacity={0.8}
+        onPress={onBuildCloset}
+      >
+        <Text style={dnaStyles.buildButtonText}>Build My Closet →</Text>
+      </TouchableOpacity>
+
+      {/* Skip link */}
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={onBuildCloset}
+      >
+        <Text style={dnaStyles.skipLink}>Skip</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}
+
 // ── Main App Screen — 4 bottom tabs ─────────────────────────────────────────
 function MainAppScreen() {
   const [activeTab, setActiveTab] = useState(0);
@@ -712,15 +857,17 @@ function MainAppScreen() {
       <StatusBar style="light" />
 
       {/* Tab content area */}
-      <Animated.View style={[mainStyles.contentArea, { opacity: fadeAnim }]}>
-        <Text style={mainStyles.tabTitle}>{tabTitles[activeTab]}</Text>
-        <Text style={mainStyles.placeholderText}>
-          {activeTab === 0 && 'Your style preferences will live here ✦'}
-          {activeTab === 1 && 'Your wardrobe items will live here ✦'}
-          {activeTab === 2 && 'Set your weather and occasion here ✦'}
-          {activeTab === 3 && 'Your generated outfits will live here ✦'}
-        </Text>
-      </Animated.View>
+      {activeTab === 0 && <StyleDNATab onBuildCloset={() => setActiveTab(1)} />}
+      {activeTab !== 0 && (
+        <Animated.View style={[mainStyles.contentArea, { opacity: fadeAnim }]}>
+          <Text style={mainStyles.tabTitle}>{tabTitles[activeTab]}</Text>
+          <Text style={mainStyles.placeholderText}>
+            {activeTab === 1 && 'Your wardrobe items will live here ✦'}
+            {activeTab === 2 && 'Set your weather and occasion here ✦'}
+            {activeTab === 3 && 'Your generated outfits will live here ✦'}
+          </Text>
+        </Animated.View>
+      )}
 
       {/* Bottom tab bar */}
       <View style={mainStyles.tabBar}>
@@ -1436,6 +1583,124 @@ const authStyles = StyleSheet.create({
     color: G,
     textAlign: 'center',
     lineHeight: 22,
+  },
+});
+
+// ── Style DNA Tab styles ────────────────────────────────────────────────────
+const dnaStyles = StyleSheet.create({
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 40,
+    alignItems: 'center',
+    maxWidth: 480,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  label: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    letterSpacing: 3,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  heading: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 28,
+    color: CREAM,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  subtitle: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#6A6058',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 28,
+  },
+  card: {
+    backgroundColor: CARD,
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: BORDER,
+    width: '100%',
+    marginBottom: 16,
+  },
+  cardHeading: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 10,
+    color: G,
+    letterSpacing: 2,
+    marginBottom: 16,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 100,
+    borderWidth: 1,
+  },
+  chipSelected: {
+    backgroundColor: G,
+    borderColor: G,
+  },
+  chipDefault: {
+    backgroundColor: 'transparent',
+    borderColor: G + '50',
+  },
+  chipText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+  },
+  textInput: {
+    backgroundColor: BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 14,
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: CREAM,
+    minHeight: 80,
+  },
+  learningNote: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: G,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 28,
+    marginTop: 8,
+  },
+  buildButton: {
+    backgroundColor: G,
+    paddingVertical: 18,
+    paddingHorizontal: 64,
+    borderRadius: 100,
+    marginBottom: 14,
+    width: '100%',
+  },
+  buildButtonText: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 16,
+    color: BG,
+    textAlign: 'center',
+  },
+  skipLink: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
   },
 });
 
