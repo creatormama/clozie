@@ -830,9 +830,388 @@ function StyleDNATab({ onBuildCloset }) {
   );
 }
 
+// ── Category colour helper ──────────────────────────────────────────────────
+function getCategoryColour(category) {
+  const colours = {
+    Tops: '#4A7AB5',
+    Bottoms: '#7B5EA7',
+    Dresses: '#C47A9A',
+    Outerwear: '#5A9E6F',
+    Shoes: '#C4953A',
+    Accessories: '#C9A96E',
+  };
+  return colours[category] || '#666';
+}
+
+// ── Wardrobe Tab ────────────────────────────────────────────────────────────
+function WardrobeTab({ items, setItems, onGoToVibe }) {
+  const [showAddPanel, setShowAddPanel] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemCategory, setNewItemCategory] = useState('');
+  const [newItemColour, setNewItemColour] = useState('');
+  const [newItemNotes, setNewItemNotes] = useState('');
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const itemCount = items.length;
+  const maxItems = 30;
+  const progressWidth = (itemCount / maxItems) * 100;
+
+  const handleAddItem = () => {
+    if (!newItemName.trim()) return;
+    const newItem = {
+      id: Date.now().toString(),
+      name: newItemName.trim(),
+      category: newItemCategory || 'Tops',
+      colour: newItemColour.trim(),
+      notes: newItemNotes.trim(),
+      lastWorn: null,
+    };
+    setItems((prev) => [...prev, newItem]);
+    setNewItemName('');
+    setNewItemCategory('');
+    setNewItemColour('');
+    setNewItemNotes('');
+    setShowCategoryPicker(false);
+    setShowAddPanel(false);
+  };
+
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [showAnalyseMessage, setShowAnalyseMessage] = useState(false);
+
+  const handleEditItem = (item) => {
+    setEditingItemId(item.id);
+    setNewItemName(item.name);
+    setNewItemCategory(item.category);
+    setNewItemColour(item.colour);
+    setNewItemNotes(item.notes);
+    setShowAddPanel(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!newItemName.trim()) return;
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === editingItemId
+          ? { ...item, name: newItemName.trim(), category: newItemCategory || 'Tops', colour: newItemColour.trim(), notes: newItemNotes.trim() }
+          : item
+      )
+    );
+    setEditingItemId(null);
+    setNewItemName('');
+    setNewItemCategory('');
+    setNewItemColour('');
+    setNewItemNotes('');
+    setShowCategoryPicker(false);
+    setShowAddPanel(false);
+  };
+
+  const handleDeleteItem = (id) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+    setDeleteConfirmId(null);
+  };
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: BG }}
+      contentContainerStyle={wardrobeStyles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Header row — label + count */}
+      <View style={wardrobeStyles.headerRow}>
+        <Text style={wardrobeStyles.label}>YOUR WARDROBE</Text>
+        <Text style={wardrobeStyles.itemCount}>{itemCount}/{maxItems} items</Text>
+      </View>
+
+      {/* Progress bar */}
+      <View style={wardrobeStyles.progressBarBg}>
+        <View style={[
+          wardrobeStyles.progressBarFill,
+          { width: progressWidth + '%' },
+        ]} />
+      </View>
+
+      {/* Empty state */}
+      {itemCount === 0 && (
+        <View style={wardrobeStyles.emptyState}>
+          <Text style={wardrobeStyles.emptyEmoji}>👗</Text>
+          <Text style={wardrobeStyles.emptyText}>
+            Every great wardrobe starts with one piece. Add your first item and let's see what Clozie can do ✦
+          </Text>
+        </View>
+      )}
+
+      {/* Item grid — 2 columns */}
+      {itemCount > 0 && (
+        <View style={wardrobeStyles.grid}>
+          {items.map((item) => (
+            <View key={item.id} style={wardrobeStyles.gridCard}>
+              {/* Placeholder photo */}
+              <View style={wardrobeStyles.gridCardPhoto}>
+                <Text style={{ fontSize: 28 }}>👗</Text>
+              </View>
+              {/* Edit icon — positioned over photo */}
+              <TouchableOpacity
+                style={wardrobeStyles.editIcon}
+                activeOpacity={0.7}
+                onPress={() => handleEditItem(item)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={wardrobeStyles.editIconText}>✎</Text>
+              </TouchableOpacity>
+              {/* Delete icon — positioned over photo */}
+              <TouchableOpacity
+                style={wardrobeStyles.deleteIcon}
+                activeOpacity={0.7}
+                onPress={() => setDeleteConfirmId(item.id)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={wardrobeStyles.deleteIconText}>✕</Text>
+              </TouchableOpacity>
+
+              {/* Delete confirmation */}
+              {deleteConfirmId === item.id && (
+                <View style={wardrobeStyles.deleteConfirm}>
+                  <Text style={wardrobeStyles.deleteConfirmText}>
+                    Remove {item.name}? This cannot be undone.
+                  </Text>
+                  <View style={wardrobeStyles.deleteConfirmButtons}>
+                    <TouchableOpacity
+                      style={wardrobeStyles.deleteConfirmRemove}
+                      activeOpacity={0.8}
+                      onPress={() => handleDeleteItem(item.id)}
+                    >
+                      <Text style={wardrobeStyles.deleteConfirmRemoveText}>Remove</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={wardrobeStyles.deleteConfirmCancel}
+                      activeOpacity={0.7}
+                      onPress={() => setDeleteConfirmId(null)}
+                    >
+                      <Text style={wardrobeStyles.deleteConfirmCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
+              {/* Category tag pill */}
+              <View style={[wardrobeStyles.categoryTag, { backgroundColor: getCategoryColour(item.category) }]}>
+                <Text style={wardrobeStyles.categoryTagText}>{item.category}</Text>
+              </View>
+              {/* Item name */}
+              <Text style={wardrobeStyles.gridCardName} numberOfLines={1}>{item.name}</Text>
+              {/* Colour */}
+              {item.colour !== '' && (
+                <Text style={wardrobeStyles.gridCardColour} numberOfLines={1}>{item.colour}</Text>
+              )}
+              {/* Last worn date */}
+              <Text style={wardrobeStyles.gridCardLastWorn}>
+                {item.lastWorn ? `Last worn: ${item.lastWorn}` : 'Never worn'}
+              </Text>
+              {/* What goes with this */}
+              <Text style={wardrobeStyles.gridCardPairLink}>What goes with this? ✦</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Add Item button */}
+      {!showAddPanel && (
+        <TouchableOpacity
+          style={wardrobeStyles.addButton}
+          activeOpacity={0.8}
+          onPress={() => setShowAddPanel(true)}
+        >
+          <Text style={wardrobeStyles.addButtonText}>
+            {itemCount === 0 ? '✦ Add Your First Item' : '✦ Add Another Item'}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Add Item panel */}
+      {showAddPanel && (
+        <View style={wardrobeStyles.addPanel}>
+          <View style={wardrobeStyles.addPanelHeader}>
+            <Text style={wardrobeStyles.addPanelHeading}>{editingItemId ? 'EDIT ITEM' : 'ADD NEW ITEM'}</Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => { setShowAddPanel(false); setEditingItemId(null); setNewItemName(''); setNewItemCategory(''); setNewItemColour(''); setNewItemNotes(''); setShowCategoryPicker(false); }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'flex-end' }}
+            >
+              <Text style={wardrobeStyles.addPanelClose}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Photo section */}
+          <View style={wardrobeStyles.photoArea}>
+            <Text style={wardrobeStyles.photoPlaceholder}>📷</Text>
+            <Text style={wardrobeStyles.photoTitle}>Add a Photo</Text>
+            <Text style={wardrobeStyles.photoSubtitle}>✦ Clozie fills in all details automatically</Text>
+            <View style={wardrobeStyles.photoButtons}>
+              <TouchableOpacity style={wardrobeStyles.photoButton} activeOpacity={0.7}>
+                <Text style={wardrobeStyles.photoButtonText}>📸 Take Photo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={wardrobeStyles.photoButton} activeOpacity={0.7}>
+                <Text style={wardrobeStyles.photoButtonText}>🖼 Upload File</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Tip box */}
+          <View style={wardrobeStyles.tipBox}>
+            <Text style={wardrobeStyles.tipText}>
+              💡 Best results: photograph on a white or light background — Clozie reads colours more accurately.
+            </Text>
+          </View>
+
+          {/* Name field (required) */}
+          <Text style={wardrobeStyles.fieldLabel}>Name *</Text>
+          <TextInput
+            style={wardrobeStyles.fieldInput}
+            placeholder="e.g. Navy Blue Wrap Dress"
+            placeholderTextColor="#555"
+            value={newItemName}
+            onChangeText={setNewItemName}
+            returnKeyType="next"
+          />
+
+          {/* Category dropdown */}
+          <Text style={wardrobeStyles.fieldLabel}>Category</Text>
+          <TouchableOpacity
+            style={wardrobeStyles.fieldInput}
+            activeOpacity={0.7}
+            onPress={() => setShowCategoryPicker(!showCategoryPicker)}
+          >
+            <Text style={{ fontFamily: 'DMMono_400Regular', fontSize: 13, color: newItemCategory ? CREAM : '#555' }}>
+              {newItemCategory || 'Select category'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Category options */}
+          {showCategoryPicker && (
+            <View style={wardrobeStyles.categoryPicker}>
+              {['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories'].map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[
+                    wardrobeStyles.categoryOption,
+                    newItemCategory === cat && wardrobeStyles.categoryOptionSelected,
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setNewItemCategory(cat);
+                    setShowCategoryPicker(false);
+                  }}
+                >
+                  <Text style={[
+                    wardrobeStyles.categoryOptionText,
+                    { color: newItemCategory === cat ? BG : CREAM },
+                  ]}>{cat}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Colour/pattern field */}
+          <Text style={wardrobeStyles.fieldLabel}>Colour / Pattern</Text>
+          <TextInput
+            style={wardrobeStyles.fieldInput}
+            placeholder="e.g. Navy blue, striped"
+            placeholderTextColor="#555"
+            value={newItemColour}
+            onChangeText={setNewItemColour}
+            returnKeyType="next"
+          />
+
+          {/* Notes field */}
+          <Text style={wardrobeStyles.fieldLabel}>Notes</Text>
+          <TextInput
+            style={[wardrobeStyles.fieldInput, { minHeight: 60 }]}
+            placeholder="e.g. From Zara, size M, great for date night"
+            placeholderTextColor="#555"
+            value={newItemNotes}
+            onChangeText={setNewItemNotes}
+            multiline={true}
+            textAlignVertical="top"
+          />
+
+          {/* Add to Closet button */}
+          <TouchableOpacity
+            style={[
+              wardrobeStyles.addToClosetButton,
+              !newItemName.trim() && wardrobeStyles.addToClosetButtonDisabled,
+            ]}
+            activeOpacity={newItemName.trim() ? 0.8 : 1}
+            disabled={!newItemName.trim()}
+            onPress={editingItemId ? handleSaveEdit : handleAddItem}
+          >
+            <Text style={wardrobeStyles.addToClosetButtonText}>{editingItemId ? 'Save Changes' : 'Add to Closet'}</Text>
+          </TouchableOpacity>
+
+          {/* Cancel button */}
+          <TouchableOpacity
+            style={wardrobeStyles.cancelButton}
+            activeOpacity={0.7}
+            onPress={() => {
+              setShowAddPanel(false);
+              setEditingItemId(null);
+              setNewItemName('');
+              setNewItemCategory('');
+              setNewItemColour('');
+              setNewItemNotes('');
+              setShowCategoryPicker(false);
+            }}
+          >
+            <Text style={wardrobeStyles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Analyse My Wardrobe button */}
+      {itemCount > 0 && !showAddPanel && (
+        <TouchableOpacity
+          style={wardrobeStyles.analyseButton}
+          activeOpacity={0.7}
+          onPress={() => setShowAnalyseMessage(true)}
+        >
+          <Text style={wardrobeStyles.analyseButtonText}>✦ Analyse My Wardrobe</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Analyse message */}
+      {showAnalyseMessage && (
+        <View style={wardrobeStyles.analyseCard}>
+          <Text style={wardrobeStyles.analyseCardText}>
+            Wardrobe analysis is coming soon ✦ Keep adding items and Clozie will have more to work with!
+          </Text>
+          <TouchableOpacity
+            style={wardrobeStyles.analyseCardButton}
+            activeOpacity={0.8}
+            onPress={() => setShowAnalyseMessage(false)}
+          >
+            <Text style={wardrobeStyles.analyseCardButtonText}>Got it ✦</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Set Today's Vibe button */}
+      {!showAddPanel && (
+        <TouchableOpacity
+          style={wardrobeStyles.vibeButton}
+          activeOpacity={0.8}
+          onPress={onGoToVibe}
+        >
+          <Text style={wardrobeStyles.vibeButtonText}>Set Today's Vibe →</Text>
+        </TouchableOpacity>
+      )}
+    </ScrollView>
+  );
+}
+
 // ── Main App Screen — 4 bottom tabs ─────────────────────────────────────────
 function MainAppScreen() {
   const [activeTab, setActiveTab] = useState(0);
+  const [wardrobeItems, setWardrobeItems] = useState([]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -845,7 +1224,7 @@ function MainAppScreen() {
 
   const tabs = [
     { label: 'Style DNA', icon: '✦' },
-    { label: 'Wardrobe (0)', icon: '👗' },
+    { label: `Wardrobe (${wardrobeItems.length})`, icon: '👗' },
     { label: "Today's Vibe", icon: '🌤' },
     { label: 'Your Looks', icon: '◈' },
   ];
@@ -858,11 +1237,11 @@ function MainAppScreen() {
 
       {/* Tab content area */}
       {activeTab === 0 && <StyleDNATab onBuildCloset={() => setActiveTab(1)} />}
-      {activeTab !== 0 && (
+      {activeTab === 1 && <WardrobeTab items={wardrobeItems} setItems={setWardrobeItems} onGoToVibe={() => setActiveTab(2)} />}
+      {activeTab !== 0 && activeTab !== 1 && (
         <Animated.View style={[mainStyles.contentArea, { opacity: fadeAnim }]}>
           <Text style={mainStyles.tabTitle}>{tabTitles[activeTab]}</Text>
           <Text style={mainStyles.placeholderText}>
-            {activeTab === 1 && 'Your wardrobe items will live here ✦'}
             {activeTab === 2 && 'Set your weather and occasion here ✦'}
             {activeTab === 3 && 'Your generated outfits will live here ✦'}
           </Text>
@@ -1701,6 +2080,419 @@ const dnaStyles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginBottom: 20,
+  },
+});
+
+// ── Wardrobe Tab styles ─────────────────────────────────────────────────────
+const wardrobeStyles = StyleSheet.create({
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 40,
+    maxWidth: 480,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  label: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    letterSpacing: 3,
+  },
+  itemCount: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: G,
+  },
+  progressBarBg: {
+    width: '100%',
+    height: 4,
+    backgroundColor: BORDER,
+    borderRadius: 2,
+    marginBottom: 24,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: 4,
+    backgroundColor: G,
+    borderRadius: 2,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 16,
+  },
+  emptyEmoji: {
+    fontSize: 48,
+    marginBottom: 20,
+  },
+  emptyText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: '#6A6058',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  addButton: {
+    backgroundColor: G,
+    paddingVertical: 18,
+    paddingHorizontal: 64,
+    borderRadius: 100,
+    marginBottom: 14,
+    alignSelf: 'center',
+  },
+  addButtonText: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 16,
+    color: BG,
+    textAlign: 'center',
+  },
+  addPanel: {
+    backgroundColor: CARD,
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: BORDER,
+    width: '100%',
+    marginBottom: 16,
+  },
+  addPanelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  addPanelHeading: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    letterSpacing: 2,
+  },
+  addPanelClose: {
+    fontSize: 18,
+    color: G,
+  },
+  photoArea: {
+    borderWidth: 1,
+    borderColor: G + '40',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  photoPlaceholder: {
+    fontSize: 36,
+    marginBottom: 10,
+  },
+  photoTitle: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 18,
+    color: CREAM,
+    marginBottom: 6,
+  },
+  photoSubtitle: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    marginBottom: 16,
+  },
+  photoButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  photoButton: {
+    backgroundColor: BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+  },
+  photoButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: CREAM,
+  },
+  tipBox: {
+    backgroundColor: G + '10',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 8,
+  },
+  tipText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: '#6A6058',
+    lineHeight: 18,
+  },
+  fieldLabel: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 10,
+    color: G,
+    letterSpacing: 1,
+    marginBottom: 6,
+    marginTop: 12,
+  },
+  fieldInput: {
+    backgroundColor: BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: CREAM,
+  },
+  categoryPicker: {
+    backgroundColor: BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 12,
+    marginTop: 6,
+    overflow: 'hidden',
+  },
+  categoryOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+  },
+  categoryOptionSelected: {
+    backgroundColor: G,
+  },
+  categoryOptionText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+  },
+  addToClosetButton: {
+    backgroundColor: G,
+    paddingVertical: 18,
+    borderRadius: 100,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  addToClosetButtonDisabled: {
+    opacity: 0.4,
+  },
+  addToClosetButtonText: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 16,
+    color: BG,
+    textAlign: 'center',
+  },
+  cancelButton: {
+    paddingVertical: 14,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: BORDER,
+    marginBottom: 8,
+  },
+  cancelButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 20,
+  },
+  gridCard: {
+    width: (SCREEN_WIDTH - 60) / 2,
+    backgroundColor: CARD,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: BORDER,
+  },
+  gridCardPhoto: {
+    width: '100%',
+    height: 120,
+    backgroundColor: BG,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopLeftRadius: 11,
+    borderTopRightRadius: 11,
+    overflow: 'hidden',
+  },
+  categoryTag: {
+    alignSelf: 'flex-start',
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    borderRadius: 100,
+    marginTop: 10,
+    marginLeft: 10,
+  },
+  categoryTagText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 9,
+    color: '#fff',
+    letterSpacing: 0.5,
+  },
+  gridCardName: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 14,
+    color: CREAM,
+    marginTop: 6,
+    marginHorizontal: 10,
+  },
+  gridCardColour: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 10,
+    color: '#666',
+    marginTop: 3,
+    marginHorizontal: 10,
+  },
+  gridCardLastWorn: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 9,
+    color: '#555',
+    marginTop: 4,
+    marginHorizontal: 10,
+  },
+  gridCardPairLink: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 10,
+    color: G,
+    marginTop: 6,
+    marginHorizontal: 10,
+    marginBottom: 12,
+  },
+  analyseButton: {
+    borderWidth: 1,
+    borderColor: G,
+    paddingVertical: 16,
+    borderRadius: 100,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  analyseButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: G,
+  },
+  analyseCard: {
+    backgroundColor: CARD,
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: G + '30',
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  analyseCardText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#6A6058',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  analyseCardButton: {
+    backgroundColor: G,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 100,
+  },
+  analyseCardButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: BG,
+  },
+  vibeButton: {
+    backgroundColor: G,
+    paddingVertical: 18,
+    borderRadius: 100,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  vibeButtonText: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 16,
+    color: BG,
+  },
+  editIcon: {
+    position: 'absolute',
+    top: 6,
+    right: 40,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  editIconText: {
+    fontSize: 14,
+    color: '#fff',
+  },
+  deleteIcon: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  deleteIconText: {
+    fontSize: 14,
+    color: '#fff',
+  },
+  deleteConfirm: {
+    backgroundColor: BG,
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+  },
+  deleteConfirmText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: CREAM,
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  deleteConfirmButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  deleteConfirmRemove: {
+    flex: 1,
+    backgroundColor: G,
+    paddingVertical: 10,
+    borderRadius: 100,
+    alignItems: 'center',
+  },
+  deleteConfirmRemoveText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: BG,
+  },
+  deleteConfirmCancel: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: BORDER,
+    paddingVertical: 10,
+    borderRadius: 100,
+    alignItems: 'center',
+  },
+  deleteConfirmCancelText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#666',
   },
 });
 
