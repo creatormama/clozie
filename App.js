@@ -1208,6 +1208,171 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
   );
 }
 
+// ── Today's Vibe Tab ────────────────────────────────────────────────────────
+function TodaysVibeTab({ wardrobeItemCount, wardrobeItems }) {
+  const [selectedWeather, setSelectedWeather] = useState(null);
+  const [selectedOccasion, setSelectedOccasion] = useState(null);
+  const [pinnedItemId, setPinnedItemId] = useState(null);
+  const [extraNotes, setExtraNotes] = useState('');
+  const weatherOptions = ['Sunny & Hot', 'Warm & Breezy', 'Mild & Cloudy', 'Cold & Dry', 'Rainy', 'Snowy'];
+  const occasionOptions = ['Casual Day', 'Work / Office', 'Date Night', 'Party', 'Outdoor / Sport', 'Formal Event', 'Weekend Errands', 'Travel'];
+  const weatherScaleAnims = useRef(weatherOptions.map(() => new Animated.Value(1))).current;
+  const occasionScaleAnims = useRef(occasionOptions.map(() => new Animated.Value(1))).current;
+
+  const toggleWeather = (weather, index) => {
+    Animated.sequence([
+      Animated.timing(weatherScaleAnims[index], { toValue: 0.92, duration: 80, useNativeDriver: true }),
+      Animated.timing(weatherScaleAnims[index], { toValue: 1, duration: 80, useNativeDriver: true }),
+    ]).start();
+    setSelectedWeather((prev) => prev === weather ? null : weather);
+  };
+
+  const toggleOccasion = (occasion, index) => {
+    Animated.sequence([
+      Animated.timing(occasionScaleAnims[index], { toValue: 0.92, duration: 80, useNativeDriver: true }),
+      Animated.timing(occasionScaleAnims[index], { toValue: 1, duration: 80, useNativeDriver: true }),
+    ]).start();
+    setSelectedOccasion((prev) => prev === occasion ? null : occasion);
+  };
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: BG }}
+      contentContainerStyle={vibeStyles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text style={vibeStyles.label}>TODAY'S VIBE</Text>
+      <Text style={vibeStyles.heading}>Today's Vibe</Text>
+      <Text style={vibeStyles.subheading}>Let's dress you perfectly for today ✦</Text>
+      <View style={vibeStyles.badge}>
+        <Text style={vibeStyles.badgeText}>✦ Styling from {wardrobeItemCount} items in your wardrobe</Text>
+      </View>
+
+      {/* WEATHER OUTSIDE card */}
+      <View style={vibeStyles.card}>
+        <Text style={vibeStyles.cardHeading}>WEATHER OUTSIDE</Text>
+        <View style={vibeStyles.chipRow}>
+          {weatherOptions.map((weather, i) => {
+            const isSelected = selectedWeather === weather;
+            return (
+              <Animated.View key={weather} style={{ transform: [{ scale: weatherScaleAnims[i] }] }}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => toggleWeather(weather, i)}
+                  style={[
+                    vibeStyles.chip,
+                    isSelected ? vibeStyles.chipSelected : vibeStyles.chipDefault,
+                  ]}
+                >
+                  <Text style={[
+                    vibeStyles.chipText,
+                    { color: isSelected ? BG : G },
+                  ]}>{weather}</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* THE OCCASION card */}
+      <View style={vibeStyles.card}>
+        <Text style={vibeStyles.cardHeading}>THE OCCASION</Text>
+        <View style={vibeStyles.chipRow}>
+          {occasionOptions.map((occasion, i) => {
+            const isSelected = selectedOccasion === occasion;
+            return (
+              <Animated.View key={occasion} style={{ transform: [{ scale: occasionScaleAnims[i] }] }}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => toggleOccasion(occasion, i)}
+                  style={[
+                    vibeStyles.chip,
+                    isSelected ? vibeStyles.chipSelected : vibeStyles.chipDefault,
+                  ]}
+                >
+                  <Text style={[
+                    vibeStyles.chipText,
+                    { color: isSelected ? BG : G },
+                  ]}>{occasion}</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* MUST INCLUDE ITEM card */}
+      <View style={vibeStyles.card}>
+        <Text style={vibeStyles.cardHeading}>MUST INCLUDE ITEM</Text>
+        <Text style={vibeStyles.cardSubtext}>Optional — pin one item and every outfit will include it ✦</Text>
+        {wardrobeItems.length === 0 ? (
+          <Text style={vibeStyles.emptyItemsText}>Add items to your wardrobe first ✦</Text>
+        ) : (
+          <ScrollView
+            horizontal={true}
+            showsHorizontalScrollIndicator={false}
+            style={vibeStyles.itemScroll}
+          >
+            {wardrobeItems.map((item) => {
+              const isPinned = pinnedItemId === item.id;
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  activeOpacity={0.7}
+                  onPress={() => setPinnedItemId((prev) => prev === item.id ? null : item.id)}
+                  style={[
+                    vibeStyles.itemThumb,
+                    isPinned && vibeStyles.itemThumbPinned,
+                  ]}
+                >
+                  <Text style={{ fontSize: 22 }}>👗</Text>
+                  <Text style={[
+                    vibeStyles.itemThumbName,
+                    { color: isPinned ? G : '#999' },
+                  ]} numberOfLines={1}>{item.name}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
+      </View>
+
+      {/* ANYTHING ELSE? card */}
+      <View style={vibeStyles.card}>
+        <Text style={vibeStyles.cardHeading}>ANYTHING ELSE?</Text>
+        <TextInput
+          style={vibeStyles.textInput}
+          placeholder="e.g. I want to feel confident, no heels today..."
+          placeholderTextColor="#555"
+          value={extraNotes}
+          onChangeText={setExtraNotes}
+          multiline={true}
+          numberOfLines={3}
+          textAlignVertical="top"
+        />
+      </View>
+
+      {/* Generate My Outfits button */}
+      <TouchableOpacity
+        style={[
+          vibeStyles.generateButton,
+          !(selectedWeather && selectedOccasion) && vibeStyles.generateButtonDisabled,
+        ]}
+        activeOpacity={selectedWeather && selectedOccasion ? 0.8 : 1}
+        disabled={!(selectedWeather && selectedOccasion)}
+      >
+        <Text style={vibeStyles.generateButtonText}>✦ Generate My Outfits →</Text>
+      </TouchableOpacity>
+
+      {/* Hint text when button is greyed */}
+      {!(selectedWeather && selectedOccasion) && (
+        <Text style={vibeStyles.hintText}>Select weather and occasion first ✦</Text>
+      )}
+    </ScrollView>
+  );
+}
+
 // ── Main App Screen — 4 bottom tabs ─────────────────────────────────────────
 function MainAppScreen() {
   const [activeTab, setActiveTab] = useState(0);
@@ -1238,13 +1403,11 @@ function MainAppScreen() {
       {/* Tab content area */}
       {activeTab === 0 && <StyleDNATab onBuildCloset={() => setActiveTab(1)} />}
       {activeTab === 1 && <WardrobeTab items={wardrobeItems} setItems={setWardrobeItems} onGoToVibe={() => setActiveTab(2)} />}
-      {activeTab !== 0 && activeTab !== 1 && (
+      {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} />}
+      {activeTab === 3 && (
         <Animated.View style={[mainStyles.contentArea, { opacity: fadeAnim }]}>
           <Text style={mainStyles.tabTitle}>{tabTitles[activeTab]}</Text>
-          <Text style={mainStyles.placeholderText}>
-            {activeTab === 2 && 'Set your weather and occasion here ✦'}
-            {activeTab === 3 && 'Your generated outfits will live here ✦'}
-          </Text>
+          <Text style={mainStyles.placeholderText}>Your generated outfits will live here ✦</Text>
         </Animated.View>
       )}
 
@@ -2493,6 +2656,161 @@ const wardrobeStyles = StyleSheet.create({
     fontFamily: 'DMMono_400Regular',
     fontSize: 12,
     color: '#666',
+  },
+});
+
+// ── Today's Vibe Tab styles ─────────────────────────────────────────────────
+const vibeStyles = StyleSheet.create({
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 40,
+    maxWidth: 480,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  label: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    letterSpacing: 3,
+    marginBottom: 12,
+  },
+  heading: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 28,
+    color: CREAM,
+    marginBottom: 8,
+  },
+  subheading: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#6A6058',
+    marginBottom: 20,
+  },
+  badge: {
+    backgroundColor: G + '15',
+    borderRadius: 100,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignSelf: 'flex-start',
+    marginBottom: 24,
+  },
+  badgeText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+  },
+  card: {
+    backgroundColor: CARD,
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: BORDER,
+    width: '100%',
+    marginBottom: 16,
+  },
+  cardHeading: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 10,
+    color: G,
+    letterSpacing: 2,
+    marginBottom: 16,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 100,
+    borderWidth: 1,
+  },
+  chipSelected: {
+    backgroundColor: G,
+    borderColor: G,
+  },
+  chipDefault: {
+    backgroundColor: 'transparent',
+    borderColor: G + '50',
+  },
+  chipText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+  },
+  cardSubtext: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: '#6A6058',
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+  emptyItemsText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#555',
+    textAlign: 'center',
+    paddingVertical: 16,
+  },
+  itemScroll: {
+    flexDirection: 'row',
+  },
+  itemThumb: {
+    width: 80,
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: BORDER,
+    marginRight: 8,
+  },
+  itemThumbPinned: {
+    borderColor: G,
+    backgroundColor: G + '15',
+  },
+  itemThumbName: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 9,
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  textInput: {
+    backgroundColor: BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 14,
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: CREAM,
+    minHeight: 80,
+  },
+  generateButton: {
+    backgroundColor: G,
+    paddingVertical: 18,
+    borderRadius: 100,
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  generateButtonDisabled: {
+    opacity: 0.4,
+  },
+  generateButtonText: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 16,
+    color: BG,
+  },
+  hintText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: '#555',
+    textAlign: 'center',
+    marginBottom: 20,
   },
 });
 
