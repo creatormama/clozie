@@ -1209,7 +1209,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
 }
 
 // ── Today's Vibe Tab ────────────────────────────────────────────────────────
-function TodaysVibeTab({ wardrobeItemCount, wardrobeItems }) {
+function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
   const [selectedWeather, setSelectedWeather] = useState(null);
   const [selectedOccasion, setSelectedOccasion] = useState(null);
   const [pinnedItemId, setPinnedItemId] = useState(null);
@@ -1361,6 +1361,7 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems }) {
         ]}
         activeOpacity={selectedWeather && selectedOccasion ? 0.8 : 1}
         disabled={!(selectedWeather && selectedOccasion)}
+        onPress={onGenerate}
       >
         <Text style={vibeStyles.generateButtonText}>✦ Generate My Outfits →</Text>
       </TouchableOpacity>
@@ -1373,10 +1374,310 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems }) {
   );
 }
 
+// ── Your Looks Tab ──────────────────────────────────────────────────────────
+function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
+  const [loading, setLoading] = useState(false);
+  const [hasGenerated, setHasGenerated] = useState(false);
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  const [savedOutfits, setSavedOutfits] = useState([]);
+  const [ratings, setRatings] = useState({});
+  const [ratingFeedback, setRatingFeedback] = useState({});
+  const [wornToday, setWornToday] = useState({});
+  const [showBoutique, setShowBoutique] = useState({});
+
+  const handleRate = (outfitId, rating) => {
+    setRatings((prev) => ({ ...prev, [outfitId]: rating }));
+    setRatingFeedback((prev) => ({ ...prev, [outfitId]: true }));
+    setTimeout(() => {
+      setRatingFeedback((prev) => ({ ...prev, [outfitId]: false }));
+    }, 2000);
+  };
+
+  const handleRegenerate = () => {
+    setLoading(true);
+    setHasGenerated(false);
+    setRatings({});
+    setRatingFeedback({});
+    setWornToday({});
+    setShowBoutique({});
+    spinAnim.setValue(0);
+    Animated.loop(
+      Animated.timing(spinAnim, {
+        toValue: 1,
+        duration: 1200,
+        useNativeDriver: true,
+      })
+    ).start();
+    setTimeout(() => {
+      setLoading(false);
+      setHasGenerated(true);
+    }, 2000);
+  };
+
+  const hasAnyRating = Object.keys(ratings).length > 0;
+
+  const handleWornToday = (outfitId) => {
+    setWornToday((prev) => ({ ...prev, [outfitId]: true }));
+    setTimeout(() => {
+      setWornToday((prev) => ({ ...prev, [outfitId]: false }));
+    }, 2000);
+  };
+
+  const toggleSave = (outfitId) => {
+    setSavedOutfits((prev) =>
+      prev.includes(outfitId) ? prev.filter((id) => id !== outfitId) : [...prev, outfitId]
+    );
+  };
+
+  // Build 3 sample outfits from wardrobe items
+  const sampleOutfits = [
+    {
+      id: '1',
+      vibe: 'ROMANTIC',
+      name: 'Evening Glow',
+      description: '"The wrap silhouette is perfect for date night — elegant and effortless."',
+      items: wardrobeItems.slice(0, 3),
+    },
+    {
+      id: '2',
+      vibe: 'CASUAL',
+      name: 'Day Explorer',
+      description: '"Relaxed layers that work from morning coffee to evening drinks."',
+      items: wardrobeItems.slice(0, Math.min(wardrobeItems.length, 3)),
+    },
+    {
+      id: '3',
+      vibe: 'CHIC',
+      name: 'Weekend Ready',
+      description: '"Effortlessly put-together — because weekends deserve good outfits too."',
+      items: wardrobeItems.length > 1 ? wardrobeItems.slice(1, 4) : wardrobeItems.slice(0, 3),
+    },
+  ];
+
+  useEffect(() => {
+    if (isGenerating && !hasGenerated) {
+      setLoading(true);
+      Animated.loop(
+        Animated.timing(spinAnim, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        })
+      ).start();
+
+      const timer = setTimeout(() => {
+        setLoading(false);
+        setHasGenerated(true);
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isGenerating]);
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  // Loading state
+  if (loading) {
+    return (
+      <View style={[looksStyles.scrollContent, { flex: 1, backgroundColor: BG, justifyContent: 'center', alignItems: 'center' }]}>
+        <Animated.Text style={[looksStyles.spinStar, { transform: [{ rotate: spin }] }]}>✦</Animated.Text>
+        <Text style={looksStyles.loadingTitle}>Styling your outfits...</Text>
+        <Text style={looksStyles.loadingSubtext}>Clozie is working her magic ✦</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: BG }}
+      contentContainerStyle={looksStyles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text style={looksStyles.label}>YOUR LOOKS</Text>
+      <Text style={looksStyles.heading}>Your Looks</Text>
+
+      {/* Empty state — shown when no outfits generated yet */}
+      {!hasGenerated && (
+        <View style={looksStyles.emptyState}>
+          <Text style={looksStyles.emptyTitle}>No outfits yet ✦</Text>
+          <Text style={looksStyles.emptyText}>
+            Head to Today's Vibe, tell Clozie about your day, and she'll create your perfect looks.
+          </Text>
+          <TouchableOpacity
+            style={looksStyles.emptyButton}
+            activeOpacity={0.8}
+            onPress={onGoToVibe}
+          >
+            <Text style={looksStyles.emptyButtonText}>Go to Today's Vibe →</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Subtitle — only when outfits generated */}
+      {hasGenerated && (
+        <Text style={looksStyles.subtitle}>
+          Here are today's looks, styled just for you. ✦ Clozie learns your taste with every rating.
+        </Text>
+      )}
+
+      {/* Outfit cards */}
+      {hasGenerated && sampleOutfits.map((outfit) => (
+        <View key={outfit.id} style={looksStyles.outfitCard}>
+          {/* Item photo strip — 2 columns */}
+          <View style={looksStyles.photoStrip}>
+            {outfit.items.length > 0 ? outfit.items.map((item) => (
+              <View key={item.id} style={looksStyles.photoStripItem}>
+                <View style={looksStyles.photoStripThumb}>
+                  <Text style={{ fontSize: 22 }}>👗</Text>
+                </View>
+                <Text style={looksStyles.photoStripName} numberOfLines={1}>{item.name}</Text>
+              </View>
+            )) : (
+              <View style={looksStyles.photoStripItem}>
+                <View style={looksStyles.photoStripThumb}>
+                  <Text style={{ fontSize: 22 }}>👗</Text>
+                </View>
+                <Text style={looksStyles.photoStripName}>Sample item</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Vibe + name + save row */}
+          <View style={looksStyles.cardHeaderRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={looksStyles.vibeLabel}>{outfit.vibe}</Text>
+              <Text style={looksStyles.outfitName}>{outfit.name}</Text>
+            </View>
+            <TouchableOpacity
+              style={[
+                looksStyles.saveButton,
+                savedOutfits.includes(outfit.id) && looksStyles.saveButtonSaved,
+              ]}
+              activeOpacity={0.7}
+              onPress={() => toggleSave(outfit.id)}
+            >
+              <Text style={looksStyles.saveButtonText}>
+                {savedOutfits.includes(outfit.id) ? '❤️ Saved' : '🤍 Save'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Description */}
+          <Text style={looksStyles.outfitDesc}>{outfit.description}</Text>
+
+          {/* Style Match Score */}
+          <Text style={looksStyles.matchScore}>✦ 94% match with your Style DNA</Text>
+
+          {/* Outfit Potential */}
+          <Text style={looksStyles.outfitPotential}>These {outfit.items.length || 3} pieces create {(outfit.items.length || 3) * 4} outfits together</Text>
+
+          {/* View Mood Board link */}
+          <TouchableOpacity activeOpacity={0.7}>
+            <Text style={looksStyles.moodBoardLink}>✦ View mood board</Text>
+          </TouchableOpacity>
+
+          {/* Rating buttons */}
+          <View style={looksStyles.ratingRow}>
+            {[
+              { key: 'love', label: '❤️ Love it' },
+              { key: 'like', label: '👍 Like it' },
+              { key: 'nope', label: '👎 Not for me' },
+            ].map((r) => {
+              const isSelected = ratings[outfit.id] === r.key;
+              return (
+                <TouchableOpacity
+                  key={r.key}
+                  style={[
+                    looksStyles.ratingButton,
+                    isSelected && looksStyles.ratingButtonSelected,
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => handleRate(outfit.id, r.key)}
+                >
+                  <Text style={[
+                    looksStyles.ratingButtonText,
+                    { color: isSelected ? BG : CREAM },
+                  ]}>{r.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Rating feedback */}
+          {ratingFeedback[outfit.id] && (
+            <Text style={looksStyles.ratingFeedback}>✦ Thanks! Clozie is learning your taste</Text>
+          )}
+
+          {/* I wore this today */}
+          <TouchableOpacity
+            style={looksStyles.actionButton}
+            activeOpacity={0.7}
+            onPress={() => handleWornToday(outfit.id)}
+          >
+            <Text style={looksStyles.actionButtonText}>
+              {wornToday[outfit.id] ? '✓ Worn today' : 'I wore this today'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Complete The Look */}
+          <TouchableOpacity
+            style={looksStyles.actionButton}
+            activeOpacity={0.7}
+            onPress={() => setShowBoutique((prev) => ({ ...prev, [outfit.id]: !prev[outfit.id] }))}
+          >
+            <Text style={looksStyles.actionButtonText}>✦ Complete The Look</Text>
+          </TouchableOpacity>
+
+          {/* Boutique message */}
+          {showBoutique[outfit.id] && (
+            <Text style={looksStyles.boutiqueMessage}>Boutique partners coming soon ✦</Text>
+          )}
+
+          {/* Share Outfit */}
+          <TouchableOpacity
+            style={looksStyles.actionButton}
+            activeOpacity={0.7}
+          >
+            <Text style={looksStyles.actionButtonText}>Share Outfit ✦</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+
+      {/* Bottom buttons — Regenerate + Save Feedback */}
+      {hasGenerated && (
+        <View style={looksStyles.bottomRow}>
+          <TouchableOpacity
+            style={looksStyles.regenerateButton}
+            activeOpacity={0.7}
+            onPress={handleRegenerate}
+          >
+            <Text style={looksStyles.regenerateButtonText}>🔄 Regenerate</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              looksStyles.feedbackButton,
+              !hasAnyRating && looksStyles.feedbackButtonDisabled,
+            ]}
+            activeOpacity={hasAnyRating ? 0.8 : 1}
+            disabled={!hasAnyRating}
+            onPress={handleRegenerate}
+          >
+            <Text style={looksStyles.feedbackButtonText}>Save Feedback & Style Again →</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </ScrollView>
+  );
+}
+
 // ── Main App Screen — 4 bottom tabs ─────────────────────────────────────────
 function MainAppScreen() {
   const [activeTab, setActiveTab] = useState(0);
   const [wardrobeItems, setWardrobeItems] = useState([]);
+  const [hasTriggeredGenerate, setHasTriggeredGenerate] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -1403,13 +1704,8 @@ function MainAppScreen() {
       {/* Tab content area */}
       {activeTab === 0 && <StyleDNATab onBuildCloset={() => setActiveTab(1)} />}
       {activeTab === 1 && <WardrobeTab items={wardrobeItems} setItems={setWardrobeItems} onGoToVibe={() => setActiveTab(2)} />}
-      {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} />}
-      {activeTab === 3 && (
-        <Animated.View style={[mainStyles.contentArea, { opacity: fadeAnim }]}>
-          <Text style={mainStyles.tabTitle}>{tabTitles[activeTab]}</Text>
-          <Text style={mainStyles.placeholderText}>Your generated outfits will live here ✦</Text>
-        </Animated.View>
-      )}
+      {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} onGenerate={() => { setHasTriggeredGenerate(true); setActiveTab(3); }} />}
+      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} isGenerating={hasTriggeredGenerate} wardrobeItems={wardrobeItems} />}
 
       {/* Bottom tab bar */}
       <View style={mainStyles.tabBar}>
@@ -2811,6 +3107,262 @@ const vibeStyles = StyleSheet.create({
     color: '#555',
     textAlign: 'center',
     marginBottom: 20,
+  },
+});
+
+// ── Your Looks Tab styles ───────────────────────────────────────────────────
+const looksStyles = StyleSheet.create({
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 60,
+    paddingBottom: 40,
+    maxWidth: 480,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  label: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    letterSpacing: 3,
+    marginBottom: 12,
+  },
+  heading: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 28,
+    color: CREAM,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#6A6058',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 16,
+  },
+  emptyTitle: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 20,
+    color: CREAM,
+    marginBottom: 12,
+  },
+  emptyText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: '#6A6058',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  emptyButton: {
+    backgroundColor: G,
+    paddingVertical: 18,
+    paddingHorizontal: 64,
+    borderRadius: 100,
+  },
+  emptyButtonText: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 16,
+    color: BG,
+    textAlign: 'center',
+  },
+  spinStar: {
+    fontSize: 36,
+    color: G,
+    marginBottom: 20,
+  },
+  loadingTitle: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 20,
+    color: CREAM,
+    marginBottom: 8,
+  },
+  loadingSubtext: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: G,
+  },
+  outfitCard: {
+    backgroundColor: CARD,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
+    marginBottom: 16,
+    width: '100%',
+  },
+  photoStrip: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 14,
+  },
+  photoStripItem: {
+    width: '47%',
+    alignItems: 'center',
+  },
+  photoStripThumb: {
+    width: '100%',
+    height: 80,
+    backgroundColor: BG,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  photoStripName: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 9,
+    color: '#999',
+    textAlign: 'center',
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  vibeLabel: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 10,
+    color: G,
+    letterSpacing: 2,
+    marginBottom: 4,
+  },
+  outfitName: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 20,
+    color: CREAM,
+  },
+  outfitDesc: {
+    fontFamily: 'PlayfairDisplay_400Regular_Italic',
+    fontSize: 12,
+    color: '#7A6A58',
+    lineHeight: 19,
+  },
+  matchScore: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    marginTop: 12,
+  },
+  outfitPotential: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 10,
+    color: '#555',
+    marginTop: 4,
+  },
+  moodBoardLink: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    marginTop: 10,
+  },
+  saveButton: {
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 100,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  saveButtonSaved: {
+    borderColor: G,
+  },
+  saveButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: CREAM,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 14,
+  },
+  ratingButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 100,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  ratingButtonSelected: {
+    backgroundColor: G,
+    borderColor: G,
+  },
+  ratingButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 10,
+  },
+  ratingFeedback: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  actionButton: {
+    borderWidth: 1,
+    borderColor: G + '50',
+    borderRadius: 100,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  actionButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+  },
+  boutiqueMessage: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: '#6A6058',
+    textAlign: 'center',
+    marginTop: 6,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  regenerateButton: {
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  regenerateButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: CREAM,
+  },
+  feedbackButton: {
+    flex: 1,
+    backgroundColor: G,
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  feedbackButtonDisabled: {
+    opacity: 0.4,
+  },
+  feedbackButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: BG,
+    textAlign: 'center',
   },
 });
 
