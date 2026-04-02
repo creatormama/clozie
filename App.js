@@ -10,12 +10,14 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { PlayfairDisplay_400Regular, PlayfairDisplay_400Regular_Italic } from '@expo-google-fonts/playfair-display';
 import { DMMono_400Regular } from '@expo-google-fonts/dm-mono';
 import * as NativeSplash from 'expo-splash-screen';
+import Svg, { Path, Ellipse } from 'react-native-svg';
 
 // ── Design tokens — sacred, never change ─────────────────────────────────────
 const G = '#C9A96E';       // gold accent
@@ -843,6 +845,18 @@ function getCategoryColour(category) {
   return colours[category] || '#666';
 }
 
+function getCategoryEmoji(category) {
+  const emojis = {
+    Tops: '👕',
+    Bottoms: '👖',
+    Dresses: '👗',
+    Outerwear: '🧥',
+    Shoes: '👟',
+    Accessories: '💍',
+  };
+  return emojis[category] || '👗';
+}
+
 // ── Wardrobe Tab ────────────────────────────────────────────────────────────
 function WardrobeTab({ items, setItems, onGoToVibe }) {
   const [showAddPanel, setShowAddPanel] = useState(false);
@@ -1384,6 +1398,9 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
   const [ratingFeedback, setRatingFeedback] = useState({});
   const [wornToday, setWornToday] = useState({});
   const [showBoutique, setShowBoutique] = useState({});
+  const [moodBoardOutfit, setMoodBoardOutfit] = useState(null);
+  const [moodBoardTab, setMoodBoardTab] = useState('moodboard');
+  const [mannequinBg, setMannequinBg] = useState('Cream');
 
   const handleRate = (outfitId, rating) => {
     setRatings((prev) => ({ ...prev, [outfitId]: rating }));
@@ -1531,14 +1548,14 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
             {outfit.items.length > 0 ? outfit.items.map((item) => (
               <View key={item.id} style={looksStyles.photoStripItem}>
                 <View style={looksStyles.photoStripThumb}>
-                  <Text style={{ fontSize: 22 }}>👗</Text>
+                  <Text style={{ fontSize: 22 }}>{getCategoryEmoji(item.category)}</Text>
                 </View>
                 <Text style={looksStyles.photoStripName} numberOfLines={1}>{item.name}</Text>
               </View>
             )) : (
               <View style={looksStyles.photoStripItem}>
                 <View style={looksStyles.photoStripThumb}>
-                  <Text style={{ fontSize: 22 }}>👗</Text>
+                  <Text style={{ fontSize: 22 }}>{getCategoryEmoji('Tops')}</Text>
                 </View>
                 <Text style={looksStyles.photoStripName}>Sample item</Text>
               </View>
@@ -1575,7 +1592,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
           <Text style={looksStyles.outfitPotential}>These {outfit.items.length || 3} pieces create {(outfit.items.length || 3) * 4} outfits together</Text>
 
           {/* View Mood Board link */}
-          <TouchableOpacity activeOpacity={0.7}>
+          <TouchableOpacity activeOpacity={0.7} onPress={() => { setMoodBoardTab('moodboard'); setMoodBoardOutfit(outfit); }}>
             <Text style={looksStyles.moodBoardLink}>✦ View mood board</Text>
           </TouchableOpacity>
 
@@ -1669,9 +1686,318 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
           </TouchableOpacity>
         </View>
       )}
+      {/* Mood Board Modal */}
+      <Modal
+        visible={moodBoardOutfit !== null}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setMoodBoardOutfit(null)}
+      >
+        <View style={moodBoardStyles.container}>
+          {/* Header */}
+          <View style={moodBoardStyles.header}>
+            <View style={{ flex: 1 }}>
+              <Text style={moodBoardStyles.vibeLabel}>{moodBoardOutfit?.vibe}</Text>
+              <Text style={moodBoardStyles.outfitName}>{moodBoardOutfit?.name}</Text>
+            </View>
+            <TouchableOpacity
+              style={moodBoardStyles.closeButton}
+              activeOpacity={0.7}
+              onPress={() => setMoodBoardOutfit(null)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={moodBoardStyles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Tabs — Mood Board / On Body */}
+          <View style={moodBoardStyles.tabRow}>
+            <TouchableOpacity
+              style={[
+                moodBoardStyles.tab,
+                moodBoardTab === 'moodboard' && moodBoardStyles.tabActive,
+              ]}
+              activeOpacity={0.7}
+              onPress={() => setMoodBoardTab('moodboard')}
+            >
+              <Text style={[
+                moodBoardStyles.tabText,
+                moodBoardTab === 'moodboard' && moodBoardStyles.tabTextActive,
+              ]}>🖼 Mood Board</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                moodBoardStyles.tab,
+                moodBoardTab === 'onbody' && moodBoardStyles.tabActive,
+              ]}
+              activeOpacity={0.7}
+              onPress={() => setMoodBoardTab('onbody')}
+            >
+              <Text style={[
+                moodBoardStyles.tabText,
+                moodBoardTab === 'onbody' && moodBoardStyles.tabTextActive,
+              ]}>✦ On Body</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Tab content */}
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ padding: 20 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {moodBoardTab === 'moodboard' && moodBoardOutfit && (
+              <View>
+                <View style={moodBoardStyles.itemGrid}>
+                  {moodBoardOutfit.items.map((item) => (
+                    <View
+                      key={item.id}
+                      style={[
+                        moodBoardStyles.itemCard,
+                        moodBoardOutfit.items.length === 1
+                          ? { width: '100%' }
+                          : { width: '48%' },
+                      ]}
+                    >
+                      <View style={moodBoardStyles.itemPhoto}>
+                        <Text style={{ fontSize: 32 }}>{getCategoryEmoji(item.category)}</Text>
+                      </View>
+                      <View style={[moodBoardStyles.itemCategoryTag, { backgroundColor: getCategoryColour(item.category) }]}>
+                        <Text style={moodBoardStyles.itemCategoryText}>{item.category || 'Tops'}</Text>
+                      </View>
+                      <Text style={moodBoardStyles.itemName} numberOfLines={2}>{item.name}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Store Suggestions */}
+                <View style={moodBoardStyles.storeDivider} />
+                <Text style={moodBoardStyles.storeLabel}>STORE SUGGESTIONS</Text>
+                <Text style={moodBoardStyles.storePlaceholder}>Boutique partners coming soon ✦</Text>
+              </View>
+            )}
+
+            {moodBoardTab === 'onbody' && (
+              <View style={moodBoardStyles.mannequinContainer}>
+                <View style={[moodBoardStyles.mannequinBg, { backgroundColor: { Cream: '#F5F0E8', White: '#FFFFFF', Grey: '#9E9E9E', Dark: '#2A2A2A', Sage: '#B5BFA0' }[mannequinBg] }]}>
+                  <Svg width={200} height={420} viewBox="0 0 200 420">
+                    {/* Head */}
+                    <Ellipse cx="100" cy="30" rx="24" ry="30" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
+                    {/* Neck */}
+                    <Path d="M92 58 L92 75 L108 75 L108 58" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
+                    {/* Torso */}
+                    <Path d="M60 80 L58 90 L55 130 L58 180 L65 220 L90 228 L100 230 L110 228 L135 220 L142 180 L145 130 L142 90 L140 80 Z" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
+                    {/* Left arm */}
+                    <Path d="M60 80 L45 100 L35 140 L30 180 L28 210 L32 215 L38 210 L42 180 L48 140 L55 110 L58 90" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
+                    {/* Right arm */}
+                    <Path d="M140 80 L155 100 L165 140 L170 180 L172 210 L168 215 L162 210 L158 180 L152 140 L145 110 L142 90" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
+                    {/* Left leg */}
+                    <Path d="M75 225 L70 270 L68 320 L66 370 L65 400 L60 410 L58 415 L75 418 L80 412 L78 400 L80 370 L82 320 L85 270 L95 228" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
+                    {/* Right leg */}
+                    <Path d="M125 225 L130 270 L132 320 L134 370 L135 400 L140 410 L142 415 L125 418 L120 412 L122 400 L120 370 L118 320 L115 270 L105 228" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
+                  </Svg>
+                </View>
+
+                {/* Background colour selector */}
+                <View style={moodBoardStyles.bgSelectorRow}>
+                  {[
+                    { name: 'Cream', color: '#F5F0E8' },
+                    { name: 'White', color: '#FFFFFF' },
+                    { name: 'Grey', color: '#9E9E9E' },
+                    { name: 'Dark', color: '#2A2A2A' },
+                    { name: 'Sage', color: '#B5BFA0' },
+                  ].map((bg) => (
+                    <TouchableOpacity
+                      key={bg.name}
+                      style={moodBoardStyles.bgOption}
+                      activeOpacity={0.7}
+                      onPress={() => setMannequinBg(bg.name)}
+                    >
+                      <View style={[
+                        moodBoardStyles.bgCircle,
+                        { backgroundColor: bg.color },
+                        mannequinBg === bg.name && moodBoardStyles.bgCircleActive,
+                      ]} />
+                      <Text style={[
+                        moodBoardStyles.bgLabel,
+                        mannequinBg === bg.name && { color: G },
+                      ]}>{bg.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
+          </ScrollView>
+
+        </View>
+      </Modal>
+
     </ScrollView>
   );
 }
+
+// ── Mood Board Modal Styles ─────────────────────────────────────────────────
+const moodBoardStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: BG,
+    paddingTop: 60,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+  },
+  vibeLabel: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  outfitName: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 22,
+    color: CREAM,
+  },
+  closeButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeButtonText: {
+    fontSize: 22,
+    color: G,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    gap: 12,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabActive: {
+    borderBottomColor: G,
+  },
+  tabText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: '#666',
+  },
+  tabTextActive: {
+    color: G,
+  },
+  itemGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  itemCard: {
+    backgroundColor: CARD,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: BORDER,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  itemPhoto: {
+    width: '100%',
+    aspectRatio: 1,
+    backgroundColor: '#1a1916',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  itemCategoryTag: {
+    alignSelf: 'flex-start',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginTop: 10,
+    marginLeft: 10,
+  },
+  itemCategoryText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 10,
+    color: '#fff',
+    textTransform: 'uppercase',
+  },
+  itemName: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 14,
+    color: CREAM,
+    paddingHorizontal: 10,
+    paddingTop: 6,
+    paddingBottom: 12,
+  },
+  storeDivider: {
+    height: 1,
+    backgroundColor: BORDER,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  storeLabel: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    letterSpacing: 2,
+    marginBottom: 8,
+  },
+  storePlaceholder: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: '#888',
+    fontStyle: 'italic',
+  },
+  mannequinContainer: {
+    alignItems: 'center',
+    paddingTop: 8,
+  },
+  mannequinBg: {
+    width: 260,
+    height: 460,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bgSelectorRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+    marginTop: 20,
+  },
+  bgOption: {
+    alignItems: 'center',
+  },
+  bgCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: BORDER,
+  },
+  bgCircleActive: {
+    borderWidth: 2,
+    borderColor: G,
+  },
+  bgLabel: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 10,
+    color: '#666',
+    marginTop: 4,
+  },
+});
 
 // ── Main App Screen — 4 bottom tabs ─────────────────────────────────────────
 function MainAppScreen() {
