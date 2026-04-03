@@ -12,6 +12,7 @@ import {
   Platform,
   Modal,
   Alert,
+  Switch,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -2395,11 +2396,1160 @@ const moodBoardStyles = StyleSheet.create({
   },
 });
 
+// ── Subscription Screen ─────────────────────────────────────────────────────
+function SubscriptionScreen({ onClose }) {
+  const [notifiedPro, setNotifiedPro] = useState(false);
+  const [notifiedElite, setNotifiedElite] = useState(false);
+
+  const handleNotifyPro = () => {
+    // Supabase save comes in Phase 2 when auth is connected
+    setNotifiedPro(true);
+  };
+
+  const proFeatures = [
+    { emoji: '🧳', text: 'Trip Planner — real weather, day by day outfits, activities, missing item alerts, packing list' },
+    { emoji: '🧹', text: 'Clear Out — items unworn 6+ months, Sell/Donate/Swap' },
+    { emoji: '🔄', text: 'Clothes Swap — share items with friends' },
+    { emoji: '🗓', text: 'Outfit Wear History — track what you wore and when' },
+  ];
+
+  const freeFeatures = [
+    'Up to 30 wardrobe items',
+    '7 outfits per week',
+    'Clozie styling + learning',
+    'Saved favourites',
+    'Style DNA profile',
+    'Clozie photo recognition',
+    'Share outfits with friends',
+    'Selfie sharing',
+    'Complete The Look',
+    'Store suggestions in Mood Board',
+    'Wardrobe Intelligence',
+    'Style Match Score + Outfit Potential',
+    'What Goes With This',
+    'Seasonal Wardrobe Report',
+  ];
+
+  return (
+    <View style={subStyles.container}>
+      {/* Header */}
+      <View style={subStyles.header}>
+        <TouchableOpacity
+          style={subStyles.backButton}
+          activeOpacity={0.7}
+          onPress={onClose}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text style={subStyles.backButtonText}>←</Text>
+        </TouchableOpacity>
+        <View style={subStyles.logoWrap}>
+          <Text style={subStyles.logoClo}>Clo</Text>
+          <Text style={subStyles.logoZie}>zie</Text>
+        </View>
+        <View style={{ width: 44 }} />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={subStyles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={subStyles.label}>✦ PLANS & PRICING ✦</Text>
+        <Text style={subStyles.heading}>Choose Your Plan</Text>
+        <Text style={subStyles.subtext}>Simple, honest pricing. No surprises.</Text>
+
+        {/* FREE card */}
+        <View style={subStyles.card}>
+          <Text style={subStyles.planName}>FREE</Text>
+          {freeFeatures.map((feature, i) => (
+            <View key={i} style={subStyles.featureRow}>
+              <Text style={subStyles.featureCheck}>✓</Text>
+              <Text style={subStyles.featureText}>{feature}</Text>
+            </View>
+          ))}
+          <View style={subStyles.currentPlanButton}>
+            <Text style={subStyles.currentPlanText}>✓ Your Current Plan</Text>
+          </View>
+        </View>
+
+        {/* PRO card */}
+        <View style={[subStyles.card, subStyles.proCard]}>
+          <Text style={subStyles.proPlanName}>✦ PRO — Coming Soon</Text>
+          <Text style={subStyles.proPricing}>$6.99/month · $67.99/year</Text>
+          <Text style={subStyles.proIntro}>Everything in Free, unlimited, plus:</Text>
+
+          {proFeatures.map((feature, i) => (
+            <View key={i} style={subStyles.featureRow}>
+              <Text style={subStyles.proEmoji}>{feature.emoji}</Text>
+              <Text style={subStyles.featureText}>{feature.text}</Text>
+            </View>
+          ))}
+
+          {!notifiedPro ? (
+            <TouchableOpacity
+              style={subStyles.notifyButton}
+              activeOpacity={0.8}
+              onPress={handleNotifyPro}
+            >
+              <Text style={subStyles.notifyButtonText}>Notify Me When Pro Launches ✦</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={subStyles.notifiedWrap}>
+              <Text style={subStyles.notifiedText}>✦ You're on the list! We'll let you know the moment Pro is ready.</Text>
+            </View>
+          )}
+        </View>
+
+        {/* ELITE card */}
+        <View style={[subStyles.card, subStyles.proCard]}>
+          <Text style={subStyles.proPlanName}>✦ ELITE — Coming Soon</Text>
+          <Text style={subStyles.proPricing}>$9.99/month · $95.99/year</Text>
+          <Text style={subStyles.proIntro}>Everything in Pro, plus:</Text>
+
+          <View style={subStyles.featureRow}>
+            <Text style={subStyles.proEmoji}>📸</Text>
+            <Text style={subStyles.featureText}>Photo Outfit Matching</Text>
+          </View>
+          <View style={subStyles.featureRow}>
+            <Text style={subStyles.proEmoji}>🛍️</Text>
+            <Text style={subStyles.featureText}>Shop For Me</Text>
+          </View>
+          <View style={subStyles.featureRow}>
+            <Text style={subStyles.proEmoji}>✦</Text>
+            <Text style={subStyles.featureText}>And more exciting features coming</Text>
+          </View>
+
+          {!notifiedElite ? (
+            <TouchableOpacity
+              style={subStyles.notifyOutlineButton}
+              activeOpacity={0.8}
+              onPress={() => setNotifiedElite(true)}
+            >
+              <Text style={subStyles.notifyOutlineButtonText}>Notify Me When Elite Launches ✦</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={subStyles.notifiedWrap}>
+              <Text style={subStyles.notifiedText}>✦ You're on the list! We'll let you know the moment Elite is ready.</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Footer */}
+        <Text style={subStyles.footer}>Secure payment · Cancel anytime · No hidden fees</Text>
+      </ScrollView>
+    </View>
+  );
+}
+
+// ── Subscription Styles ─────────────────────────────────────────────────────
+const subStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: BG,
+    paddingTop: 60,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButtonText: {
+    fontSize: 22,
+    color: G,
+  },
+  logoWrap: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  logoClo: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 22,
+    color: CREAM,
+  },
+  logoZie: {
+    fontFamily: 'PlayfairDisplay_400Regular_Italic',
+    fontSize: 22,
+    color: G,
+  },
+  scrollContent: {
+    padding: 24,
+    paddingBottom: 40,
+  },
+  label: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    letterSpacing: 3,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  heading: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 28,
+    color: CREAM,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  subtext: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: '#888',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  card: {
+    backgroundColor: CARD,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+  },
+  planName: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 20,
+    color: CREAM,
+    marginBottom: 16,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  featureCheck: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: G,
+    width: 22,
+  },
+  featureText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: CREAM,
+    flex: 1,
+    lineHeight: 20,
+  },
+  currentPlanButton: {
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 100,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  currentPlanText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: '#555',
+  },
+  footer: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: '#555',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  proCard: {
+    borderColor: G + '40',
+  },
+  proPlanName: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 20,
+    color: G,
+    marginBottom: 6,
+  },
+  proPricing: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: CREAM,
+    marginBottom: 12,
+  },
+  proIntro: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 14,
+  },
+  proEmoji: {
+    fontSize: 16,
+    width: 26,
+  },
+  notifyButton: {
+    backgroundColor: G,
+    borderRadius: 100,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  notifyButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: BG,
+  },
+  notifyOutlineButton: {
+    borderWidth: 1,
+    borderColor: G,
+    borderRadius: 100,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  notifyOutlineButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: G,
+  },
+  notifiedWrap: {
+    borderWidth: 1,
+    borderColor: G + '40',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  notifiedText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: G,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+});
+
+// ── Settings Screen ─────────────────────────────────────────────────────────
+function SettingsScreen({ onClose, onSignOut }) {
+  // Placeholder user data — will come from Supabase in Phase 2
+  const [displayName, setDisplayName] = useState('Grace');
+  const userEmail = 'insuredbyjacek@msn.com';
+
+  // Subscription modal state
+  const [showSubscription, setShowSubscription] = useState(false);
+
+  // Edit Profile state
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [editName, setEditName] = useState('');
+
+  const openEditProfile = () => {
+    setEditName(displayName);
+    setShowEditProfile(true);
+  };
+
+  const saveProfile = () => {
+    const trimmed = editName.trim();
+    if (trimmed.length > 0) {
+      setDisplayName(trimmed);
+    }
+    setShowEditProfile(false);
+  };
+
+  const cancelEditProfile = () => {
+    setShowEditProfile(false);
+  };
+
+  // Change Password state
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
+
+  const openChangePassword = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowCurrentPw(false);
+    setShowNewPw(false);
+    setShowConfirmPw(false);
+    setShowChangePassword(true);
+  };
+
+  const cancelChangePassword = () => {
+    setShowChangePassword(false);
+  };
+
+  const handleUpdatePassword = () => {
+    // Supabase password update comes in Phase 2
+    setShowChangePassword(false);
+  };
+
+  const handleClearMemory = () => {
+    Alert.alert(
+      'Clear Clozie\'s Memory',
+      'This will reset everything Clozie has learned about your taste. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, reset',
+          onPress: () => {
+            // Supabase clearing comes in Phase 2
+          },
+        },
+      ]
+    );
+  };
+
+  // Delete Account state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteStep, setDeleteStep] = useState(1);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
+  const openDeleteAccount = () => {
+    setDeleteStep(1);
+    setDeleteConfirmText('');
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteAccount = () => {
+    // Supabase account deletion comes in Phase 2
+    setShowDeleteModal(false);
+    onClose();
+    if (onSignOut) onSignOut();
+  };
+
+  return (
+    <View style={settingsStyles.container}>
+      {/* Header */}
+      <View style={settingsStyles.header}>
+        <TouchableOpacity
+          style={settingsStyles.backButton}
+          activeOpacity={0.7}
+          onPress={onClose}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text style={settingsStyles.backButtonText}>←</Text>
+        </TouchableOpacity>
+        <View style={settingsStyles.logoWrap}>
+          <Text style={settingsStyles.logoClo}>Clo</Text>
+          <Text style={settingsStyles.logoZie}>zie</Text>
+        </View>
+        <View style={{ width: 44 }} />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={settingsStyles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={settingsStyles.label}>SETTINGS</Text>
+        <View style={settingsStyles.headingRow}>
+          <Text style={settingsStyles.headingNormal}>Your </Text>
+          <Text style={settingsStyles.headingItalic}>Account</Text>
+        </View>
+
+        {/* ACCOUNT card */}
+        <View style={settingsStyles.card}>
+          {/* Name + email + Edit Profile */}
+          <View style={settingsStyles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={settingsStyles.cardName}>{displayName}</Text>
+              <Text style={settingsStyles.cardEmail}>{userEmail}</Text>
+            </View>
+            <TouchableOpacity activeOpacity={0.7} onPress={openEditProfile}>
+              <Text style={settingsStyles.goldLink}>Edit Profile</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Edit Profile panel — slides in when tapped */}
+          {showEditProfile && (
+            <View style={settingsStyles.editPanel}>
+              {/* Panel header */}
+              <View style={settingsStyles.editPanelHeader}>
+                <Text style={settingsStyles.editPanelLabel}>EDIT PROFILE</Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={cancelEditProfile}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Text style={settingsStyles.editPanelClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Your Name field */}
+              <Text style={settingsStyles.fieldLabel}>Your Name</Text>
+              <TextInput
+                style={settingsStyles.textInput}
+                value={editName}
+                onChangeText={setEditName}
+                placeholderTextColor="#555"
+                autoCapitalize="words"
+                returnKeyType="done"
+              />
+
+              {/* Email field — disabled */}
+              <Text style={settingsStyles.fieldLabel}>Email</Text>
+              <TextInput
+                style={[settingsStyles.textInput, settingsStyles.textInputDisabled]}
+                value={userEmail}
+                editable={false}
+              />
+              <Text style={settingsStyles.fieldNote}>Email cannot be changed</Text>
+
+              {/* Buttons */}
+              <View style={settingsStyles.editButtonRow}>
+                <TouchableOpacity
+                  style={settingsStyles.saveButton}
+                  activeOpacity={0.8}
+                  onPress={saveProfile}
+                >
+                  <Text style={settingsStyles.saveButtonText}>Save Changes</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={settingsStyles.cancelButton}
+                  activeOpacity={0.7}
+                  onPress={cancelEditProfile}
+                >
+                  <Text style={settingsStyles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Divider */}
+          <View style={settingsStyles.divider} />
+
+          {/* Subscription row */}
+          <View style={settingsStyles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={settingsStyles.cardRowLabel}>Subscription</Text>
+              <Text style={settingsStyles.cardRowValue}>Free Plan</Text>
+            </View>
+            <TouchableOpacity activeOpacity={0.7} onPress={() => setShowSubscription(true)}>
+              <Text style={settingsStyles.goldLink}>Upgrade ✦</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* DATA card */}
+        <View style={settingsStyles.card}>
+          {/* Clear Clozie's Memory */}
+          <View style={settingsStyles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={settingsStyles.cardRowLabel}>Clear Clozie's Memory</Text>
+              <Text style={settingsStyles.cardRowValue}>Reset learned preferences</Text>
+            </View>
+            <TouchableOpacity activeOpacity={0.7} onPress={handleClearMemory}>
+              <Text style={settingsStyles.goldLink}>Clear</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Divider */}
+          <View style={settingsStyles.divider} />
+
+          {/* Change Password */}
+          <View style={settingsStyles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={settingsStyles.cardRowLabel}>Change password</Text>
+              <Text style={settingsStyles.cardRowValue}>Update your password</Text>
+            </View>
+            <TouchableOpacity activeOpacity={0.7} onPress={openChangePassword}>
+              <Text style={settingsStyles.goldLink}>Update</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Change Password panel */}
+          {showChangePassword && (
+            <View style={settingsStyles.editPanel}>
+              {/* Panel header */}
+              <View style={settingsStyles.editPanelHeader}>
+                <Text style={settingsStyles.editPanelLabel}>CHANGE PASSWORD</Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={cancelChangePassword}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Text style={settingsStyles.editPanelClose}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Current Password */}
+              <Text style={settingsStyles.fieldLabel}>Current Password</Text>
+              <View style={settingsStyles.passwordWrap}>
+                <TextInput
+                  style={settingsStyles.passwordInput}
+                  value={currentPassword}
+                  onChangeText={setCurrentPassword}
+                  secureTextEntry={!showCurrentPw}
+                  placeholderTextColor="#555"
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={settingsStyles.eyeButton}
+                  activeOpacity={0.7}
+                  onPress={() => setShowCurrentPw(!showCurrentPw)}
+                >
+                  <Text style={settingsStyles.eyeIcon}>{showCurrentPw ? '👁' : '👁‍🗨'}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* New Password */}
+              <Text style={settingsStyles.fieldLabel}>New Password</Text>
+              <View style={settingsStyles.passwordWrap}>
+                <TextInput
+                  style={settingsStyles.passwordInput}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry={!showNewPw}
+                  placeholderTextColor="#555"
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={settingsStyles.eyeButton}
+                  activeOpacity={0.7}
+                  onPress={() => setShowNewPw(!showNewPw)}
+                >
+                  <Text style={settingsStyles.eyeIcon}>{showNewPw ? '👁' : '👁‍🗨'}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Confirm New Password */}
+              <Text style={settingsStyles.fieldLabel}>Confirm New Password</Text>
+              <View style={settingsStyles.passwordWrap}>
+                <TextInput
+                  style={settingsStyles.passwordInput}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPw}
+                  placeholderTextColor="#555"
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={settingsStyles.eyeButton}
+                  activeOpacity={0.7}
+                  onPress={() => setShowConfirmPw(!showConfirmPw)}
+                >
+                  <Text style={settingsStyles.eyeIcon}>{showConfirmPw ? '👁' : '👁‍🗨'}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Buttons */}
+              <View style={settingsStyles.editButtonRow}>
+                <TouchableOpacity
+                  style={settingsStyles.saveButton}
+                  activeOpacity={0.8}
+                  onPress={handleUpdatePassword}
+                >
+                  <Text style={settingsStyles.saveButtonText}>Update Password</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={settingsStyles.cancelButton}
+                  activeOpacity={0.7}
+                  onPress={cancelChangePassword}
+                >
+                  <Text style={settingsStyles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* PREFERENCES card */}
+        <View style={settingsStyles.card}>
+          <View style={settingsStyles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={settingsStyles.cardRowLabel}>Daily outfit notifications</Text>
+              <Text style={settingsStyles.cardRowValue}>Get styled every morning · coming soon</Text>
+            </View>
+            <Switch
+              value={false}
+              disabled={true}
+              trackColor={{ false: BORDER, true: G }}
+              thumbColor="#555"
+              ios_backgroundColor={BORDER}
+            />
+          </View>
+        </View>
+
+        {/* ABOUT card */}
+        <View style={settingsStyles.card}>
+          <View style={settingsStyles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={settingsStyles.cardRowLabel}>Clozie</Text>
+              <Text style={settingsStyles.cardRowValue}>Version 1.0 — Your personal AI stylist</Text>
+            </View>
+            <Text style={settingsStyles.versionText}>v1.0</Text>
+          </View>
+
+          {/* Divider */}
+          <View style={settingsStyles.divider} />
+
+          {/* Delete Account */}
+          <TouchableOpacity
+            style={settingsStyles.deleteAccountButton}
+            activeOpacity={0.7}
+            onPress={openDeleteAccount}
+          >
+            <Text style={settingsStyles.deleteAccountButtonText}>Delete Account</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Sign Out button */}
+        <TouchableOpacity
+          style={settingsStyles.signOutButton}
+          activeOpacity={0.7}
+          onPress={() => {
+            onClose();
+            if (onSignOut) onSignOut();
+          }}
+        >
+          <Text style={settingsStyles.signOutButtonText}>Sign Out</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      {/* Subscription Screen Modal */}
+      <Modal
+        visible={showSubscription}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowSubscription(false)}
+      >
+        <SubscriptionScreen onClose={() => setShowSubscription(false)} />
+      </Modal>
+
+      {/* Delete Account Modal — 2-step confirmation */}
+      <Modal
+        visible={showDeleteModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <View style={settingsStyles.deleteOverlay}>
+          <View style={settingsStyles.deleteModal}>
+            {deleteStep === 1 && (
+              <>
+                <Text style={settingsStyles.deleteHeading}>Delete Your Account</Text>
+                <Text style={settingsStyles.deleteWarningText}>
+                  This will permanently delete:
+                </Text>
+                <View style={settingsStyles.deleteList}>
+                  <Text style={settingsStyles.deleteListItem}>• All your wardrobe items</Text>
+                  <Text style={settingsStyles.deleteListItem}>• All your saved outfits</Text>
+                  <Text style={settingsStyles.deleteListItem}>• Your Style DNA profile</Text>
+                  <Text style={settingsStyles.deleteListItem}>• All outfit ratings and learning data</Text>
+                  <Text style={settingsStyles.deleteListItem}>• Your account</Text>
+                </View>
+                <Text style={settingsStyles.deleteCannotUndo}>This action cannot be undone.</Text>
+
+                <TouchableOpacity
+                  style={settingsStyles.deleteRedButton}
+                  activeOpacity={0.8}
+                  onPress={() => setDeleteStep(2)}
+                >
+                  <Text style={settingsStyles.deleteRedButtonText}>I understand, continue</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={settingsStyles.deleteCancelButton}
+                  activeOpacity={0.7}
+                  onPress={() => setShowDeleteModal(false)}
+                >
+                  <Text style={settingsStyles.deleteCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {deleteStep === 2 && (
+              <>
+                <Text style={settingsStyles.deleteHeading}>Confirm Deletion</Text>
+                <Text style={settingsStyles.deleteWarningText}>
+                  Type DELETE to confirm you want to permanently delete your account and all data.
+                </Text>
+
+                <TextInput
+                  style={settingsStyles.deleteInput}
+                  value={deleteConfirmText}
+                  onChangeText={setDeleteConfirmText}
+                  placeholder="Type DELETE here"
+                  placeholderTextColor="#555"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                />
+
+                <TouchableOpacity
+                  style={[
+                    settingsStyles.deleteRedButton,
+                    deleteConfirmText !== 'DELETE' && settingsStyles.deleteRedButtonDisabled,
+                  ]}
+                  activeOpacity={0.8}
+                  disabled={deleteConfirmText !== 'DELETE'}
+                  onPress={handleDeleteAccount}
+                >
+                  <Text style={[
+                    settingsStyles.deleteRedButtonText,
+                    deleteConfirmText !== 'DELETE' && { opacity: 0.4 },
+                  ]}>Delete My Account</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={settingsStyles.deleteCancelButton}
+                  activeOpacity={0.7}
+                  onPress={() => setShowDeleteModal(false)}
+                >
+                  <Text style={settingsStyles.deleteCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+// ── Settings Styles ─────────────────────────────────────────────────────────
+const settingsStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: BG,
+    paddingTop: 60,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButtonText: {
+    fontSize: 22,
+    color: G,
+  },
+  logoWrap: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  logoClo: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 22,
+    color: CREAM,
+  },
+  logoZie: {
+    fontFamily: 'PlayfairDisplay_400Regular_Italic',
+    fontSize: 22,
+    color: G,
+  },
+  scrollContent: {
+    padding: 24,
+    paddingBottom: 40,
+  },
+  label: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    letterSpacing: 3,
+    marginBottom: 8,
+  },
+  headingRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 24,
+  },
+  headingNormal: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 28,
+    color: CREAM,
+  },
+  headingItalic: {
+    fontFamily: 'PlayfairDisplay_400Regular_Italic',
+    fontSize: 28,
+    color: G,
+  },
+  card: {
+    backgroundColor: CARD,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardName: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 16,
+    color: CREAM,
+    marginBottom: 2,
+  },
+  cardEmail: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#888',
+  },
+  goldLink: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: G,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: BORDER,
+    marginVertical: 14,
+  },
+  cardRowLabel: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: CREAM,
+    marginBottom: 2,
+  },
+  cardRowValue: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#888',
+  },
+  editPanel: {
+    borderTopWidth: 1,
+    borderTopColor: BORDER,
+    marginTop: 14,
+    paddingTop: 14,
+  },
+  editPanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  editPanelLabel: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    letterSpacing: 3,
+  },
+  editPanelClose: {
+    fontSize: 18,
+    color: G,
+    width: 44,
+    height: 44,
+    textAlign: 'center',
+    lineHeight: 44,
+  },
+  fieldLabel: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: CREAM,
+    marginBottom: 6,
+  },
+  textInput: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 14,
+    color: CREAM,
+    backgroundColor: BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 14,
+  },
+  textInputDisabled: {
+    color: '#555',
+    backgroundColor: '#0F0E0C',
+  },
+  fieldNote: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: '#555',
+    marginTop: -10,
+    marginBottom: 14,
+  },
+  editButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: G,
+    borderRadius: 100,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: BG,
+  },
+  cancelButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 100,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: CREAM,
+  },
+  passwordWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 10,
+    marginBottom: 14,
+  },
+  passwordInput: {
+    flex: 1,
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 14,
+    color: CREAM,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  eyeButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  eyeIcon: {
+    fontSize: 18,
+  },
+  versionText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#555',
+  },
+  deleteAccountButton: {
+    borderWidth: 1,
+    borderColor: '#5A2A2A',
+    borderRadius: 100,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  deleteAccountButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: '#C47A7A',
+  },
+  deleteOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  deleteModal: {
+    backgroundColor: CARD,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 360,
+  },
+  deleteHeading: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 22,
+    color: '#C47A7A',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  deleteWarningText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: CREAM,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  deleteList: {
+    marginBottom: 12,
+  },
+  deleteListItem: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#888',
+    lineHeight: 22,
+  },
+  deleteCannotUndo: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#C47A7A',
+    marginBottom: 20,
+  },
+  deleteInput: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 16,
+    color: CREAM,
+    backgroundColor: BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 20,
+    textAlign: 'center',
+    letterSpacing: 2,
+  },
+  deleteRedButton: {
+    backgroundColor: '#5A2A2A',
+    borderRadius: 100,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  deleteRedButtonDisabled: {
+    opacity: 0.4,
+  },
+  deleteRedButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: '#C47A7A',
+  },
+  deleteCancelButton: {
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 100,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  deleteCancelButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: CREAM,
+  },
+  signOutButton: {
+    borderWidth: 1,
+    borderColor: '#5A2A2A',
+    borderRadius: 100,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  signOutButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 14,
+    color: '#C47A7A',
+  },
+});
+
 // ── Main App Screen — 4 bottom tabs ─────────────────────────────────────────
-function MainAppScreen() {
+function MainAppScreen({ onSignOut }) {
   const [activeTab, setActiveTab] = useState(0);
   const [wardrobeItems, setWardrobeItems] = useState([]);
   const [hasTriggeredGenerate, setHasTriggeredGenerate] = useState(false);
+  const [showSettingsScreen, setShowSettingsScreen] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -2422,6 +3572,16 @@ function MainAppScreen() {
   return (
     <View style={mainStyles.container}>
       <StatusBar style="light" />
+
+      {/* Settings gear icon — top right */}
+      <TouchableOpacity
+        style={mainStyles.gearButton}
+        activeOpacity={0.7}
+        onPress={() => setShowSettingsScreen(true)}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Text style={mainStyles.gearIcon}>⚙</Text>
+      </TouchableOpacity>
 
       {/* Tab content area */}
       {activeTab === 0 && <StyleDNATab onBuildCloset={() => setActiveTab(1)} />}
@@ -2453,6 +3613,16 @@ function MainAppScreen() {
           );
         })}
       </View>
+
+      {/* Settings Screen Modal */}
+      <Modal
+        visible={showSettingsScreen}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowSettingsScreen(false)}
+      >
+        <SettingsScreen onClose={() => setShowSettingsScreen(false)} onSignOut={onSignOut} />
+      </Modal>
     </View>
   );
 }
@@ -2509,7 +3679,7 @@ export default function App() {
         />
       )}
       {currentScreen === 'main' && (
-        <MainAppScreen />
+        <MainAppScreen onSignOut={() => setCurrentScreen('welcome')} />
       )}
       {currentScreen === 'auth' && (
         <AuthScreen
@@ -4093,6 +5263,20 @@ const mainStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: BG,
+  },
+  gearButton: {
+    position: 'absolute',
+    top: 56,
+    right: 16,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gearIcon: {
+    fontSize: 22,
+    color: G,
   },
   contentArea: {
     flex: 1,
