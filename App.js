@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -1401,6 +1402,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
   const [moodBoardOutfit, setMoodBoardOutfit] = useState(null);
   const [moodBoardTab, setMoodBoardTab] = useState('moodboard');
   const [mannequinBg, setMannequinBg] = useState('Cream');
+  const [showSavedScreen, setShowSavedScreen] = useState(false);
 
   const handleRate = (outfitId, rating) => {
     setRatings((prev) => ({ ...prev, [outfitId]: rating }));
@@ -1514,7 +1516,20 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
       showsVerticalScrollIndicator={false}
     >
       <Text style={looksStyles.label}>YOUR LOOKS</Text>
-      <Text style={looksStyles.heading}>Your Looks</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={looksStyles.heading}>Your Looks</Text>
+        {savedOutfits.length > 0 && (
+          <TouchableOpacity
+            style={{ paddingVertical: 8, paddingHorizontal: 4 }}
+            activeOpacity={0.7}
+            onPress={() => setShowSavedScreen(true)}
+          >
+            <Text style={{ fontFamily: 'DMMono_400Regular', fontSize: 13, color: G }}>
+              ❤️ Saved ({savedOutfits.length})
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* Empty state — shown when no outfits generated yet */}
       {!hasGenerated && (
@@ -1777,25 +1792,108 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
               </View>
             )}
 
-            {moodBoardTab === 'onbody' && (
+            {moodBoardTab === 'onbody' && (() => {
+              // Determine which items go in which zone — exactly as web app
+              const allItems = moodBoardOutfit.items || [];
+              const isDress = allItems.find(i => i.category === 'Dresses');
+              const top = isDress || allItems.find(i => ['Tops', 'Outerwear'].includes(i.category)) || null;
+              const bottom = isDress ? null : (allItems.find(i => i.category === 'Bottoms') || null);
+              const shoes = allItems.find(i => i.category === 'Shoes') || null;
+              const allAcc = allItems.filter(i => i.category === 'Accessories');
+              const hat = allAcc.find(i => /(hat|cap|beret|beanie|headband)/i.test(i.name || ''));
+              const earring = allAcc.find(i => /(earring|ear|stud|hoop)/i.test(i.name || ''));
+              const bag = allAcc.find(i => /(bag|purse|clutch|tote)/i.test(i.name || ''));
+              const acc1 = hat || earring || allAcc[0] || null;
+              const acc2 = bag || (hat ? earring : null) || allAcc[1] || null;
+              // Items list for gold dots below mannequin
+              const itemList = [isDress ? null : top, bottom, shoes, acc1, acc2].filter(Boolean);
+              if (isDress) itemList.unshift(isDress);
+
+              return (
               <View style={moodBoardStyles.mannequinContainer}>
                 <View style={[moodBoardStyles.mannequinBg, { backgroundColor: { Cream: '#F5F0E8', White: '#FFFFFF', Grey: '#9E9E9E', Dark: '#2A2A2A', Sage: '#B5BFA0' }[mannequinBg] }]}>
-                  <Svg width={200} height={420} viewBox="0 0 200 420">
-                    {/* Head */}
-                    <Ellipse cx="100" cy="30" rx="24" ry="30" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
-                    {/* Neck */}
-                    <Path d="M92 58 L92 75 L108 75 L108 58" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
-                    {/* Torso */}
-                    <Path d="M60 80 L58 90 L55 130 L58 180 L65 220 L90 228 L100 230 L110 228 L135 220 L142 180 L145 130 L142 90 L140 80 Z" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
-                    {/* Left arm */}
-                    <Path d="M60 80 L45 100 L35 140 L30 180 L28 210 L32 215 L38 210 L42 180 L48 140 L55 110 L58 90" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
-                    {/* Right arm */}
-                    <Path d="M140 80 L155 100 L165 140 L170 180 L172 210 L168 215 L162 210 L158 180 L152 140 L145 110 L142 90" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
-                    {/* Left leg */}
-                    <Path d="M75 225 L70 270 L68 320 L66 370 L65 400 L60 410 L58 415 L75 418 L80 412 L78 400 L80 370 L82 320 L85 270 L95 228" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
-                    {/* Right leg */}
-                    <Path d="M125 225 L130 270 L132 320 L134 370 L135 400 L140 410 L142 415 L125 418 L120 412 L122 400 L120 370 L118 320 L115 270 L105 228" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
-                  </Svg>
+                  {/* Mannequin SVG + clothing overlays in one relative container */}
+                  <View style={{ position: 'relative', width: 200, height: 420 }}>
+                    <Svg width={200} height={420} viewBox="0 0 200 420">
+                      {/* Head */}
+                      <Ellipse cx="100" cy="30" rx="24" ry="30" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
+                      {/* Neck */}
+                      <Path d="M92 58 L92 75 L108 75 L108 58" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
+                      {/* Torso */}
+                      <Path d="M60 80 L58 90 L55 130 L58 180 L65 220 L90 228 L100 230 L110 228 L135 220 L142 180 L145 130 L142 90 L140 80 Z" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
+                      {/* Left arm */}
+                      <Path d="M60 80 L45 100 L35 140 L30 180 L28 210 L32 215 L38 210 L42 180 L48 140 L55 110 L58 90" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
+                      {/* Right arm */}
+                      <Path d="M140 80 L155 100 L165 140 L170 180 L172 210 L168 215 L162 210 L158 180 L152 140 L145 110 L142 90" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
+                      {/* Left leg */}
+                      <Path d="M75 225 L70 270 L68 320 L66 370 L65 400 L60 410 L58 415 L75 418 L80 412 L78 400 L80 370 L82 320 L85 270 L95 228" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
+                      {/* Right leg */}
+                      <Path d="M125 225 L130 270 L132 320 L134 370 L135 400 L140 410 L142 415 L125 418 L120 412 L122 400 L120 370 L118 320 L115 270 L105 228" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
+                    </Svg>
+
+                    {/* Dress zone — covers top and bottom */}
+                    {isDress && (
+                      <View style={{ position: 'absolute', top: 60, left: 36, width: 128, height: 340, borderRadius: 10, overflow: 'hidden', opacity: 0.93, backgroundColor: '#f0ede8', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 48 }}>{getCategoryEmoji(isDress.category)}</Text>
+                        <Text style={{ fontFamily: 'DMMono_400Regular', fontSize: 9, color: '#666', marginTop: 4 }}>{isDress.name}</Text>
+                      </View>
+                    )}
+
+                    {/* Top zone — only if no dress */}
+                    {!isDress && top && (
+                      <View style={{ position: 'absolute', top: 58, left: 38, width: 124, height: 170, borderRadius: 8, overflow: 'hidden', opacity: 0.93, backgroundColor: '#f0ede8', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 40 }}>{getCategoryEmoji(top.category)}</Text>
+                        <Text style={{ fontFamily: 'DMMono_400Regular', fontSize: 9, color: '#666', marginTop: 4 }}>{top.name}</Text>
+                      </View>
+                    )}
+
+                    {/* Bottom zone — only if no dress */}
+                    {!isDress && bottom && (
+                      <View style={{ position: 'absolute', top: 220, left: 38, width: 124, height: 190, borderRadius: 8, overflow: 'hidden', opacity: 0.93, backgroundColor: '#f0ede8', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 40 }}>{getCategoryEmoji(bottom.category)}</Text>
+                        <Text style={{ fontFamily: 'DMMono_400Regular', fontSize: 9, color: '#666', marginTop: 4 }}>{bottom.name}</Text>
+                      </View>
+                    )}
+
+                    {/* Shoes zone */}
+                    {shoes && (
+                      <View style={{ position: 'absolute', top: 402, left: 40, width: 120, height: 70, borderRadius: 8, overflow: 'hidden', backgroundColor: '#f0ede8', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 28 }}>{getCategoryEmoji(shoes.category)}</Text>
+                      </View>
+                    )}
+
+                    {/* Accessory 1 — hat on head, otherwise left side */}
+                    {acc1 && /(hat|cap|beret|beanie|headband)/i.test(acc1.name || '') && (
+                      <View style={{ position: 'absolute', top: -10, left: 68, width: 64, height: 44, borderRadius: 8, overflow: 'hidden', backgroundColor: '#f0ede8', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 22 }}>{getCategoryEmoji(acc1.category)}</Text>
+                      </View>
+                    )}
+                    {acc1 && !/(hat|cap|beret|beanie|headband)/i.test(acc1.name || '') && (
+                      <View style={{ position: 'absolute', top: 18, left: 14, width: 36, height: 36, borderRadius: 18, overflow: 'hidden', borderWidth: 2, borderColor: '#fff', backgroundColor: '#f0ede8', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 16 }}>{getCategoryEmoji(acc1.category)}</Text>
+                      </View>
+                    )}
+
+                    {/* Accessory 2 — right side */}
+                    {acc2 && (
+                      <View style={{ position: 'absolute', top: 18, right: 14, width: 36, height: 36, borderRadius: 18, overflow: 'hidden', borderWidth: 2, borderColor: '#fff', backgroundColor: '#f0ede8', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 16 }}>{getCategoryEmoji(acc2.category)}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+
+                {/* Item list with gold dots below mannequin */}
+                <View style={{ marginTop: 12, paddingHorizontal: 20 }}>
+                  {itemList.map((item, i) => (
+                    <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: G }} />
+                      <Text style={{ fontFamily: 'DMMono_400Regular', fontSize: 11, color: '#888' }}>{item.name}</Text>
+                      {item.category && (
+                        <Text style={{ fontFamily: 'DMMono_400Regular', fontSize: 10, color: G, opacity: 0.6 }}>{item.category}</Text>
+                      )}
+                    </View>
+                  ))}
                 </View>
 
                 {/* Background colour selector */}
@@ -1826,15 +1924,313 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
                   ))}
                 </View>
               </View>
-            )}
+              );
+            })()}
           </ScrollView>
 
+        </View>
+      </Modal>
+
+      {/* Saved Outfits Modal */}
+      <Modal
+        visible={showSavedScreen}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowSavedScreen(false)}
+      >
+        <View style={savedStyles.container}>
+          {/* Header */}
+          <View style={savedStyles.header}>
+            <TouchableOpacity
+              style={savedStyles.backButton}
+              activeOpacity={0.7}
+              onPress={() => setShowSavedScreen(false)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={savedStyles.backButtonText}>←</Text>
+            </TouchableOpacity>
+            <View style={{ flex: 1 }} />
+            <TouchableOpacity
+              style={savedStyles.closeButton}
+              activeOpacity={0.7}
+              onPress={() => setShowSavedScreen(false)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={savedStyles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            contentContainerStyle={savedStyles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={savedStyles.label}>MY COLLECTION</Text>
+            <Text style={savedStyles.heading}>Saved Outfits</Text>
+
+            {/* Empty state */}
+            {savedOutfits.length === 0 && (
+              <View style={savedStyles.emptyState}>
+                <Text style={{ fontSize: 48, marginBottom: 16 }}>♡</Text>
+                <Text style={savedStyles.emptyTitle}>Your saved looks will live here ✦</Text>
+                <Text style={savedStyles.emptyText}>
+                  Generate outfits and save the ones you love.
+                </Text>
+                <TouchableOpacity
+                  style={savedStyles.emptyButton}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setShowSavedScreen(false);
+                    onGoToVibe();
+                  }}
+                >
+                  <Text style={savedStyles.emptyButtonText}>Generate My First Looks →</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Saved outfits list */}
+            {savedOutfits.length > 0 && (
+              <>
+                <Text style={savedStyles.countText}>{savedOutfits.length} saved look{savedOutfits.length !== 1 ? 's' : ''} ✦</Text>
+                <Text style={savedStyles.hintText}>Tap an outfit to see the mood board</Text>
+
+                {sampleOutfits
+                  .filter((o) => savedOutfits.includes(o.id))
+                  .map((outfit) => (
+                    <TouchableOpacity
+                      key={outfit.id}
+                      style={savedStyles.outfitCard}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        setShowSavedScreen(false);
+                        setMoodBoardTab('moodboard');
+                        setMoodBoardOutfit(outfit);
+                      }}
+                    >
+                      {/* Photo strip */}
+                      <View style={savedStyles.photoStrip}>
+                        {outfit.items.map((item) => (
+                          <View key={item.id} style={savedStyles.photoStripItem}>
+                            <View style={savedStyles.photoStripThumb}>
+                              <Text style={{ fontSize: 20 }}>{getCategoryEmoji(item.category)}</Text>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+
+                      {/* Vibe + name */}
+                      <Text style={savedStyles.vibeLabel}>{outfit.vibe}</Text>
+                      <Text style={savedStyles.outfitName}>{outfit.name}</Text>
+
+                      {/* Item chips */}
+                      <View style={savedStyles.chipRow}>
+                        {outfit.items.map((item) => (
+                          <View key={item.id} style={savedStyles.chip}>
+                            <Text style={savedStyles.chipText}>{getCategoryEmoji(item.category)} {item.name}</Text>
+                          </View>
+                        ))}
+                      </View>
+
+                      {/* Remove button */}
+                      <TouchableOpacity
+                        style={savedStyles.removeButton}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          Alert.alert(
+                            'Remove ' + outfit.name + '?',
+                            'Remove ' + outfit.name + ' from your collection? This cannot be undone.',
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              {
+                                text: 'Remove',
+                                style: 'destructive',
+                                onPress: () => {
+                                  setSavedOutfits((prev) => prev.filter((id) => id !== outfit.id));
+                                },
+                              },
+                            ]
+                          );
+                        }}
+                      >
+                        <Text style={savedStyles.removeButtonText}>Remove</Text>
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  ))}
+              </>
+            )}
+          </ScrollView>
         </View>
       </Modal>
 
     </ScrollView>
   );
 }
+
+// ── Saved Outfits Styles ────────────────────────────────────────────────────
+const savedStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: BG,
+    paddingTop: 60,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButtonText: {
+    fontSize: 22,
+    color: G,
+  },
+  closeButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeButtonText: {
+    fontSize: 22,
+    color: G,
+  },
+  scrollContent: {
+    padding: 24,
+    paddingBottom: 40,
+  },
+  label: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    letterSpacing: 3,
+    marginBottom: 8,
+  },
+  heading: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 28,
+    color: CREAM,
+    marginBottom: 8,
+  },
+  countText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: G,
+    marginBottom: 4,
+  },
+  hintText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 20,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingTop: 60,
+  },
+  emptyTitle: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 20,
+    color: CREAM,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: '#888',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  emptyButton: {
+    backgroundColor: G,
+    borderRadius: 100,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+  },
+  emptyButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 14,
+    color: BG,
+    textAlign: 'center',
+  },
+  outfitCard: {
+    backgroundColor: CARD,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  photoStrip: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  photoStripItem: {
+    width: '22%',
+  },
+  photoStripThumb: {
+    aspectRatio: 1,
+    backgroundColor: '#1a1916',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  vibeLabel: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  outfitName: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 18,
+    color: CREAM,
+    marginBottom: 10,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 12,
+  },
+  chip: {
+    backgroundColor: BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 100,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  chipText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 10,
+    color: CREAM,
+  },
+  removeButton: {
+    borderWidth: 1,
+    borderColor: '#5A2A2A',
+    borderRadius: 100,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  removeButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 12,
+    color: '#C47A7A',
+  },
+});
 
 // ── Mood Board Modal Styles ─────────────────────────────────────────────────
 const moodBoardStyles = StyleSheet.create({
