@@ -20,7 +20,7 @@ import { useFonts } from 'expo-font';
 import { PlayfairDisplay_400Regular, PlayfairDisplay_400Regular_Italic } from '@expo-google-fonts/playfair-display';
 import { DMMono_400Regular } from '@expo-google-fonts/dm-mono';
 import { DMSerifDisplay_400Regular, DMSerifDisplay_400Regular_Italic } from '@expo-google-fonts/dm-serif-display';
-import { Outfit_400Regular, Outfit_500Medium } from '@expo-google-fonts/outfit';
+import { Outfit_400Regular, Outfit_500Medium, Outfit_700Bold } from '@expo-google-fonts/outfit';
 import * as NativeSplash from 'expo-splash-screen';
 import Svg, { Path, Ellipse } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -81,12 +81,12 @@ function SplashScreenView({ onFinished }) {
   }, []);
 
   return (
-    <View style={styles.screen}>
+    <View style={styles.splashScreen}>
       <StatusBar style="light" />
       <Animated.View style={{ opacity: logoFade }}>
         <Text style={styles.splashLogo}>
-          <Text style={styles.logoClo}>Clo</Text>
-          <Text style={styles.logoZie}>zie</Text>
+          <Text style={styles.splashLogoClo}>Clo</Text>
+          <Text style={styles.splashLogoZie}>zie</Text>
         </Text>
       </Animated.View>
       <Animated.View style={{ opacity: Animated.multiply(labelFade, labelPulse) }}>
@@ -3667,6 +3667,7 @@ export default function App() {
     DMSerifDisplay_400Regular_Italic,
     Outfit_400Regular,
     Outfit_500Medium,
+    Outfit_700Bold,
   });
 
   const onLayoutRootView = useCallback(async () => {
@@ -3757,15 +3758,33 @@ const styles = StyleSheet.create({
   },
 
   // ── Splash Screen styles ────────────────────────────────────────────────
+  splashScreen: {
+    flex: 1,
+    backgroundColor: '#E8E4CE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   splashLogo: {
     flexDirection: 'row',
     marginBottom: 20,
   },
+  splashLogoClo: {
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 72,
+    color: '#2C1A0E',
+    letterSpacing: -2,
+  },
+  splashLogoZie: {
+    fontFamily: 'DMSerifDisplay_400Regular_Italic',
+    fontSize: 72,
+    color: '#C87A52',
+    letterSpacing: -2,
+  },
   splashLabel: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    letterSpacing: 3,
-    color: G,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 12,
+    letterSpacing: 2.5,
+    color: '#C87A52',
     textAlign: 'center',
   },
 
