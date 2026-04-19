@@ -13,13 +13,17 @@ import {
   Modal,
   Alert,
   Switch,
+  ImageBackground,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { PlayfairDisplay_400Regular, PlayfairDisplay_400Regular_Italic } from '@expo-google-fonts/playfair-display';
 import { DMMono_400Regular } from '@expo-google-fonts/dm-mono';
+import { DMSerifDisplay_400Regular, DMSerifDisplay_400Regular_Italic } from '@expo-google-fonts/dm-serif-display';
+import { Outfit_400Regular, Outfit_500Medium } from '@expo-google-fonts/outfit';
 import * as NativeSplash from 'expo-splash-screen';
 import Svg, { Path, Ellipse } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // ── Design tokens — sacred, never change ─────────────────────────────────────
 const G = '#C9A96E';       // gold accent
@@ -27,6 +31,9 @@ const BG = '#0D0C0A';      // background
 const CARD = '#161512';     // card background
 const BORDER = '#252320';   // border color
 const CREAM = '#EDE5D8';    // logo "Clo" color
+
+// ── Welcome Screen photo asset ───────────────────────────────────────────────
+const WELCOME_PHOTO = require('./assets/welcome-photo.jpeg');
 
 // Keep native splash visible while fonts load
 NativeSplash.preventAutoHideAsync();
@@ -102,39 +109,58 @@ function WelcomeScreen({ onNext, onSignIn }) {
   }, []);
 
   return (
-    <View style={styles.screen}>
+    <Animated.View style={[welcomeStyles.screen, { opacity: fadeAnim }]}>
       <StatusBar style="light" />
+      <ImageBackground
+        source={WELCOME_PHOTO}
+        style={welcomeStyles.photo}
+        imageStyle={welcomeStyles.photoImage}
+        resizeMode="cover"
+      >
+        <LinearGradient
+          colors={['rgba(0,0,0,0.65)', 'rgba(0,0,0,0)']}
+          locations={[0, 1]}
+          style={welcomeStyles.topGradient}
+          pointerEvents="none"
+        />
+        <LinearGradient
+          colors={['rgba(232,228,206,0)', 'rgba(232,228,206,0.7)', '#E8E4CE', '#E8E4CE']}
+          locations={[0, 0.25, 0.5, 1]}
+          style={welcomeStyles.bottomGradient}
+          pointerEvents="none"
+        />
 
-      {/* Subtle radial gold glow in centre — Welcome screen ONLY */}
-      <View style={styles.glowContainer}>
-        <View style={styles.glow} />
-      </View>
+        <View style={welcomeStyles.logoBlock} pointerEvents="none">
+          <Text style={welcomeStyles.logoRow}>
+            <Text style={welcomeStyles.logoClo}>Clo</Text>
+            <Text style={welcomeStyles.logoZie}>zie</Text>
+          </Text>
+          <Text style={welcomeStyles.eyebrow}>YOUR PERSONAL STYLIST</Text>
+        </View>
 
-      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-        <Text style={styles.label}>✦ PERSONAL STYLIST ✦</Text>
+        <View style={welcomeStyles.bottomBlock}>
+          <Text style={welcomeStyles.tagline}>
+            Everyone says I have nothing to wear.{'\n'}
+            Clozie solves that in 30 seconds.
+          </Text>
 
-        <Text style={styles.logo}>
-          <Text style={styles.logoClo}>Clo</Text>
-          <Text style={styles.logoZie}>zie</Text>
-        </Text>
+          <View style={welcomeStyles.buttonRing}>
+            <TouchableOpacity
+              style={welcomeStyles.button}
+              activeOpacity={0.85}
+              onPress={onNext}
+            >
+              <Text style={welcomeStyles.buttonText}>Next →</Text>
+            </TouchableOpacity>
+          </View>
 
-        <Text style={styles.emojis}>👗 👔</Text>
-
-        <Text style={styles.tagline}>
-          Everyone says I have nothing to wear.{'\n'}
-          Clozie solves that in 30 seconds.
-        </Text>
-
-        <TouchableOpacity style={styles.goldButton} activeOpacity={0.8} onPress={onNext}>
-          <Text style={styles.goldButtonText}>Next →</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.signInRow}>
-          Already have an account?{' '}
-          <Text style={styles.signInLink} onPress={onSignIn}>Sign in</Text>
-        </Text>
-      </Animated.View>
-    </View>
+          <Text style={welcomeStyles.signInRow}>
+            Already have an account?{' '}
+            <Text style={welcomeStyles.signInLink} onPress={onSignIn}>Sign in</Text>
+          </Text>
+        </View>
+      </ImageBackground>
+    </Animated.View>
   );
 }
 
@@ -3637,6 +3663,10 @@ export default function App() {
     PlayfairDisplay_400Regular,
     PlayfairDisplay_400Regular_Italic,
     DMMono_400Regular,
+    DMSerifDisplay_400Regular,
+    DMSerifDisplay_400Regular_Italic,
+    Outfit_400Regular,
+    Outfit_500Medium,
   });
 
   const onLayoutRootView = useCallback(async () => {
@@ -3825,6 +3855,116 @@ const styles = StyleSheet.create({
   },
   signInLink: {
     color: G,
+  },
+});
+
+// ── Welcome Screen styles (redesign April 2026) ──────────────────────────────
+const welcomeStyles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: '#E8E4CE',
+  },
+  photo: {
+    flex: 1,
+    width: '100%',
+  },
+  photoImage: {
+    width: '100%',
+    height: undefined,
+    aspectRatio: 1099 / 1546,
+    top: 0,
+  },
+  topGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '52%',
+  },
+  bottomGradient: {
+    position: 'absolute',
+    top: '60%',
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  logoBlock: {
+    position: 'absolute',
+    top: 80,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  logoRow: {
+    textAlign: 'center',
+  },
+  logoClo: {
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 64,
+    color: '#F7F0E3',
+  },
+  logoZie: {
+    fontFamily: 'DMSerifDisplay_400Regular_Italic',
+    fontSize: 64,
+    color: '#DC8F68',
+  },
+  eyebrow: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 9,
+    letterSpacing: 3.5,
+    color: '#F7F0E3',
+    opacity: 0.78,
+    marginTop: 13,
+    textAlign: 'center',
+  },
+  bottomBlock: {
+    position: 'absolute',
+    bottom: 60,
+    left: 24,
+    right: 24,
+    alignItems: 'center',
+  },
+  tagline: {
+    fontFamily: 'DMSerifDisplay_400Regular_Italic',
+    fontSize: 18,
+    lineHeight: 26,
+    color: '#5C4A3A',
+    textAlign: 'center',
+  },
+  buttonRing: {
+    marginTop: 28,
+    backgroundColor: '#FFFFFF',
+    padding: 3,
+    borderRadius: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  button: {
+    backgroundColor: '#BCC7B7',
+    paddingVertical: 16,
+    paddingHorizontal: 56,
+    borderRadius: 100,
+  },
+  buttonText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 15,
+    color: '#2C1A0E',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
+  signInRow: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
+    textAlign: 'center',
+    marginTop: 18,
+  },
+  signInLink: {
+    fontFamily: 'Outfit_500Medium',
+    color: '#DC8F68',
   },
 });
 
