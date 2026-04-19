@@ -235,7 +235,7 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
             peekStyles.chip,
             i === 0 ? peekStyles.chipSelected : peekStyles.chipDefault,
           ]}>
-            <Text style={[peekStyles.chipText, { color: i === 0 ? BG : '#555' }]}>{w}</Text>
+            <Text style={[peekStyles.chipText, { color: i === 0 ? '#FFFFFF' : '#5C4A3A' }]}>{w}</Text>
           </View>
         ))}
       </View>
@@ -245,7 +245,7 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
             peekStyles.chip,
             i === 0 ? peekStyles.chipAccent : peekStyles.chipDefault,
           ]}>
-            <Text style={[peekStyles.chipText, { color: i === 0 ? G : '#555' }]}>{o}</Text>
+            <Text style={[peekStyles.chipText, { color: i === 0 ? '#FFFFFF' : '#5C4A3A' }]}>{o}</Text>
           </View>
         ))}
       </View>
@@ -253,7 +253,7 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
   );
 
   const Step3Visual = () => (
-    <View style={[peekStyles.visualCard, { borderColor: G + '40' }]}>
+    <View style={[peekStyles.visualCard, { borderColor: 'rgba(200,122,82,0.35)' }]}>
       <View style={peekStyles.outfitHeader}>
         <View>
           <Text style={peekStyles.outfitVibe}>ROMANTIC</Text>
@@ -291,8 +291,8 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
   const icons = ['📸', '🌤', '✨'];
 
   return (
-    <View style={[styles.screen, { justifyContent: 'flex-start' }]}>
-      <StatusBar style="light" />
+    <View style={peekStyles.screen}>
+      <StatusBar style="dark" />
       <ScrollView
         contentContainerStyle={peekStyles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -301,8 +301,8 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
 
           <View style={peekStyles.headerBlock}>
             <Text style={[styles.logo, { marginBottom: 4 }]}>
-              <Text style={[styles.logoClo, { fontSize: 36 }]}>Clo</Text>
-              <Text style={[styles.logoZie, { fontSize: 36 }]}>zie</Text>
+              <Text style={peekStyles.peekLogoClo}>Clo</Text>
+              <Text style={peekStyles.peekLogoZie}>zie</Text>
             </Text>
             <Text style={peekStyles.howLabel}>✦ HERE'S HOW IT WORKS ✦</Text>
           </View>
@@ -316,8 +316,8 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
                 style={[
                   peekStyles.tab,
                   {
-                    borderColor: activeStep === i ? G : BORDER,
-                    backgroundColor: activeStep === i ? G + '15' : CARD,
+                    borderColor: activeStep === i ? '#C87A52' : 'rgba(44,26,14,0.12)',
+                    backgroundColor: activeStep === i ? 'rgba(200,122,82,0.08)' : '#FFFFFF',
                   },
                 ]}
               >
@@ -332,7 +332,7 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
                 <Text style={{ fontSize: 18, marginBottom: 3 }}>{icon}</Text>
                 <Text style={[
                   peekStyles.tabLabel,
-                  { color: activeStep === i ? G : '#444' },
+                  { color: activeStep === i ? '#C87A52' : '#5C4A3A' },
                 ]}>STEP {i + 1}</Text>
               </TouchableOpacity>
             ))}
@@ -362,20 +362,22 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
                   peekStyles.dot,
                   {
                     width: activeStep === i ? 24 : 8,
-                    backgroundColor: activeStep === i ? G : BORDER,
+                    backgroundColor: activeStep === i ? '#C87A52' : 'rgba(44,26,14,0.15)',
                   },
                 ]} />
               </TouchableOpacity>
             ))}
           </View>
 
-          <TouchableOpacity style={[styles.goldButton, { width: '100%' }]} activeOpacity={0.8} onPress={onStartStyling}>
-            <Text style={styles.goldButtonText}>✦ Start Styling — It's Free</Text>
-          </TouchableOpacity>
+          <View style={peekStyles.buttonRing}>
+            <TouchableOpacity style={peekStyles.button} activeOpacity={0.85} onPress={onStartStyling}>
+              <Text style={peekStyles.buttonText}>✦ Start Styling — It's Free</Text>
+            </TouchableOpacity>
+          </View>
 
-          <Text style={[styles.signInRow, { marginTop: 12 }]}>
+          <Text style={peekStyles.signInRow}>
             Already have an account?{' '}
-            <Text style={styles.signInLink} onPress={onSignIn}>Sign in</Text>
+            <Text style={peekStyles.signInLink} onPress={onSignIn}>Sign in</Text>
           </Text>
 
         </Animated.View>
@@ -3989,6 +3991,11 @@ const welcomeStyles = StyleSheet.create({
 
 // ── Peek Inside Screen styles ────────────────────────────────────────────────
 const peekStyles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: '#E8E4CE',
+    justifyContent: 'flex-start',
+  },
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 60,
@@ -4003,11 +4010,23 @@ const peekStyles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 28,
   },
+  peekLogoClo: {
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 36,
+    color: '#2C1A0E',
+    letterSpacing: -1,
+  },
+  peekLogoZie: {
+    fontFamily: 'DMSerifDisplay_400Regular_Italic',
+    fontSize: 36,
+    color: '#C87A52',
+    letterSpacing: -1,
+  },
   howLabel: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 10,
-    color: G,
-    letterSpacing: 3,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 12,
+    color: '#C87A52',
+    letterSpacing: 2.5,
     marginTop: 12,
   },
 
@@ -4027,7 +4046,7 @@ const peekStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabLabel: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_700Bold',
     fontSize: 9,
     letterSpacing: 1,
   },
@@ -4039,38 +4058,38 @@ const peekStyles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: G,
+    backgroundColor: '#C87A52',
     borderWidth: 2,
-    borderColor: BG,
+    borderColor: '#E8E4CE',
   },
 
   hintText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_700Bold',
     fontSize: 10,
-    color: G,
+    color: '#C87A52',
     letterSpacing: 1,
     textAlign: 'center',
   },
 
   contentCard: {
-    backgroundColor: CARD,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: G + '30',
+    borderColor: 'rgba(44,26,14,0.08)',
     width: '100%',
   },
   cardTitle: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 22,
-    color: CREAM,
+    color: '#2C1A0E',
     marginBottom: 8,
   },
   cardDesc: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 11,
-    color: '#6A6058',
+    color: '#5C4A3A',
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -4087,11 +4106,11 @@ const peekStyles = StyleSheet.create({
   },
 
   visualCard: {
-    backgroundColor: CARD,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: 'rgba(44,26,14,0.12)',
   },
   itemRow: {
     flexDirection: 'row',
@@ -4103,32 +4122,33 @@ const peekStyles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 10,
-    backgroundColor: '#1A1815',
+    backgroundColor: '#E8E4CE',
     alignItems: 'center',
     justifyContent: 'center',
   },
   recognisedLabel: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_700Bold',
     fontSize: 10,
-    color: G,
+    color: '#C87A52',
+    letterSpacing: 2.5,
     marginBottom: 3,
   },
   itemName: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 14,
-    color: CREAM,
+    color: '#2C1A0E',
   },
   itemMeta: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 10,
-    color: '#666',
+    color: '#5C4A3A',
     marginTop: 2,
   },
   checkCircle: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#1A3A1A',
+    backgroundColor: 'rgba(188,199,183,0.35)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -4140,22 +4160,24 @@ const peekStyles = StyleSheet.create({
     flex: 1,
     paddingVertical: 5,
     paddingHorizontal: 4,
-    backgroundColor: BG,
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.12)',
   },
   tagChipText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 9,
-    color: '#666',
+    color: '#5C4A3A',
     textAlign: 'center',
   },
 
   vibeLabel: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 9,
-    color: G,
-    letterSpacing: 2,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 10,
+    color: '#C87A52',
+    letterSpacing: 2.5,
     marginBottom: 10,
   },
   chipRow: {
@@ -4168,22 +4190,22 @@ const peekStyles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 12,
     borderRadius: 100,
-    borderWidth: 1,
+    borderWidth: 1.5,
   },
   chipSelected: {
-    backgroundColor: G,
-    borderColor: G,
+    backgroundColor: '#BCC7B7',
+    borderColor: '#BCC7B7',
   },
   chipAccent: {
-    backgroundColor: G + '20',
-    borderColor: G + '60',
+    backgroundColor: '#BCC7B7',
+    borderColor: '#BCC7B7',
   },
   chipDefault: {
-    backgroundColor: 'transparent',
-    borderColor: BORDER,
+    backgroundColor: '#FFFFFF',
+    borderColor: 'rgba(44,26,14,0.12)',
   },
   chipText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 10,
   },
 
@@ -4194,64 +4216,100 @@ const peekStyles = StyleSheet.create({
     marginBottom: 10,
   },
   outfitVibe: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 9,
-    color: G,
-    letterSpacing: 2,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 10,
+    color: '#C87A52',
+    letterSpacing: 2.5,
   },
   outfitName: {
-    fontFamily: 'PlayfairDisplay_400Regular_Italic',
+    fontFamily: 'DMSerifDisplay_400Regular_Italic',
     fontSize: 16,
-    color: CREAM,
+    color: '#2C1A0E',
   },
   moodTab: {
     paddingVertical: 4,
     paddingHorizontal: 8,
-    backgroundColor: '#1A1512',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: 'rgba(44,26,14,0.12)',
   },
   moodTabText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 9,
-    color: G,
+    color: '#5C4A3A',
   },
   bodyTab: {
     paddingVertical: 4,
     paddingHorizontal: 8,
-    backgroundColor: G + '20',
+    backgroundColor: 'rgba(200,122,82,0.12)',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: G + '60',
+    borderColor: 'rgba(200,122,82,0.5)',
   },
   bodyTabText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 9,
-    color: G,
+    color: '#C87A52',
   },
   outfitChip: {
     flex: 1,
     paddingVertical: 5,
     paddingHorizontal: 4,
-    backgroundColor: BG,
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: BORDER,
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.12)',
   },
   outfitChipText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 9,
-    color: '#8A7A68',
+    color: '#5C4A3A',
     textAlign: 'center',
   },
   outfitDesc: {
-    fontFamily: 'PlayfairDisplay_400Regular_Italic',
+    fontFamily: 'DMSerifDisplay_400Regular_Italic',
     fontSize: 11,
-    color: '#7A6A58',
+    color: '#5C4A3A',
     marginTop: 8,
     lineHeight: 17,
+  },
+
+  buttonRing: {
+    alignSelf: 'stretch',
+    backgroundColor: '#FFFFFF',
+    padding: 3,
+    borderRadius: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  button: {
+    backgroundColor: '#BCC7B7',
+    paddingVertical: 16,
+    paddingHorizontal: 56,
+    borderRadius: 100,
+  },
+  buttonText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 15,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
+  signInRow: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
+    textAlign: 'center',
+    marginTop: 18,
+  },
+  signInLink: {
+    fontFamily: 'Outfit_500Medium',
+    color: '#C87A52',
   },
 });
 
