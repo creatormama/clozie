@@ -734,8 +734,7 @@ function StyleDNATab({ onBuildCloset }) {
       contentContainerStyle={dnaStyles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={dnaStyles.label}>YOUR STYLE DNA</Text>
-      <Text style={dnaStyles.heading}>Your Style Profile</Text>
+      <Text style={dnaStyles.heading}>Your Style</Text>
       <Text style={dnaStyles.subtitle}>
         Clozie uses this to personalize every outfit, the more you use her the better she knows you ✦
       </Text>
@@ -932,9 +931,11 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       contentContainerStyle={wardrobeStyles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      {/* Header row — label + count */}
+      {/* Heading */}
+      <Text style={wardrobeStyles.heading}>Your Closet</Text>
+
+      {/* Item count row */}
       <View style={wardrobeStyles.headerRow}>
-        <Text style={wardrobeStyles.label}>YOUR WARDROBE</Text>
         <Text style={wardrobeStyles.itemCount}>{itemCount}/{maxItems} items</Text>
       </View>
 
@@ -1257,7 +1258,6 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
       contentContainerStyle={vibeStyles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={vibeStyles.label}>TODAY'S VIBE</Text>
       <Text style={vibeStyles.heading}>Today's Vibe</Text>
       <Text style={vibeStyles.subheading}>Let's dress you perfectly for today ✦</Text>
       <View style={vibeStyles.badge}>
@@ -1516,7 +1516,6 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
       contentContainerStyle={looksStyles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={looksStyles.label}>YOUR LOOKS</Text>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text style={looksStyles.heading}>Your Looks</Text>
         {savedOutfits.length > 0 && (
@@ -1578,31 +1577,19 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
             )}
           </View>
 
-          {/* Vibe + name + save row */}
+          {/* Vibe + name */}
           <View style={looksStyles.cardHeaderRow}>
             <View style={{ flex: 1 }}>
               <Text style={looksStyles.vibeLabel}>{outfit.vibe}</Text>
               <Text style={looksStyles.outfitName}>{outfit.name}</Text>
             </View>
-            <TouchableOpacity
-              style={[
-                looksStyles.saveButton,
-                savedOutfits.includes(outfit.id) && looksStyles.saveButtonSaved,
-              ]}
-              activeOpacity={0.7}
-              onPress={() => toggleSave(outfit.id)}
-            >
-              <Text style={looksStyles.saveButtonText}>
-                {savedOutfits.includes(outfit.id) ? '❤️ Saved' : '🤍 Save'}
-              </Text>
-            </TouchableOpacity>
           </View>
 
           {/* Description */}
           <Text style={looksStyles.outfitDesc}>{outfit.description}</Text>
 
           {/* Style Match Score */}
-          <Text style={looksStyles.matchScore}>✦ 94% match with your Style DNA</Text>
+          <Text style={looksStyles.matchScore}>✦ 94% match with Your Style</Text>
 
           {/* Outfit Potential */}
           <Text style={looksStyles.outfitPotential}>These {outfit.items.length || 3} pieces create {(outfit.items.length || 3) * 4} outfits together</Text>
@@ -1612,7 +1599,32 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
             <Text style={looksStyles.moodBoardLink}>✦ View mood board</Text>
           </TouchableOpacity>
 
-          {/* Rating buttons */}
+          {/* Row 1: Save + I wore this today — equal pills */}
+          <View style={looksStyles.actionRow}>
+            <TouchableOpacity
+              style={[
+                looksStyles.actionButtonHalf,
+                savedOutfits.includes(outfit.id) && looksStyles.actionButtonHalfSaved,
+              ]}
+              activeOpacity={0.7}
+              onPress={() => toggleSave(outfit.id)}
+            >
+              <Text style={looksStyles.actionButtonText}>
+                {savedOutfits.includes(outfit.id) ? '❤️ Saved' : '🤍 Save'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={looksStyles.actionButtonHalf}
+              activeOpacity={0.7}
+              onPress={() => handleWornToday(outfit.id)}
+            >
+              <Text style={looksStyles.actionButtonText}>
+                {wornToday[outfit.id] ? '✓ Worn today' : 'I wore this today'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Row 2: Rating buttons */}
           <View style={looksStyles.ratingRow}>
             {[
               { key: 'love', label: '❤️ Love it' },
@@ -1644,38 +1656,27 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
             <Text style={looksStyles.ratingFeedback}>✦ Thanks! Clozie is learning your taste</Text>
           )}
 
-          {/* I wore this today */}
+          {/* Row 3: Share Outfit — primary filled */}
           <TouchableOpacity
-            style={looksStyles.actionButton}
-            activeOpacity={0.7}
-            onPress={() => handleWornToday(outfit.id)}
+            style={looksStyles.primaryButton}
+            activeOpacity={0.8}
           >
-            <Text style={looksStyles.actionButtonText}>
-              {wornToday[outfit.id] ? '✓ Worn today' : 'I wore this today'}
-            </Text>
+            <Text style={looksStyles.primaryButtonText}>Share Outfit ✦</Text>
           </TouchableOpacity>
 
-          {/* Complete The Look */}
+          {/* Row 4: Complete The Look — outline only */}
           <TouchableOpacity
-            style={looksStyles.actionButton}
+            style={looksStyles.outlineButton}
             activeOpacity={0.7}
             onPress={() => setShowBoutique((prev) => ({ ...prev, [outfit.id]: !prev[outfit.id] }))}
           >
-            <Text style={looksStyles.actionButtonText}>✦ Complete The Look</Text>
+            <Text style={looksStyles.outlineButtonText}>✦ Complete The Look</Text>
           </TouchableOpacity>
 
           {/* Boutique message */}
           {showBoutique[outfit.id] && (
             <Text style={looksStyles.boutiqueMessage}>Boutique partners coming soon ✦</Text>
           )}
-
-          {/* Share Outfit */}
-          <TouchableOpacity
-            style={looksStyles.actionButton}
-            activeOpacity={0.7}
-          >
-            <Text style={looksStyles.actionButtonText}>Share Outfit ✦</Text>
-          </TouchableOpacity>
         </View>
       ))}
 
@@ -3561,10 +3562,10 @@ function MainAppScreen({ onSignOut }) {
   }, []);
 
   const tabs = [
-    { label: 'Style DNA', icon: '✦' },
-    { label: `Wardrobe (${wardrobeItems.length})`, icon: '👗' },
+    { label: 'My Style', icon: '✦' },
+    { label: `My Closet (${wardrobeItems.length})`, icon: '👗' },
     { label: "Today's Vibe", icon: '🌤' },
-    { label: 'Your Looks', icon: '◈' },
+    { label: 'My Looks', icon: '◈' },
   ];
 
   const tabTitles = ['YOUR STYLE DNA', 'YOUR WARDROBE', "TODAY'S VIBE", 'YOUR LOOKS'];
@@ -4320,7 +4321,7 @@ const authStyles = StyleSheet.create({
 const dnaStyles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 108,
     paddingBottom: 40,
     alignItems: 'center',
     maxWidth: 480,
@@ -4438,15 +4439,21 @@ const dnaStyles = StyleSheet.create({
 const wardrobeStyles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 108,
     paddingBottom: 40,
     maxWidth: 480,
     alignSelf: 'center',
     width: '100%',
   },
+  heading: {
+    fontFamily: 'PlayfairDisplay_400Regular',
+    fontSize: 28,
+    color: CREAM,
+    marginBottom: 8,
+  },
   headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     marginBottom: 12,
   },
@@ -4851,7 +4858,7 @@ const wardrobeStyles = StyleSheet.create({
 const vibeStyles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 108,
     paddingBottom: 40,
     maxWidth: 480,
     alignSelf: 'center',
@@ -5006,7 +5013,7 @@ const vibeStyles = StyleSheet.create({
 const looksStyles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 60,
+    paddingTop: 108,
     paddingBottom: 40,
     maxWidth: 480,
     alignSelf: 'center',
@@ -5207,6 +5214,56 @@ const looksStyles = StyleSheet.create({
     marginTop: 8,
   },
   actionButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 11,
+    color: G,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 14,
+  },
+  actionButtonHalf: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: G + '50',
+    borderRadius: 100,
+    minHeight: 44,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionButtonHalfSaved: {
+    borderColor: G,
+  },
+  primaryButton: {
+    backgroundColor: G,
+    borderRadius: 100,
+    minHeight: 48,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  primaryButtonText: {
+    fontFamily: 'DMMono_400Regular',
+    fontSize: 13,
+    color: BG,
+    letterSpacing: 1,
+  },
+  outlineButton: {
+    borderWidth: 1,
+    borderColor: G,
+    borderRadius: 100,
+    minHeight: 44,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    backgroundColor: 'transparent',
+  },
+  outlineButtonText: {
     fontFamily: 'DMMono_400Regular',
     fontSize: 11,
     color: G,
