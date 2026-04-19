@@ -84,6 +84,7 @@ Never rush Grace — always reassure warmly.
 - EXPO_PUBLIC_SUPABASE_URL
 - EXPO_PUBLIC_SUPABASE_ANON
 - EXPO_PUBLIC_ANTHROPIC_KEY
+  - NOTE: REMOVE before launch. API key moves to Supabase Edge Function in Phase 2. Never in client code.
 - EXPO_PUBLIC_PHOTOROOM_KEY (only when PhotoRoom is ready — not yet)
 
 ---
@@ -129,13 +130,17 @@ DO NOT change these — they stay as AI:
 WARNING: Limits enforced in code from the very first version of the app. Never unlimited. No exceptions.
 
 - 30 wardrobe items maximum
-- 7 outfit generations per week
+- 12 sessions per week (36 outfits) — rolling 7-day window
+
+Rolling 7-day window: When a user tries to generate, the Edge Function counts their sessions in the last 7 days. If < 12, allow. If >= 12, block and show over-cap error. No cron job, no timezone math.
+
+Session counter only increments on successful API response containing 3 complete outfits. Failed, timed out, or malformed responses do not count.
 
 NUDGE MESSAGES — never a hard wall, always a warm invitation:
 
 At 28 items show: "2 spots left in your free wardrobe ✦ Upgrade to Pro for unlimited"
-At outfit 6 of 7 show: "1 look left this week — Pro members never run out ✦"
-When all 7 used show: "You've used all 7 looks this week ✦ New looks available Monday. In the meantime — explore What Goes With This in your wardrobe, or upgrade to Pro for unlimited looks."
+At session 11 of 12 show: "1 session left this week — Pro members never run out ✦"
+When all 12 sessions used show: "You've used all 12 sessions this week ✦ Sessions refresh as the week rolls forward. In the meantime — explore What Goes With This in your wardrobe, or upgrade to Pro for unlimited looks."
 
 ---
 
@@ -144,7 +149,7 @@ When all 7 used show: "You've used all 7 looks this week ✦ New looks available
 Never hide Pro features completely. Show them. Let her see they exist. Then gate the action behind the upgrade.
 
 Key upgrade moments:
-- Hits 7 outfits mid-week with big weekend coming
+- Hits 12 sessions mid-week with big weekend coming
 - Wardrobe hits 30 items after shopping
 - Planning holiday — sees Trip Planner greyed out
 - Seasonal Report shows unworn items — Clear Out is Pro — upgrades to fix it
@@ -172,63 +177,35 @@ Follow this exact order. Grace approves each step before the next begins.
 
 ---
 
-# CURRENT DESIGN SYSTEM — SACRED. NEVER CHANGE.
+# CURRENT DESIGN SYSTEM — LOCKED (April 2026)
 
 DO NOT CHANGE any of these unless Grace specifically and explicitly asks.
 
-- Background: #0D0C0A
-- Gold accent: #C9A96E
-- Card: #161512
-- Border: #252320
-- Heading font: Playfair Display
-- Body font: DM Mono
-- Logo: "Clo" light cream + "zie" italic gold
-- Style: Dark luxury
+Colors:
+- Background: #E8E4CE
+- Cards: #FFFFFF
+- Headings: #2C1A0E
+- Body text: #5C4A3A
+- Buttons: #BCC7B7 sage green with white ring
+- Unselected chips: white with border rgba(44,26,14,0.12)
+- Logo Clo: #2C1A0E
+- Logo zie (welcome): #DC8F68
+- Logo zie (inner): #C87A52
+- Tab bar active: #C87A52 with dot
+- Tab bar inactive: #2C1A0E at 28%
+- Eyebrow labels: #C87A52, 700 weight, 10px, letter-spacing 2.5px, uppercase
+- App icon background: #D4CFA8
+- Back button: #2C1A0E espresso
 
-In the code these are defined as:
-- G = "#C9A96E" (gold)
-- BG = "#0D0C0A" (background)
-- CARD = "#161512" (card)
-- BORDER = "#252320" (border)
+Fonts: DM Serif Display (logo, titles, outfit names, tagline — 'zie' always italic) + Outfit (all UI, buttons, chips, labels, body text). Both from Google Fonts.
 
----
+Rejected fonts — never use: Cormorant Garamond, Playfair Display, DM Mono.
 
-# COLOR CHANGE PLAN — WHEN / IF GRACE DECIDES
+Category tag pill: background rgba(188,199,183,0.30), text #6B7E65. Unified — all 6 categories use the same sage green pill. No per-category color mapping. Font: Outfit, 9px, weight 500, letter-spacing 0.3px, border-radius 100px, padding 2px 10px.
 
-Current: black and gold stays until Grace decides. No changes until she says so explicitly.
+Warmth tag (None/Light/Medium/Heavy) is NOT displayed on the closet grid card. It is stored on the item data and used by the AI for outfit generation. The user sets warmth when adding/editing an item — it is not visible in the closet browse view.
 
-Option A — Berry Purple + Sage Green
-- Background: #6B3A5B
-- Accent/Logo 'zie': #B5BD6B
-- Buttons: #7A8A3A
-- Cards: #F5F2ED
-
-Option B — Deep Teal + Warm Coral (Grace's current favourite)
-- Background: #1B6B5A + subtle SVG pattern on welcome screen only
-- Accent/Button/Logo 'zie': #E8956A
-- Cards: #F5F0E8
-
-Option C — Cherry Blossom (Deep Teal + Blush Pink)
-- Background: #1E5A6A
-- Accent: #ECAFC0
-- Button: #C84B6A
-- Cards: #FFF0F3
-
-Option D — Cherry Red + Blue Green
-- Background: #5A1E22
-- Accent: #7DBDB8
-- Cards: #F5FAFA
-
-Other explored: Terracotta, Dusty Rose, Fuchsia, Cinnamon Rust, Cobalt Blue, Slate Blue, Forest Green, Coral Red, Navy.
-
-WHEN GRACE DECIDES — FOLLOW EXACTLY:
-- Grace tells Claude Code in plain English
-- Grace uploads a design image showing exactly what she wants
-- Change ONE screen at a time — never whole app
-- Order: Welcome → Splash → Peek Inside → Auth → Style DNA → Wardrobe → Today's Vibe → Your Looks → Mood Board → Saved Outfits → Settings → Subscription
-- Grace tests on iPhone → confirms → approves → then next screen only
-- Risk level: LOW. If wrong: revert immediately.
-- Never assume. Never guess.
+Screen heading layout: no eyebrow labels above headings. Screen titles stand alone in DM Serif Display. The old pattern of small caps labels (e.g. 'YOUR STYLE DNA', 'YOUR WARDROBE', 'TODAY'S VIBE', 'YOUR LOOKS') above headings is removed. Eyebrow labels are ONLY used inside cards as section labels (e.g. 'STYLES I LOVE', 'WEATHER') — never as screen-level headers.
 
 ---
 
@@ -239,7 +216,7 @@ These are confirmed open decisions. Do NOT make any of them without Grace explic
 - Color scheme: Keep current black/gold OR switch to Option B (Deep Teal + Warm Coral) OR Option A/C/D — PENDING — current black/gold stays until Grace decides
 - Welcome screen redesign: Current design (2 emojis) OR new design with phone mockup (teal/coral) — PENDING — Grace will upload design image when ready
 - Phone mockup on welcome screen: Include 160px phone mockup with 2x2 emoji grid — PENDING — only when color decision is made
-- Mannequin vs Flat Lay: Keep SVG mannequin OR switch to flat lay (clothes stacked top to bottom, no body) — PENDING — mannequin stays until Grace decides
+- Mannequin vs Flat Lay: Mannequin replaced by Hanger View (locked April 19, 2026). Decision closed.
 - Large retailers for Shop For Me: Boutiques only OR add large stores like Zara/H&M later — PENDING — boutiques first, Grace decides later
 
 ---
@@ -275,13 +252,13 @@ ALL native app building happens on a testing branch. Never on main.
 
 # WELCOME SCREEN LAYOUT — NATIVE APP
 
-Build exactly as it looks in the live web app. Top to bottom:
+Welcome screen has been redesigned. Full bleed portrait photo, top and bottom gradients, no emojis. See Design Tracker §1.4 for locked spec. Do not match web app.
 
 - ✦ PERSONAL STYLIST ✦ — small, gold accent, letter-spacing 3px, uppercase
 - Logo "Clozie" — large, "Clo" cream, "zie" italic gold
-- Two emojis side by side: 👗 (dress) and 👔 (dress shirt)
-- Tagline — italic Playfair Display, 2 lines: Line 1: Everyone says I have nothing to wear. Line 2: Clozie solves that in 30 seconds.
+- Tagline — italic DM Serif Display, 2 lines: Line 1: Everyone says I have nothing to wear. Line 2: Clozie solves that in 30 seconds.
 - Gold pill button: "Next →"
+- NOTE: Welcome screen button is 'Next →'. Peek Inside button is '✦ Start Styling — It's Free'. Two different buttons, two different actions.
 - "Already have an account? Sign in" — underlined gold link
 - No Preview Demo button — removed completely
 - No 3 bottom icons — removed completely
@@ -299,7 +276,7 @@ This is taken directly from the working web app code. Rebuild each screen to mat
 
 ## BACK BUTTON — APPLIES TO EVERY SCREEN THAT IS NOT A MAIN TAB
 
-Gold ← arrow. Top left corner. Always. 44px minimum tap target. Never hidden. Never missing. No exceptions.
+Espresso #2C1A0E ← arrow. Top left, 44px tap target, every non-tab screen.
 
 ## Splash Screen
 
@@ -314,7 +291,6 @@ Gold ← arrow. Top left corner. Always. 44px minimum tap target. Never hidden. 
 - Dark background with subtle radial gold glow in center
 - ✦ PERSONAL STYLIST ✦ — small, gold, letter-spaced
 - Logo large — "Clo" cream + "zie" italic gold
-- 👗 👔 emoji row
 - Italic tagline: "Everyone says I have nothing to wear. Clozie solves that in 30 seconds."
 - Gold pill button: "Next →"
 - "Already have an account? Sign in"
@@ -327,7 +303,7 @@ TABS ARE TAPPABLE — user taps Step 1 / Step 2 / Step 3 to switch content
 - Active tab: gold border, slightly lighter background
 - Step 1: 📸 'Snap & Add Your Clothes' — shows clothing card with CLOZIE RECOGNISED ✦ label — never AI RECOGNISED
 - Step 2: 🌤 'Tell Clozie Your Day' — shows weather chips + occasion chips
-- Step 3: ✨ 'Get 3 Perfect Outfits' — shows outfit card with Mood Board / On Body tabs
+- Step 3: ✨ 'Get 3 Perfect Outfits' — shows outfit card with Mood Board / Hanger View tabs
 - Bouncing gold dot on Step 1 tab before user taps anything — disappears after first tap
 - Gold pulsing pill: '👆 Tap each step to explore' — MORE VISIBLE than before. Pulses softly 3 times then stays still. Disappears after first tap.
 - Navigation dots at bottom — tap to move between steps
@@ -346,6 +322,7 @@ Sign Up screen:
 - Full name field · Email field · Password field with show/hide eye icon
 - "At least 8 characters" — tiny cream text below password
 - Password requirement: 8 characters minimum ONLY — no other rules
+- Age checkbox: "I confirm I am 13 or older." Unchecked = cannot create account.
 - Gold pill button: "Create Account →"
 - "Already have an account? Sign in"
 - Error messages — warm gold text directly below relevant field:
@@ -374,12 +351,11 @@ Forgot Password screen:
 - After tapping: "✦ Check your email — We've sent a reset link to [her email]"
 - "← Back to Sign In"
 
-All error messages in warm gold DM Mono — below the relevant field — never aggressive red
+All error messages in warm terracotta Outfit font — below the relevant field — never aggressive red
 
 ## Post-Login Welcome Screen
 
 - Shows once for new users only, after first sign up
-- 👗 👔 emojis
 - "Welcome to Clozie" heading
 - "The more you use Clozie, the better she knows you"
 - Gold button: "Let's Start ✦"
@@ -387,11 +363,14 @@ All error messages in warm gold DM Mono — below the relevant field — never a
 
 ## Main App — Four Tabs (bottom navigation)
 
-Tab 1: ✦ Style DNA   Tab 2: 👗 Wardrobe (shows item count)   Tab 3: 🌤 Today's Vibe   Tab 4: ◈ Your Looks
+Tab 1: My Style (star SVG)   Tab 2: My Closet (hanger SVG, shows item count)   Tab 3: Today's Vibe (sun SVG)   Tab 4: My Looks (mirror SVG)
 
-## Style DNA Tab (was 'profile' in code)
+Landing screen behaviour:
+- After first login (new user): lands on My Style tab.
+- Every subsequent app open (returning user): lands on Today's Vibe tab.
 
-- "YOUR STYLE DNA" label in gold
+## My Style Tab (was 'profile' in code)
+
 - "Takes 30 seconds · The more you share, the better your outfits ✦" — subtitle below heading
 - UX note: must feel like a fun quick quiz — not a form. Exciting, not homework.
 - Card: STYLES I LOVE — tag chips: Minimalist, Streetwear, Classic, Bohemian, Sporty, Romantic, Edgy, Business
@@ -403,13 +382,14 @@ Tab 1: ✦ Style DNA   Tab 2: 👗 Wardrobe (shows item count)   Tab 3: 🌤 Tod
 - Gold button: "Build My Closet →"
 - Skip link below button
 
-## Wardrobe Tab (was 'closet' in code)
+## My Closet Tab (was 'closet' in code)
 
-- "YOUR WARDROBE" label + item count in gold top right e.g. "12/30 items"
+- Item count in gold top right e.g. "12/30 items"
 - Gold progress bar below header showing items used
 - Bar turns amber at 25+ items
 - Nudge at 25+: "5 spots left · Upgrade for unlimited ✦"
 - Empty state: closet emoji, 'Every great wardrobe starts with one piece. Add your first item and let's see what Clozie can do ✦'
+- Progressive empty state — 3 states: (1) Empty closet: warm encouragement to add first item. (2) Under 5 items: 'Add X more items for your first outfits ✦'. (3) 5+ items: Generate button activates.
 - Items shown in 2-column grid
 
 Each item card:
@@ -417,9 +397,9 @@ Each item card:
 - ✎ pencil icon (edit) top right corner of photo — 44px minimum tap target
 - × delete icon top right corner of photo (next to pencil) — 44px minimum tap target
 - When × delete tapped — confirmation required: 'Remove [item name]? This cannot be undone.' [Gold button] Remove · [Outlined button] Cancel
-- Coloured category tag pill below photo (Tops=blue, Bottoms=purple, Outerwear=green, Dresses=pink, Shoes=amber, Accessories=gold)
-- Item name in Playfair Display — white, prominent
-- Color description below name in DM Mono — muted grey
+- Unified sage green category tag pill below photo — same color for all 6 categories (Tops, Bottoms, Dresses, Outerwear, Shoes, Accessories). Background: rgba(188,199,183,0.30), text color: #6B7E65. One pill style for all categories — no per-category color mapping.
+- Item name in DM Serif Display — espresso #2C1A0E, prominent
+- Color description below name in Outfit — body text #5C4A3A
 - Last worn date below color — small, muted — e.g. 'Last worn: March 15' or 'Never worn'
 - 'What goes with this? ✦' — small gold link below last worn date
 
@@ -432,6 +412,7 @@ Add Item panel:
 - After scan: green ✅ bar + 'Clozie filled in your details — check and edit below!'
 - If no key: grey bar + 'No Clozie key — fill in details manually'
 - Tip box — always visible, NOT dismissable: '💡 Best results: photograph on a white or light background — Clozie reads colours more accurately.'
+- Upload tip — always visible, not dismissible: 'Upload clothing and accessories only.' Styled in Outfit font, body text color (#5C4A3A), 11px.
 - Fields: Name (required), Category dropdown, Colour/pattern, Notes
 - Fields highlighted in gold when Clozie has filled them in
 - "Add to Closet" button — disabled while scanning
@@ -442,22 +423,24 @@ Add Item panel:
 
 ## Today's Vibe Tab (was 'context' in code)
 
-- "TODAY'S VIBE" label in gold
 - "Let's dress you perfectly for today ✦" — subheading below
-- "Today's Vibe" heading in Playfair
+- Personalized greeting at top: 'Good morning, [Name] ✦' (or afternoon/evening based on device time). Falls back to 'Good morning ✦' if no name. DM Serif Display, espresso #2C1A0E. This IS the heading — not an addition above it.
 - Shows wardrobe count badge: "✦ Styling from X items in your wardrobe"
-- Card: WEATHER OUTSIDE — tag chips: Sunny & Hot, Warm & Breezy, Mild & Cloudy, Cold & Dry, Rainy, Snowy
-- Card: THE OCCASION — tag chips: Casual Day, Work / Office, Date Night, Party, Outdoor / Sport, Formal Event, Weekend Errands, Travel
+- Card: WEATHER OUTSIDE — Two-row weather input. Row 1 — Temperature: Cold / Cool / Warm / Hot. Row 2 — Condition: Sunny / Cloudy / Rainy / Snowy. User selects one from each row. Both required before Generate button activates.
+- Card: THE OCCASION — tag chips: Casual Day, Work / Office, Going Out, Formal Event, Outdoor / Sport, Weekend Errands, Travel
+- 'I'll be indoors' toggle below occasion chips. When ON: skip heavy outerwear suggestions, relax warmth constraints. AI uses the Occasion chip and Brief to decide whether occasion layering (blazer, jacket) is still appropriate indoors.
 - Card: MUST INCLUDE ITEM — Label: 'Optional — pin one item and every outfit will include it ✦' User sees wardrobe thumbnails in horizontal scroll. Tapping highlights in gold. Tapping again deselects.
 - Card: ANYTHING ELSE? — text input for extra notes
+- Brief field — 'Tell Clozie more' text input. Placeholder: 'Tell Clozie more — office is cold, walking outside, anniversary dinner…' When the Brief describes a specific context more precise than the Occasion chip, it outranks the chip and defines the aesthetic direction.
 - Gold pill button sticky: "✦ Generate My Outfits →" — greyed out until weather AND occasion both selected
 - Hint text shown below when greyed: "Select weather and occasion first ✦" — disappears when button activates
 
 WARNING: Every generated outfit MUST include the pinned item — no exceptions. Clozie cannot skip or replace it.
 
+WARNING: Clozie does not use any weather API, GPS, or location service. Weather input is fully manual. This is a locked decision (April 17, 2026).
+
 ## Your Looks Tab (was 'outfits' in code)
 
-- "YOUR LOOKS" label
 - "Your Looks" heading
 - Empty state: 'No outfits yet ✦' 'Head to Today's Vibe, tell Clozie about your day, and she'll create your perfect looks.' [Gold pill button] Go to Today's Vibe →
 - Loading state: Spinning gold ✦ 'Styling your outfits...' 'Clozie is working her magic ✦'
@@ -466,35 +449,36 @@ Each outfit card:
 - Photo strip at top — 2-column grid of item photos with names
 - VIBE label in gold (e.g. ROMANTIC)
 - Outfit name in Playfair (e.g. 'Evening Glow')
-- "✦ 94% match with your Style DNA" — small gold text below outfit name
+- "✦ 94% match with your style profile" — small gold text below outfit name
 - "These 3 pieces create 12 outfits together" — small muted text below score
 - "✦ View mood board" gold link
-- "🤍 Save" / "❤️ Saved" — gold border when saved
 - Item chips showing each item with thumbnail photo
 - Italic description from Clozie
-- Rating buttons: ❤️ Love it / 👍 Like it / 👎 Not for me
-- When tapped: selected button turns gold filled — others stay dark outlined
-- After any rating — warm feedback: '✦ Thanks! Clozie is learning your taste' — fades in then disappears after 2 seconds
-- "I wore this today" button — small, gold outline, below rating buttons
-- When tapped: saves today's date to Supabase against every item in this outfit. Button changes to '✓ Worn today' for a few seconds.
-- "✦ Complete The Look" button — gold outline, on every outfit card
-- Goes straight to ONE boutique suggestion — photo, item name, price, store name, 'Shop Now →' gold button
-- One suggestion only — never a list. Boutique stores only — never large retailers like ASOS or Zara
-- If no boutique connection yet — shows "Boutique partners coming soon ✦"
-- "Share Outfit ✦" button — shares outfit card with Clozie watermark via native share sheet
-- "Share a Selfie ✦" button — opens camera or camera roll — Clozie adds watermark — native share sheet
-- Pre-written caption: "Styled by Clozie. Wear it or not? 👗 👎"
+- Outfit card button hierarchy (confirmed):
+  - Row 1: ♡ Save + 'I wore this today' (equal pills, side by side).
+    - Save: "🤍 Save" / "❤️ Saved" — border colour changes when saved.
+    - 'I wore this today': saves today's date to Supabase against every item in this outfit. Button changes to '✓ Worn today' for a few seconds.
+  - Row 2: rating pills (Love it / Like it / Not for me).
+    - Selected pill fills, others stay outlined.
+    - After rating: '✦ Thanks! Clozie is learning your taste' fades in, disappears after 2 seconds.
+  - Row 3: Share Outfit ✦ (primary sage green).
+    - Shares outfit card with Clozie watermark via native share sheet.
+    - Pre-written caption: "Styled by Clozie. Wear it or not?"
+  - Row 4: ✦ Complete The Look (terracotta outline).
+    - Goes straight to ONE boutique suggestion — photo, item name, price, store name, 'Shop Now →' button.
+    - One suggestion only — never a list. Boutique stores only — never large retailers.
+    - If no boutique connection yet — shows "Boutique partners coming soon ✦".
 
 Bottom of screen — two buttons side by side:
 - Left: 🔄 Regenerate — dark square outlined button
 - Right: "Save Feedback & Style Again →" — large gold filled button
 - Save Feedback button is disabled until at least one outfit is rated
 
-## Mood Board / On Body Screen (modal overlay)
+## Mood Board / Hanger View Screen (modal overlay)
 
 - Opens as full-screen modal overlay — dark semi-transparent background
 - Header: vibe label + outfit name + ✕ Close button
-- Two tabs: 🖼 Mood Board — 'Photos side by side' / ✦ On Body — 'Styled on mannequin'
+- Two tabs: 🖼 Mood Board — 'Photos side by side' / ✦ Hanger View — 'Styled together'
 - Mood Board tab: shows item photos in grid — 1 column for single item, 2 columns for multiple
 
 Store Suggestions section inside Mood Board:
@@ -503,22 +487,11 @@ Store Suggestions section inside Mood Board:
 - Boutiques only — never large retailers
 - FREE feature
 
-On Body tab:
-- SVG mannequin with clothing items layered over it by zone
-- Background color selector: Cream, White, Grey, Dark, Sage
-- Items layer in correct zones: dress/top, bottom, shoes, accessories, hat
-- Item list below mannequin with gold dots
-
-## Mannequin (On Body SVG)
-
-- Built from SVG paths — head, neck, torso, arms, legs, feet
-- Skin color: #DDD0BC with stroke #C8B8A2
-- Clothing items overlay by zone using real item photos with mixBlendMode multiply
-- Zones: Dress (top 60 to bottom 400), Top (58-228), Bottom (220-410), Shoes (402-472), Hat (-10 to 34), Accessories (18 left and right)
-- Background has 5 color options the user can tap to change
-
-WARNING: BUILD MANNEQUIN EXACTLY AS IN WEB APP for now.
-WARNING: DECISION PENDING — Grace is still deciding whether to keep the mannequin or replace it with a flat lay view. Do NOT remove or change the mannequin without Grace's explicit instruction.
+Hanger View tab:
+- Items displayed on a closet rod with hook + hanger, stacked top to bottom
+- Order: Top / Dress → Bottom → Shoes → Accessories
+- Item list below hanger display with gold dots
+- See full Hanger View spec below
 
 ## Saved Outfits Screen
 
@@ -534,13 +507,13 @@ WARNING: DECISION PENDING — Grace is still deciding whether to keep the manneq
 
 ## Clear Out Screen (PRO)
 
-- Accessed from Wardrobe tab — '✦ Clear Out My Wardrobe' button below the item grid
+- Accessed from My Closet tab — '✦ Clear Out My Closet' button below the item grid
 - "Time for a refresh ✦" heading
 - "These pieces haven't been worn in 6 months or more"
 - "X pieces ready to clear out ✦"
 - Each item shows: photo, item name, category, last worn date, and three buttons: Sell · Donate · Swap
 - Sell — Clozie writes a selling description the user can copy straight to Vinted, Facebook Marketplace, or anywhere else
-- Donate — shows nearby donation centres
+- Donate — generates a shareable donation card with item photo, name, size, and condition. User shares via WhatsApp, iMessage, or anywhere. No GPS, no location services, no maps API.
 - Swap — moves item to the Clothes Swap list
 - PRO feature only — free users see upgrade prompt
 
@@ -559,7 +532,7 @@ WARNING: DECISION PENDING — Grace is still deciding whether to keep the manneq
 - Destination field — user types where they are going
 - Date picker — from date and to date
 - Activities — user selects all that apply: Beach · Hiking · City exploring · Formal dinner · Business meetings · Sport · Casual days · Nights out
-- Clozie checks real weather forecast for those dates automatically
+- User provides weather conditions manually per day using the same two-row chip format (Temperature + Condition). No weather API, no location lookup.
 - Generates one outfit per day from the user's actual wardrobe
 - Each day shows: date, weather that day, outfit photos
 - Clozie suggests what is missing from their wardrobe for that specific trip
@@ -573,7 +546,7 @@ WARNING: DECISION PENDING — Grace is still deciding whether to keep the manneq
 - "Privacy Policy" heading in gold
 - Plain text: what data Clozie collects, how it is used, Supabase storage, no selling of data to third parties
 - Last updated date shown at bottom
-- grace@clozie.com contact email at the bottom
+- hello@clozie.net contact email at the bottom
 - No buttons — scroll only
 - WARNING: Must be built before Phase 3 App Store submission — required by Apple
 
@@ -619,33 +592,32 @@ HEADER:
 - ← Back button + Clozie logo
 - "✦ PLANS & PRICING ✦" label in gold
 - "Choose Your Plan" heading
-- "Simple, honest pricing. No surprises." subtext in DM Mono
+- "Simple, honest pricing. No surprises." subtext in Outfit
 
 FREE CARD (shown first — always visible):
 - ✓ Up to 30 wardrobe items
-- ✓ 7 outfits per week
+- ✓ 12 sessions per week (36 outfits)
 - ✓ Clozie styling + learning
 - ✓ Saved favourites
-- ✓ Style DNA profile
+- ✓ style profile
 - ✓ 📸 Clozie photo recognition
 - ✓ Share outfits with friends
-- ✓ Selfie sharing
 - ✓ Complete The Look (one boutique suggestion per outfit)
 - ✓ Store suggestions in Mood Board
 - ✓ Wardrobe Intelligence — Analyse My Wardrobe
 - ✓ Style Match Score + Outfit Potential on every outfit
 - ✓ What Goes With This — tap any item to see pairings
-- ✓ Seasonal Wardrobe Report
 - "✓ Your Current Plan" grey outlined button (disabled — not tappable)
 
 PRO CARD — Coming Soon:
 - "✦ PRO — Coming Soon"
 - $6.99/month · $67.99/year
 - Everything in Free, unlimited, plus:
-- 🧳 Trip Planner — real weather, day by day outfits, activities, missing item alerts, packing list
-- 🧹 Clear Out — items unworn 6+ months, Sell/Donate/Swap
-- 🔄 Clothes Swap — share items with friends
-- 🗓 Outfit Wear History — track what you wore and when
+- Unlimited wardrobe items
+- 10 styling sessions daily
+- Smarter wardrobe tools
+- Plan ahead features
+- Exclusive Pro perks
 - [Gold pill button] "Notify Me When Pro Launches ✦" — Supabase saves email and notify_pro flag
 - Confirmation: "✦ You're on the list! We'll let you know the moment Pro is ready."
 
@@ -670,10 +642,10 @@ Every single one of these must be in the native app:
 - Smart filtering — weather, occasion, heels/sneakers/dress rules
 - Must Include Item — lives in Today's Vibe screen
 - Clozie learns from ratings
-- Style DNA profile (always use 'Style DNA')
+- style profile (always use 'Your Style')
 - Saved favourite outfits
 - Mood Board tab
-- On Body mannequin tab with SVG mannequin
+- Hanger View tab — items displayed on closet rod/hanger, top to bottom
 - Clozie Photo Recognition — camera AND gallery both work
 - Take Photo button + Upload File button — both must work
 - Gold shimmer scanning animation while Clozie reads the photo
@@ -688,7 +660,7 @@ Every single one of these must be in the native app:
 - Subscription page with teaser cards
 - Edit Profile panel in Settings
 - Change Password panel in Settings
-- Coloured category tags (Tops=blue, Bottoms=purple, Dresses=pink, Outerwear=green, Shoes=amber, Accessories=gold)
+- Unified sage green category tag pills — same color for all categories. Background: rgba(188,199,183,0.30), text: #6B7E65.
 - Edit button (✎) for each wardrobe item — 44px tap target
 - Empty wardrobe encouragement
 - Outfit generation works with as few as 5 items
@@ -710,13 +682,11 @@ These are built fresh — exactly why we switched:
 - Store Suggestions in Mood Board — boutique items matching saved outfits
 - Wardrobe Intelligence — Analyse My Wardrobe
 - Style Match Score + Outfit Potential on every outfit card
-- What Goes With This — from Wardrobe tab
-- Seasonal Wardrobe Report
-- Selfie Sharing + Outfit Sharing with watermark
+- What Goes With This — from My Closet tab
+- Outfit Sharing with watermark
 - Trip Planner
 - Clear Out
 - Clothes Swap
-- Stripe payments
 - PhotoRoom — AFTER Stripe is live
 
 ---
@@ -748,7 +718,7 @@ NOTE: Worth trying properly in native — previous failure was a coding mistake,
 
 - VIP emails — never remove, never change
 - Outfit generation rules and smart filtering logic
-- Mannequin SVG — rebuild carefully in native using react-native-svg, do not simplify
+- Hanger View layout and spec — do not change without Grace's approval
 - Colors and fonts — never change unless Grace explicitly asks
 - Supabase database structure — only ever add to it, never break it
 - Web app at clozie.vercel.app — completely frozen, never touch
@@ -797,7 +767,7 @@ To build something:
 
 To test on iPhone:
 - Grace opens Terminal on MacBook (Press Command + Space → type Terminal → press Enter)
-- Grace types this one command and presses Enter: npx expo start
+- Grace types these commands and presses Enter: cd ~/Desktop/Clozie\ Native, then nvm use 20 && npx expo start
 - A QR code appears on the MacBook screen
 - Grace opens the camera on her iPhone
 - Points the camera at the QR code → taps the yellow link that appears
@@ -806,7 +776,7 @@ To test on iPhone:
 - If it works → Grace confirms → Claude Code labels the version and moves to next step
 - If it breaks → revert immediately, never touch anything else first
 
-The ONLY terminal command Grace ever types is: npx expo start
+The terminal commands Grace types are: cd ~/Desktop/Clozie\ Native, then nvm use 20 && npx expo start (no tunnel needed, LAN mode works).
 Everything else — building, fixing, labelling — is done through Claude Code in plain English.
 
 ---
@@ -823,15 +793,24 @@ RULE 7: LABEL EVERY WORKING VERSION — date + description every time
 RULE 8: VERIFY CODE IS COMPLETE before giving to Grace — no partial files ever
 RULE 9: NEVER LIE, NEVER GUESS — if unsure, say so and ask Grace
 RULE 10: IF SOMETHING BREAKS — revert immediately, never pile fixes on top
-RULE 11: NEVER TOUCH outfit rules, VIP emails, mannequin, Supabase structure, design
+RULE 11: NEVER TOUCH outfit rules, VIP emails, Hanger View layout, Supabase structure, design
 RULE 12: ONLY WORK FROM FILES GRACE GIVES YOU — never assume or invent
 RULE 13: DOUBLE CHECK NOTHING IS FORGOTTEN before finishing any session
 RULE 14: WHEN IN DOUBT — ask Grace first
 RULE 15: FOLLOW GRACE'S WORKFLOW EVERY TIME — no shortcuts ever
 RULE 16: DO NOT APOLOGIZE EXCESSIVELY — just follow the rules instead
 RULE 17: NEVER SAY AI TO USERS — anything visible in the app always says Clozie, never AI
+RULE 18: NEVER EDIT CLAUDE.md without showing Grace the exact change word for word and waiting for YES. Additions and archiving only — nothing permanently deleted.
 
 Every step must be LOW risk. Every step must be tested and confirmed by Grace before the next step begins. Grace needs proof everything works before moving forward. No exceptions. Ever.
+
+---
+
+# UI STATES — LOCKED APRIL 19 2026
+
+Error colors: errors do NOT use red or orange. Error headings: #2C1A0E espresso. Error body text: #5C4A3A. Inline error messages: #C87A52 terracotta at 88% opacity. Errors feel like gentle Clozie guidance, not alarm bells.
+
+Disabled button: background #BCC7B7 sage green at 45% opacity. Text: white at 35% opacity. No white ring on disabled state. Button appears muted but recognizable.
 
 ---
 
@@ -840,26 +819,24 @@ Every step must be LOW risk. Every step must be tested and confirmed by Grace be
 ## FREE PLAN
 
 - Up to 30 wardrobe items
-- 7 outfit generations per week
+- 12 sessions per week (36 outfits) — rolling 7-day window
 - Clozie styling + learning
 - Saved favourites
-- Style DNA profile
+- style profile
 - 📸 Clozie photo recognition
 - Share outfits with friends
-- Selfie sharing with Clozie watermark
 - ✦ Complete The Look — Clozie suggests ONE boutique piece to complete outfit — earns commission
 - Store Suggestions inside Mood Board — boutique items matching saved outfits — earns commission
 - Wardrobe Intelligence — Analyse My Wardrobe — finds gaps and imbalances
-- ✦ Style Match Score — % match with Style DNA on every outfit card
+- ✦ Style Match Score — % match with style profile on every outfit card
 - ✦ Outfit Potential — how many combinations these pieces create
 - What Goes With This — tap any item, Clozie shows everything that pairs with it
-- Seasonal Wardrobe Report — notification driven, shows style evolution
-- WARNING: Limits enforced in code from day one — 30 items, 7 outfits per week. Never unlimited. No exceptions.
+- WARNING: Limits enforced in code from day one — 30 items, 12 sessions per week. Never unlimited. No exceptions.
 
 ## PRO PLAN — $6.99/month or $67.99/year (20% off)
 
 - Everything in Free — unlimited
-- Trip Planner — enter destination + dates, real weather API, outfit per day from your wardrobe, packing list with Clozie watermark
+- Trip Planner — enter destination + dates, manual weather per day, outfit per day from your wardrobe, packing list with Clozie watermark
 - Clear Out — items not worn in 6+ months flagged, Sell / Donate / Swap each one
 - Clothes Swap — mark items for swap, share swap card with watermark
 - Outfit Wear History — tracks which items are worn and when, feeds Clear Out and Trip Planner
@@ -884,10 +861,10 @@ Every step must be LOW risk. Every step must be tested and confirmed by Grace be
 
 Screen opens with a large '✨ Surprise Me' button at the top.
 
-If user taps Surprise Me — Clozie uses only their Style DNA plus the 2 required answers below.
+If user taps Surprise Me — Clozie uses only their style profile plus the 2 required answers below.
 
 Otherwise user answers the questionnaire — all questions visible on screen at once:
-- Occasion — Date Night / Work / Party / Wedding Guest / Special Event / Indoor Event / Surprise Me — REQUIRED
+- Occasion — Going Out / Work / Wedding Guest / Special Event / Indoor Event / Surprise Me — REQUIRED
 - Indoor or Outdoor — always shown for every occasion — REQUIRED
 - Season — Spring / Summer / Autumn / Winter — optional
 - Looking For — Full outfit / Dress / Top / Trousers / Shoes / Jacket / Accessories / Surprise Me — optional
@@ -895,7 +872,7 @@ Otherwise user answers the questionnaire — all questions visible on screen at 
 - Budget — price range slider — optional
 - Anything Else — free text — optional
 
-Clozie uses Style DNA to fill in everything the user skips.
+Clozie uses your style profile to fill in everything the user skips.
 
 Results: 2-3 complete outfit options from ALL stores. User picks outfit, sees each piece with photo, price, store name. Can swap any individual piece. Buy button on each piece — taps it — goes directly to store website. Clozie earns commission on every purchase.
 
@@ -912,11 +889,14 @@ Results: 2-3 complete outfit options from ALL stores. User picks outfit, sees ea
 Smart filtering rules — ALL must be respected every single time:
 - Weather-appropriate — checks temperature and season
 - Occasion-appropriate — casual, work, formal, smart casual, etc.
-- Heels rule — never paired with casual or sporty outfits unless user explicitly asks
-- Sneakers rule — matched to casual and sporty occasions only
-- Dress rule — a dress is a complete outfit, no bottoms ever added to it
+- Heels rule — never with Outdoor / Sport or Weekend Errands (unless pinned as Must Include). Heels allowed with Going Out, Work / Office, and Formal Event. Heels allowed with Casual Day — AI uses judgment based on Brief.
+- Sneakers rule — never with Formal Event (unless pinned). Sneakers allowed with Going Out — AI uses judgment based on Brief. Sneakers allowed with Casual Day, Work / Office, Outdoor / Sport, Weekend Errands, and Travel.
+- Dress rule — Dresses fine for all occasions. When Brief mentions sport, gym, hiking, or heavy physical activity, AI skips dresses unless she explicitly requests one.
 - Cold/Rainy rule — outerwear is added when weather is cold or rainy
-- Before generating: Clozie reads the user's Style DNA
+- Warmth tags apply to ALL categories — Tops, Bottoms, Dresses, AND Outerwear. Each item may have a warmth tag: None, Light, Medium, or Heavy. Cold prefers Heavy/Medium. Hot prefers Light/None. Cool and Warm mix freely.
+- Outerwear splits into two categories: (a) THERMAL — warmth response to weather (heavy coats, puffers, parkas). Add only when Cold or Cool. Match warmth tag to temperature. (b) OCCASION LAYERING — aesthetic signaling (blazers, structured jackets, leather jackets). Responds to Occasion, not weather. Gated only by warmth tag compatibility.
+- Indoor climate signals: if Brief mentions cold indoor conditions ('office is freezing', 'AC is cold'), add a light warmth layer even if outside is warm.
+- Before generating: Clozie reads the user's style profile
 - Before generating: Clozie reads all past ratings and learning notes
 - Before generating: Clozie reads the 'Anything Else?' free text
 - Clozie avoids repeating outfit combinations the user has rated poorly
@@ -956,7 +936,7 @@ HOW BOUTIQUE CONNECTION WORKS:
 
 ## Wardrobe Intelligence — Analyse My Wardrobe
 
-- Lives in Wardrobe tab — '✦ Analyse My Wardrobe' button
+- Lives in My Closet tab — '✦ Analyse My Wardrobe' button
 - FREE feature — available to all users
 - When tapped: Clozie scans entire wardrobe and identifies gaps and imbalances
 - Shows maximum 3 observations — warm encouraging tone — never makes user feel bad
@@ -964,7 +944,7 @@ HOW BOUTIQUE CONNECTION WORKS:
 
 ## What Goes With This
 
-- Lives on every item card in Wardrobe tab — 'What goes with this? ✦' small gold link
+- Lives on every item card in My Closet tab — 'What goes with this? ✦' small gold link
 - FREE feature — available to all users
 - When tapped: Clozie scans entire wardrobe and shows all items that pair well with this piece
 - Results shown as warm grid of item thumbnails
@@ -973,24 +953,20 @@ HOW BOUTIQUE CONNECTION WORKS:
 ## Style Match Score + Outfit Potential
 
 - Both shown on every outfit card in Your Looks tab
-- Style Match Score: '✦ 94% match with your Style DNA' — how well outfit matches user's taste
+- Style Match Score: '✦ 94% match with your style profile' — how well outfit matches user's taste
 - Outfit Potential: 'These 3 pieces create 12 outfits together' — shows versatility of pieces
 - Both are FREE — available to all users
 
 ## Seasonal Wardrobe Report
 
-- FREE feature — available to all users
-- Triggered by notification — e.g. 'Your Spring Wardrobe Report is ready ✦'
-- Shows: most worn item this season, least worn item, style DNA evolution, top outfit
-- Warm encouraging tone — celebrates what the user owns
-- Shareable as a card with Clozie watermark
+Seasonal Wardrobe Report moved to Phase 4+ as a Pro feature. No spec needed before Phase 2.
 
 ## Outfit Wear History
 
 - On every outfit card in Your Looks tab: 'I wore this today' button — small, gold outline
 - When tapped: saves today's date to Supabase against every item in that outfit
 - Button changes to '✓ Worn today' for a few seconds then returns to normal
-- On every item card in Wardrobe tab: shows 'Last worn: [date]' or 'Never worn'
+- On every item card in My Closet tab: shows 'Last worn: [date]' or 'Never worn'
 - This data feeds: Clear Out (flags items not worn in 6+ months) and Trip Planner and Seasonal Report
 
 ## Clozie Photo Recognition
@@ -1015,14 +991,14 @@ Simple memory — like a notepad Clozie checks before styling you.
 
 Phase 2 upgrade:
 Clozie saves specific details from every rating — exact color, category, occasion.
-After 5+ ratings, Clozie detects patterns and adds them to the user's Style DNA automatically.
+After 5+ ratings, Clozie detects patterns and adds them to the user's style profile automatically.
 The more they use it, the smarter it gets. It starts to feel like a real personal stylist.
 
-## Style DNA
+## Your Style
 
 - Built from what the user selects and from their ratings over time
 - Stores: favourite styles, favourite color palettes, dislikes, pattern-detected preferences
-- Shown to the user on their Style DNA tab
+- Shown to the user on their My Style tab
 - Never reset or deleted — always saved safely in Supabase
 - Always read by Clozie before generating any outfit suggestions
 
@@ -1032,13 +1008,9 @@ The more they use it, the smarter it gets. It starts to feel like a real persona
 - Grid: 1 column for 1 item, 2 columns for 2+ items
 - If no item photos: empty state with instructions
 
-## On Body — Mannequin View
+## Hanger View
 
-- SVG mannequin with real clothing item photos layered over it by zone
-- Zones: dress/top, bottom, shoes, hat, accessories (earrings/bag)
-- Background color selector: Cream, White, Grey, Dark, Sage
-- Items list shown below mannequin with gold dots
-- Rebuild mannequin carefully using react-native-svg — decision pending on whether to keep or replace with flat lay
+Hanger View (locked April 19, 2026). Tab label: 'Hanger View'. Subtitle: 'Styled together'. Tab ID: 'hanger'. Tab icon: hanger SVG (same as My Closet tab bar icon, scaled to fit modal tab label). Layout: closet rod → hook → hanger → items stacked top to bottom (Top/Dress → Bottom → Shoes → Accessories). object-fit: contain on all items. Slight negative margin overlap. Background color selector: 5 options (Cream #F5F0E8, White #FFFFFF, Sage #E8E4CE, Dark #2C1A0E, Sage green #BCC7B7). Apple Vision background removal on iOS 16+ (on-device, no privacy impact, fallback to full photos). Heavy outerwear not shown — light outerwear shows. Open items needing mockup: accessory placement, light outerwear layering. See full spec in hanger-view-update-spec.
 
 ---
 
@@ -1049,7 +1021,7 @@ User rates an outfit → Clozie saves a note → Clozie reads all notes before g
 
 Phase 2 upgrade:
 Saves specific color, type, occasion from every rating.
-After 5+ ratings, detects patterns, adds to Style DNA automatically.
+After 5+ ratings, detects patterns, adds to style profile automatically.
 Feels personal. Feels like it knows you.
 
 ---
@@ -1065,12 +1037,11 @@ Free feature — builds daily habit and retention. Build in Phase 2 — not Phas
 
 ---
 
-# REFERRAL SYSTEM — PHASE 2
+# REFERRAL SYSTEM — DEFERRED TO PHASE 4+
 
-Every user gets a unique referral link.
-When a friend uses it and signs up — Supabase records who referred them.
-Referrer gets 3 bonus outfit generations that week — credited automatically.
-Build in Phase 2 — not Phase 1.
+Referral system deferred to Phase 4+. Not in scope for Phase 2.
+
+(Planned spec, for when it's revisited: every user gets a unique referral link. When a friend uses it and signs up — Supabase records who referred them. Referrer gets 3 bonus outfit generations that week — credited automatically.)
 
 ---
 
@@ -1089,11 +1060,11 @@ One screen at a time. In this exact order. Grace approves each screen before the
 - Login Screen + Sign Up Screen + Forgot Password — with exact headings and error messages per spec above
 - Post-Login Welcome Screen — new users only
 - Main App shell — 4 bottom tabs with correct labels and icons
-- Style DNA Tab — style tags, color tags, dislikes input, learning notes, subtitle, chip states
-- Wardrobe Tab — grid view, item count + progress bar, add item, photo upload + Clozie recognition, edit item, delete item + confirmation, coloured tags, empty encouragement, last worn date, What Goes With This, Analyse My Wardrobe button
+- My Style Tab — style tags, color tags, dislikes input, learning notes, subtitle, chip states
+- My Closet Tab — grid view, item count + progress bar, add item, photo upload + Clozie recognition, edit item, delete item + confirmation, coloured tags, empty encouragement, last worn date, What Goes With This, Analyse My Wardrobe button
 - Today's Vibe Tab — weather tags, occasion tags, Must Include Item picker, extra note, generate button
 - Your Looks Tab — outfit cards, photos, Style Match Score, Outfit Potential, rating buttons, save button, mood board link, regenerate, 'I wore this today', Complete The Look
-- Mood Board + On Body modal — tabs, photo grid, Store Suggestions, SVG mannequin, background selector
+- Mood Board + Hanger View modal — tabs, photo grid, Store Suggestions, Hanger View layout, background selector
 - Saved Outfits Screen — grid of saved looks, tap to view mood board, remove button
 - Settings Screen — edit profile, change password, Clear Clozie's Memory, notifications toggle, sign out, delete account
 - Subscription Screen — free plan features, Pro teaser + Notify Me, Elite teaser + Notify Me
@@ -1105,15 +1076,12 @@ One screen at a time. In this exact order. Grace approves each screen before the
 - Clozie smarter learning — smarter note-saving + pattern detection after 5+ ratings
 - Native sharing — outfit cards + Clozie watermark — works on iPhone + Android
 - Save to camera roll — Expo MediaLibrary
-- Selfie Sharing — camera or camera roll, watermark, native share sheet
 - Complete The Look fully connected to boutique partners
 - Store Suggestions in Mood Board fully connected
 - Wardrobe Intelligence fully working
 - Outfit Wear History saving to Supabase correctly
-- Seasonal Wardrobe Report — notification triggered
 - What Goes With This fully working
 - Daily Notifications — Expo Notifications, 7:30am default, permission prompt on first open
-- Referral System — unique link, 3 bonus outfits on friend signup
 
 ## PHASE 3 — App Store + Google Play
 
@@ -1164,10 +1132,10 @@ One screen at a time. In this exact order. Grace approves each screen before the
 
 "Styled by Clozie ✦ Find us in the App Store"
 
-This applies to: outfit cards, swap cards, packing lists, selfies, voting cards, seasonal reports.
+This applies to: outfit cards, swap cards, packing lists, voting cards, seasonal reports.
 No exceptions. Ever.
 
-Pre-written caption Clozie suggests when sharing an outfit: "Styled by Clozie. Wear it or not? 👗 👎"
+Pre-written caption Clozie suggests when sharing an outfit: "Styled by Clozie. Wear it or not?"
 User just taps share — caption is pre-filled. No friction.
 
 ---
@@ -1177,19 +1145,37 @@ User just taps share — caption is pre-filled. No friction.
 - Claude Desktop app — claude.com/download — this is where Claude Code lives
 - Claude Code — inside Claude Desktop — Grace types plain English, Claude Code builds
 - Expo Go — free app on iPhone — used to test on phone
-- Terminal — Grace opens this ONE time per session to type: npx expo start
+- Terminal — Grace opens this ONE time per session to type: cd ~/Desktop/Clozie\ Native, then nvm use 20 && npx expo start
 - Claude.ai chat — strategy, decisions, colors, brainstorming, questions
 
 ---
 
 # BUSINESS TASKS
 
-TRADEMARK — USPTO.gov — ALREADY FILED
+TRADEMARK — FILED March 22, 2026. Serial 99717374. In review queue.
 Clozie filed in Class 042. TM symbol usable now. Full approval pending. USPTO account uses insuredbyjacek@msn.com.
 
-DOMAIN — clozie.com — ALREADY PURCHASED via Namecheap
+DOMAIN — clozie.net (registered).
 
-EMAIL — grace@clozie.com — ALREADY SET UP via Zoho Mail
+EMAIL — hello@clozie.net (Namecheap Private Email).
+
+LLC — Clozie LLC approved April 13, 2026. Registered with Northwest Registered Agent. Address: 418 Broadway STE N, Albany NY 12207.
+
+D-U-N-S — request ~2 weeks before App Store submission. Not today.
+
+COMPLIANCE — GDPR handled via Termly from day one — applies to any EU user who downloads regardless of marketing.
+
+PAYMENTS — Pro subscriptions on iOS use Apple In-App Purchase via RevenueCat in Phase 4. Stripe is not used for in-app purchases. Older Stripe-in-app guidance is obsolete.
+
+ANTHROPIC DATA HANDLING — point to their privacy policy, never promise on their behalf. Correct language: 'Your wardrobe photos and style preferences are processed by Anthropic to generate outfit suggestions. For details on how Anthropic handles data, see their privacy policy at anthropic.com/privacy.' Do not claim Anthropic does or does not store photos.
+
+REFUNDS — handled by Apple, not by Clozie. TOS must state: 'To request a refund, visit reportaproblem.apple.com or contact Apple Support.'
+
+REASONABLE PERSONAL USE — unlimited wardrobe clause: 'Accounts used for commercial purposes, automated bulk uploads, or activity inconsistent with personal wardrobe management may be suspended.'
+
+SHARE CARD CONTENT PROTECTION — user retains ownership of photos. Clozie watermark may not be removed. User grants limited license for promotional use with credit.
+
+AI CONSENT MODAL (Apple guideline 5.1.2(i)) — one-time modal before first outfit generation. Title: 'Before Clozie styles you'. Body explains Anthropic processes wardrobe photos, links to anthropic.com/privacy. Buttons: 'Accept — I'm ready to style ✦' and 'Not now'. Shown once, consent stored in Supabase. Must name Anthropic explicitly.
 
 AFFILIATES — Commission-only — no upfront cost to partners ever.
 Sign up in this order when Shop For Me is ready to build:
@@ -1212,7 +1198,7 @@ INSTAGRAM — @cloziestyle
 
 - Clear Out with Sell / Donate / Swap — nobody has this
 - Clothes Swap — nobody has this
-- Trip Planner using YOUR actual wardrobe + real weather — nobody does it this way
+- Trip Planner using YOUR actual wardrobe + manual weather input — nobody does it this way
 - Wardrobe Intelligence — tells you exactly why your wardrobe feels broken — nobody has this
 - What Goes With This — instant pairings from your own wardrobe — nobody has this
 - Shop For Me via ALL stores including boutiques
@@ -1226,7 +1212,7 @@ INSTAGRAM — @cloziestyle
 
 I am Grace. I am the non-technical solo founder of Clozie.
 I am building Clozie as a React Native Expo app.
-I work on a MacBook. The only terminal command I use is: npx expo start
+I work on a MacBook. The terminal commands I use are: cd ~/Desktop/Clozie\ Native, then nvm use 20 && npx expo start
 Everything else I do through Claude Code in plain English.
 
 Stack: React Native + Expo + Supabase + Anthropic Claude API
@@ -1276,6 +1262,93 @@ NEXT SESSION:
 - Initialise the Expo/React Native project properly so npx expo start works
 - Test on iPhone via Expo Go — scan QR code and see something on screen
 - Only after that confirmed working — begin Phase 1 screen rebuild
+
+---
+
+# OLD DESIGN — DO NOT USE (archived April 2026)
+
+NOTE: Preserved for historical reference only. Replaced by the CURRENT DESIGN SYSTEM — LOCKED (April 2026) section above. Do NOT build from this spec.
+
+## CURRENT DESIGN SYSTEM — SACRED. NEVER CHANGE. (archived)
+
+DO NOT CHANGE any of these unless Grace specifically and explicitly asks.
+
+- Background: #0D0C0A
+- Gold accent: #C9A96E
+- Card: #161512
+- Border: #252320
+- Heading font: Playfair Display
+- Body font: DM Mono
+- Logo: "Clo" light cream + "zie" italic gold
+- Style: Dark luxury
+
+In the code these are defined as:
+- G = "#C9A96E" (gold)
+- BG = "#0D0C0A" (background)
+- CARD = "#161512" (card)
+- BORDER = "#252320" (border)
+
+## COLOR CHANGE PLAN — WHEN / IF GRACE DECIDES (archived)
+
+Current: black and gold stays until Grace decides. No changes until she says so explicitly.
+
+Option A — Berry Purple + Sage Green
+- Background: #6B3A5B
+- Accent/Logo 'zie': #B5BD6B
+- Buttons: #7A8A3A
+- Cards: #F5F2ED
+
+Option B — Deep Teal + Warm Coral (Grace's current favourite)
+- Background: #1B6B5A + subtle SVG pattern on welcome screen only
+- Accent/Button/Logo 'zie': #E8956A
+- Cards: #F5F0E8
+
+Option C — Cherry Blossom (Deep Teal + Blush Pink)
+- Background: #1E5A6A
+- Accent: #ECAFC0
+- Button: #C84B6A
+- Cards: #FFF0F3
+
+Option D — Cherry Red + Blue Green
+- Background: #5A1E22
+- Accent: #7DBDB8
+- Cards: #F5FAFA
+
+Other explored: Terracotta, Dusty Rose, Fuchsia, Cinnamon Rust, Cobalt Blue, Slate Blue, Forest Green, Coral Red, Navy.
+
+WHEN GRACE DECIDES — FOLLOW EXACTLY:
+- Grace tells Claude Code in plain English
+- Grace uploads a design image showing exactly what she wants
+- Change ONE screen at a time — never whole app
+- Order: Welcome → Splash → Peek Inside → Auth → My Style → My Closet → Today's Vibe → Your Looks → Mood Board → Saved Outfits → Settings → Subscription
+- Grace tests on iPhone → confirms → approves → then next screen only
+- Risk level: LOW. If wrong: revert immediately.
+- Never assume. Never guess.
+
+---
+
+# ARCHIVED — pre-April-19-2026 Mannequin spec
+
+NOTE: Preserved for historical reference only. Replaced by the Hanger View spec (locked April 19, 2026). Do NOT build from this spec.
+
+## Mannequin (On Body SVG)
+
+- Built from SVG paths — head, neck, torso, arms, legs, feet
+- Skin color: #DDD0BC with stroke #C8B8A2
+- Clothing items overlay by zone using real item photos with mixBlendMode multiply
+- Zones: Dress (top 60 to bottom 400), Top (58-228), Bottom (220-410), Shoes (402-472), Hat (-10 to 34), Accessories (18 left and right)
+- Background has 5 color options the user can tap to change
+
+WARNING: BUILD MANNEQUIN EXACTLY AS IN WEB APP for now.
+WARNING: DECISION PENDING — Grace is still deciding whether to keep the mannequin or replace it with a flat lay view. Do NOT remove or change the mannequin without Grace's explicit instruction.
+
+## On Body — Mannequin View
+
+- SVG mannequin with real clothing item photos layered over it by zone
+- Zones: dress/top, bottom, shoes, hat, accessories (earrings/bag)
+- Background color selector: Cream, White, Grey, Dark, Sage
+- Items list shown below mannequin with gold dots
+- Rebuild mannequin carefully using react-native-svg — decision pending on whether to keep or replace with flat lay
 
 ---
 
