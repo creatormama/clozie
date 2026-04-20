@@ -465,7 +465,7 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
   const subtitle = isForgot
     ? "Enter your email and we'll send you a reset link"
     : isLogin
-      ? 'Sign in to your wardrobe'
+      ? ''
       : 'Your personal stylist awaits';
 
   const buttonLabel = isForgot
@@ -475,8 +475,8 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
       : 'Create Account →';
 
   return (
-    <View style={[styles.screen, { justifyContent: 'flex-start' }]}>
-      <StatusBar style="light" />
+    <View style={[styles.screen, { justifyContent: 'flex-start', backgroundColor: '#E8E4CE' }]}>
+      <StatusBar style="dark" />
       <KeyboardAvoidingView
         style={{ flex: 1, width: '100%' }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -501,8 +501,8 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
             {/* Logo + heading */}
             <View style={authStyles.headerBlock}>
               <Text style={[styles.logo, { marginBottom: 4 }]}>
-                <Text style={[styles.logoClo, { fontSize: 36 }]}>Clo</Text>
-                <Text style={[styles.logoZie, { fontSize: 36 }]}>zie</Text>
+                <Text style={[styles.logoClo, { fontSize: 36, fontFamily: 'DMSerifDisplay_400Regular', color: '#2C1A0E' }]}>Clo</Text>
+                <Text style={[styles.logoZie, { fontSize: 36, fontFamily: 'DMSerifDisplay_400Regular_Italic', color: '#C87A52' }]}>zie</Text>
               </Text>
               <Text style={authStyles.headingLabel}>{headingLabel}</Text>
               <Text style={authStyles.subtitle}>{subtitle}</Text>
@@ -517,7 +517,12 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
                   activeOpacity={0.7}
                   onPress={() => onDone({ email: 'google@user.com', name: 'Google User', mode: isLogin ? 'login' : 'signup' })}
                 >
-                  <Text style={authStyles.socialIcon}>G</Text>
+                  <Svg width={20} height={20} viewBox="0 0 48 48">
+                    <Path fill="#FBBC05" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
+                    <Path fill="#EA4335" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" />
+                    <Path fill="#34A853" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z" />
+                    <Path fill="#4285F4" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" />
+                  </Svg>
                   <Text style={authStyles.socialText}>Continue with Google</Text>
                 </TouchableOpacity>
 
@@ -527,7 +532,12 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
                   activeOpacity={0.7}
                   onPress={() => onDone({ email: 'apple@user.com', name: 'Apple User', mode: isLogin ? 'login' : 'signup' })}
                 >
-                  <Text style={authStyles.socialIcon}></Text>
+                  <Svg width={20} height={20} viewBox="0 0 24 24">
+                    <Path
+                      fill="#2C1A0E"
+                      d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"
+                    />
+                  </Svg>
                   <Text style={authStyles.socialText}>Continue with Apple</Text>
                 </TouchableOpacity>
 
@@ -547,9 +557,10 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
                   ✦ Check your email — We've sent a reset link to {email}
                 </Text>
                 <TouchableOpacity
-                  style={{ marginTop: 24 }}
+                  style={{ marginTop: 24, minHeight: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12 }}
                   activeOpacity={0.7}
                   onPress={() => onSwitchMode('login')}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Text style={authStyles.forgotBackLink}>← Back to Sign In</Text>
                 </TouchableOpacity>
@@ -563,7 +574,7 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
                     <TextInput
                       style={authStyles.input}
                       placeholder="Full name"
-                      placeholderTextColor="#555"
+                      placeholderTextColor="rgba(44,26,14,0.4)"
                       value={name}
                       onChangeText={setName}
                       autoCapitalize="words"
@@ -575,7 +586,7 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
                   <TextInput
                     style={authStyles.input}
                     placeholder="Email address"
-                    placeholderTextColor="#555"
+                    placeholderTextColor="rgba(44,26,14,0.4)"
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"
@@ -590,7 +601,7 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
                       <TextInput
                         style={[authStyles.input, { flex: 1, marginBottom: 0 }]}
                         placeholder="Password"
-                        placeholderTextColor="#555"
+                        placeholderTextColor="rgba(44,26,14,0.4)"
                         value={password}
                         onChangeText={setPassword}
                         secureTextEntry={!showPassword}
@@ -632,32 +643,51 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
 
                 {/* Submit button */}
                 <TouchableOpacity
-                  style={[styles.goldButton, { width: '100%', marginTop: 4 }]}
+                  style={[styles.goldButton, {
+                    width: '100%',
+                    marginTop: 4,
+                    backgroundColor: '#BCC7B7',
+                    borderWidth: 3,
+                    borderColor: '#FFFFFF',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 8,
+                    elevation: 3,
+                  }]}
                   activeOpacity={0.8}
                   onPress={handleSubmit}
                 >
-                  <Text style={styles.goldButtonText}>{buttonLabel}</Text>
+                  <Text style={[styles.goldButtonText, {
+                    fontFamily: 'Outfit_500Medium',
+                    color: '#FFFFFF',
+                  }]}>{buttonLabel}</Text>
                 </TouchableOpacity>
 
                 {/* Switch mode link — Login ↔ Sign Up */}
                 {!isForgot && (
-                  <Text style={[styles.signInRow, { marginTop: 16 }]}>
-                    {isLogin ? "Don't have an account? " : 'Already have an account? '}
-                    <Text
-                      style={styles.signInLink}
-                      onPress={() => onSwitchMode(isLogin ? 'signup' : 'login')}
-                    >
-                      {isLogin ? 'Sign up' : 'Sign in'}
+                  <TouchableOpacity
+                    style={{ marginTop: 16, minHeight: 44, justifyContent: 'center', paddingHorizontal: 12 }}
+                    activeOpacity={0.7}
+                    onPress={() => onSwitchMode(isLogin ? 'signup' : 'login')}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 14, color: '#5C4A3A', textAlign: 'center' }}>
+                      {isLogin ? "Don't have an account? " : 'Already have an account? '}
+                      <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 14, color: '#C87A52' }}>
+                        {isLogin ? 'Sign up' : 'Sign in'}
+                      </Text>
                     </Text>
-                  </Text>
+                  </TouchableOpacity>
                 )}
 
                 {/* Back to Sign In — Forgot Password only */}
                 {isForgot && (
                   <TouchableOpacity
-                    style={{ marginTop: 16 }}
+                    style={{ marginTop: 16, minHeight: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12 }}
                     activeOpacity={0.7}
                     onPress={() => onSwitchMode('login')}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     <Text style={authStyles.forgotBackLink}>← Back to Sign In</Text>
                   </TouchableOpacity>
@@ -4363,9 +4393,9 @@ const authStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   backArrow: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 24,
-    color: G,
+    color: '#2C1A0E',
   },
 
   // Header
@@ -4375,17 +4405,17 @@ const authStyles = StyleSheet.create({
     marginTop: 8,
   },
   headingLabel: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 10,
-    color: G,
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 13,
+    color: '#2C1A0E',
     letterSpacing: 3,
     marginTop: 16,
     textAlign: 'center',
   },
   subtitle: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 12,
-    color: '#666',
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
     marginTop: 8,
     textAlign: 'center',
   },
@@ -4400,22 +4430,23 @@ const authStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: CARD,
-    borderWidth: 1,
-    borderColor: BORDER,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.12)',
     borderRadius: 12,
     paddingVertical: 16,
     marginBottom: 10,
     width: '100%',
   },
   socialIcon: {
-    fontSize: 18,
-    color: '#fff',
+    fontFamily: 'System',
+    fontSize: 20,
+    color: '#2C1A0E',
   },
   socialText: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 13,
-    color: CREAM,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 15,
+    color: '#2C1A0E',
   },
 
   // OR divider
@@ -4428,12 +4459,12 @@ const authStyles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: BORDER,
+    backgroundColor: 'rgba(44,26,14,0.12)',
   },
   dividerText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 11,
-    color: '#666',
+    color: '#5C4A3A',
   },
 
   // Input fields
@@ -4442,15 +4473,15 @@ const authStyles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    backgroundColor: CARD,
-    borderWidth: 1,
-    borderColor: BORDER,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.12)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 14,
-    color: CREAM,
+    color: '#2C1A0E',
     marginBottom: 10,
     width: '100%',
   },
@@ -4459,9 +4490,9 @@ const authStyles = StyleSheet.create({
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: CARD,
-    borderWidth: 1,
-    borderColor: BORDER,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.12)',
     borderRadius: 12,
     marginBottom: 4,
     width: '100%',
@@ -4479,19 +4510,19 @@ const authStyles = StyleSheet.create({
 
   // Password hint
   passwordHint: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 10,
-    color: '#555',
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
     marginTop: 2,
     marginBottom: 8,
     marginLeft: 4,
   },
 
-  // Error message — warm gold
+  // Error message — terracotta at 88% opacity
   errorText: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 12,
-    color: G,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: 'rgba(200,122,82,0.88)',
     marginBottom: 12,
     textAlign: 'left',
     width: '100%',
@@ -4505,17 +4536,17 @@ const authStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   forgotLink: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 12,
-    color: G,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#C87A52',
     textDecorationLine: 'underline',
   },
 
   // Forgot password — back to sign in
   forgotBackLink: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 12,
-    color: G,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#C87A52',
     textAlign: 'center',
   },
 
@@ -4526,9 +4557,9 @@ const authStyles = StyleSheet.create({
     paddingVertical: 24,
   },
   resetSentText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: G,
+    color: '#C87A52',
     textAlign: 'center',
     lineHeight: 22,
   },
