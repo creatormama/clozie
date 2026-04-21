@@ -13,6 +13,7 @@ import {
   Modal,
   Alert,
   Switch,
+  Image,
   ImageBackground,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -34,6 +35,7 @@ const CREAM = '#EDE5D8';    // logo "Clo" color
 
 // ── Welcome Screen photo asset ───────────────────────────────────────────────
 const WELCOME_PHOTO = require('./assets/welcome-photo.jpeg');
+const POSTLOGIN_PHOTO = require('./assets/mirror-photo-post-login.jpg');
 
 // Keep native splash visible while fonts load
 NativeSplash.preventAutoHideAsync();
@@ -715,35 +717,45 @@ function PostLoginWelcomeScreen({ onStart }) {
   }, []);
 
   return (
-    <View style={styles.screen}>
-      <StatusBar style="light" />
-      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+    <Animated.View style={[postLoginStyles.screen, { opacity: fadeAnim }]}>
+      <StatusBar style="dark" />
 
-        {/* Emoji row */}
-        <Text style={styles.emojis}>👗 👔</Text>
+      {/* Photo fills width at natural 9:16 aspect, top-aligned — nothing cropped */}
+      <Image
+        source={POSTLOGIN_PHOTO}
+        style={postLoginStyles.photoImage}
+      />
 
-        {/* Welcome heading */}
-        <Text style={postLoginStyles.heading}>Welcome to{' '}
-          <Text style={postLoginStyles.headingClo}>Clo</Text>
-          <Text style={postLoginStyles.headingZie}>zie</Text>
+      {/* Subtle fade — transparent at top, fading to sage at the bottom */}
+      <LinearGradient
+        colors={['transparent', '#E8E4CE']}
+        locations={[0, 0.6]}
+        style={postLoginStyles.bottomGradient}
+        pointerEvents="none"
+      />
+
+      {/* Logo, body text, button — bottom of screen */}
+      <View style={postLoginStyles.bottomBlock}>
+        <Text style={postLoginStyles.logoRow}>
+          <Text style={postLoginStyles.logoClo}>Clo</Text>
+          <Text style={postLoginStyles.logoZie}>zie</Text>
         </Text>
 
-        {/* Warm subtitle */}
-        <Text style={postLoginStyles.subtitle}>
+        <Text style={postLoginStyles.body}>
           The more you use Clozie, the better she knows you
         </Text>
 
-        {/* Let's Start button */}
-        <TouchableOpacity
-          style={[styles.goldButton, { marginTop: 40 }]}
-          activeOpacity={0.8}
-          onPress={onStart}
-        >
-          <Text style={styles.goldButtonText}>Let's Start ✦</Text>
-        </TouchableOpacity>
-
-      </Animated.View>
-    </View>
+        <View style={postLoginStyles.buttonRing}>
+          <TouchableOpacity
+            style={postLoginStyles.button}
+            activeOpacity={0.85}
+            onPress={onStart}
+          >
+            <Text style={postLoginStyles.buttonText}>Let's Start ✦</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Animated.View>
   );
 }
 
@@ -4345,29 +4357,80 @@ const peekStyles = StyleSheet.create({
 
 // ── Post-Login Welcome Screen styles ─────────────────────────────────────────
 const postLoginStyles = StyleSheet.create({
-  heading: {
-    fontFamily: 'PlayfairDisplay_400Regular',
-    fontSize: 32,
-    color: CREAM,
+  screen: {
+    flex: 1,
+    backgroundColor: '#E8E4CE',
+  },
+  photoImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    width: '100%',
+    height: undefined,
+    aspectRatio: 864 / 1536,
+  },
+  bottomGradient: {
+    position: 'absolute',
+    top: '55%',
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  bottomBlock: {
+    position: 'absolute',
+    bottom: 80,
+    left: 24,
+    right: 24,
+    alignItems: 'center',
+  },
+  logoRow: {
     textAlign: 'center',
     marginBottom: 16,
   },
-  headingClo: {
-    fontFamily: 'PlayfairDisplay_400Regular',
-    fontSize: 32,
-    color: CREAM,
+  logoClo: {
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 56,
+    color: '#2C1A0E',
   },
-  headingZie: {
-    fontFamily: 'PlayfairDisplay_400Regular_Italic',
-    fontSize: 32,
-    color: G,
+  logoZie: {
+    fontFamily: 'DMSerifDisplay_400Regular_Italic',
+    fontSize: 56,
+    color: '#C87A52',
   },
-  subtitle: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 14,
-    color: '#6A6058',
-    textAlign: 'center',
+  body: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 15,
     lineHeight: 22,
+    color: '#5C4A3A',
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  buttonRing: {
+    backgroundColor: '#FFFFFF',
+    padding: 3,
+    borderRadius: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  button: {
+    backgroundColor: '#BCC7B7',
+    minHeight: 50,
+    paddingVertical: 16,
+    paddingHorizontal: 56,
+    borderRadius: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 16,
+    color: '#2C1A0E',
+    textAlign: 'center',
+    letterSpacing: 0.3,
   },
 });
 
