@@ -998,7 +998,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: BG }}
+      style={{ flex: 1, backgroundColor: '#E8E4CE' }}
       contentContainerStyle={wardrobeStyles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
@@ -1082,7 +1082,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
               )}
 
               {/* Category tag pill */}
-              <View style={[wardrobeStyles.categoryTag, { backgroundColor: getCategoryColour(item.category) }]}>
+              <View style={wardrobeStyles.categoryTag}>
                 <Text style={wardrobeStyles.categoryTagText}>{item.category}</Text>
               </View>
               {/* Item name */}
@@ -1157,7 +1157,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           <TextInput
             style={wardrobeStyles.fieldInput}
             placeholder="e.g. Navy Blue Wrap Dress"
-            placeholderTextColor="#555"
+            placeholderTextColor="rgba(44,26,14,0.40)"
             value={newItemName}
             onChangeText={setNewItemName}
             returnKeyType="next"
@@ -1170,7 +1170,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
             activeOpacity={0.7}
             onPress={() => setShowCategoryPicker(!showCategoryPicker)}
           >
-            <Text style={{ fontFamily: 'DMMono_400Regular', fontSize: 13, color: newItemCategory ? CREAM : '#555' }}>
+            <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: newItemCategory ? '#2C1A0E' : 'rgba(44,26,14,0.40)' }}>
               {newItemCategory || 'Select category'}
             </Text>
           </TouchableOpacity>
@@ -1193,7 +1193,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
                 >
                   <Text style={[
                     wardrobeStyles.categoryOptionText,
-                    { color: newItemCategory === cat ? BG : CREAM },
+                    { color: '#2C1A0E' },
                   ]}>{cat}</Text>
                 </TouchableOpacity>
               ))}
@@ -1205,7 +1205,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           <TextInput
             style={wardrobeStyles.fieldInput}
             placeholder="e.g. Navy blue, striped"
-            placeholderTextColor="#555"
+            placeholderTextColor="rgba(44,26,14,0.40)"
             value={newItemColour}
             onChangeText={setNewItemColour}
             returnKeyType="next"
@@ -1216,7 +1216,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           <TextInput
             style={[wardrobeStyles.fieldInput, { minHeight: 60 }]}
             placeholder="e.g. From Zara, size M, great for date night"
-            placeholderTextColor="#555"
+            placeholderTextColor="rgba(44,26,14,0.40)"
             value={newItemNotes}
             onChangeText={setNewItemNotes}
             multiline={true}
@@ -4830,9 +4830,9 @@ const wardrobeStyles = StyleSheet.create({
     width: '100%',
   },
   heading: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 28,
-    color: CREAM,
+    color: '#2C1A0E',
     marginBottom: 8,
   },
   headerRow: {
@@ -4842,27 +4842,28 @@ const wardrobeStyles = StyleSheet.create({
     marginBottom: 12,
   },
   label: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: G,
-    letterSpacing: 3,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 10,
+    color: '#C87A52',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
   },
   itemCount: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 12,
-    color: G,
+    color: '#2C1A0E',
   },
   progressBarBg: {
     width: '100%',
     height: 4,
-    backgroundColor: BORDER,
+    backgroundColor: 'rgba(44,26,14,0.10)',
     borderRadius: 2,
     marginBottom: 24,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: 4,
-    backgroundColor: G,
+    backgroundColor: '#BCC7B7',
     borderRadius: 2,
   },
   emptyState: {
@@ -4875,32 +4876,39 @@ const wardrobeStyles = StyleSheet.create({
     marginBottom: 20,
   },
   emptyText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: '#6A6058',
+    color: '#5C4A3A',
     textAlign: 'center',
     lineHeight: 22,
   },
   addButton: {
-    backgroundColor: G,
+    backgroundColor: '#BCC7B7',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
     paddingVertical: 18,
     paddingHorizontal: 64,
     borderRadius: 100,
     marginBottom: 14,
     alignSelf: 'center',
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   addButtonText: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 16,
-    color: BG,
+    color: '#2C1A0E',
     textAlign: 'center',
   },
   addPanel: {
-    backgroundColor: CARD,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 20,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: 'rgba(44,26,14,0.08)',
     width: '100%',
     marginBottom: 16,
   },
@@ -4911,18 +4919,19 @@ const wardrobeStyles = StyleSheet.create({
     marginBottom: 16,
   },
   addPanelHeading: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: G,
-    letterSpacing: 2,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 10,
+    color: '#C87A52',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
   },
   addPanelClose: {
     fontSize: 18,
-    color: G,
+    color: '#2C1A0E',
   },
   photoArea: {
-    borderWidth: 1,
-    borderColor: G + '40',
+    borderWidth: 1.5,
+    borderColor: 'rgba(200,122,82,0.40)',
     borderStyle: 'dashed',
     borderRadius: 12,
     padding: 24,
@@ -4934,15 +4943,15 @@ const wardrobeStyles = StyleSheet.create({
     marginBottom: 10,
   },
   photoTitle: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 18,
-    color: CREAM,
+    color: '#2C1A0E',
     marginBottom: 6,
   },
   photoSubtitle: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 11,
-    color: G,
+    color: '#5C4A3A',
     marginBottom: 16,
   },
   photoButtons: {
@@ -4950,53 +4959,56 @@ const wardrobeStyles = StyleSheet.create({
     gap: 10,
   },
   photoButton: {
-    backgroundColor: BG,
-    borderWidth: 1,
-    borderColor: BORDER,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.12)',
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 18,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   photoButtonText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 12,
-    color: CREAM,
+    color: '#2C1A0E',
   },
   tipBox: {
-    backgroundColor: G + '10',
+    backgroundColor: 'rgba(188,199,183,0.18)',
     borderRadius: 10,
     padding: 14,
     marginBottom: 8,
   },
   tipText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 11,
-    color: '#6A6058',
+    color: '#5C4A3A',
     lineHeight: 18,
   },
   fieldLabel: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_700Bold',
     fontSize: 10,
-    color: G,
-    letterSpacing: 1,
+    color: '#C87A52',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
     marginBottom: 6,
     marginTop: 12,
   },
   fieldInput: {
-    backgroundColor: BG,
-    borderWidth: 1,
-    borderColor: BORDER,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.12)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: CREAM,
+    color: '#2C1A0E',
   },
   categoryPicker: {
-    backgroundColor: BG,
-    borderWidth: 1,
-    borderColor: BORDER,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.12)',
     borderRadius: 12,
     marginTop: 6,
     overflow: 'hidden',
@@ -5005,17 +5017,19 @@ const wardrobeStyles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    borderBottomColor: 'rgba(44,26,14,0.08)',
+    minHeight: 44,
+    justifyContent: 'center',
   },
   categoryOptionSelected: {
-    backgroundColor: G,
+    backgroundColor: '#BCC7B7',
   },
   categoryOptionText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 13,
   },
   addToClosetButton: {
-    backgroundColor: G,
+    backgroundColor: '#BCC7B7',
     paddingVertical: 18,
     borderRadius: 100,
     marginTop: 20,
@@ -5025,22 +5039,22 @@ const wardrobeStyles = StyleSheet.create({
     opacity: 0.4,
   },
   addToClosetButtonText: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 16,
-    color: BG,
+    color: '#2C1A0E',
     textAlign: 'center',
   },
   cancelButton: {
     paddingVertical: 14,
     borderRadius: 100,
-    borderWidth: 1,
-    borderColor: BORDER,
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.12)',
     marginBottom: 8,
   },
   cancelButtonText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 14,
-    color: '#666',
+    color: '#2C1A0E',
     textAlign: 'center',
   },
   grid: {
@@ -5051,15 +5065,15 @@ const wardrobeStyles = StyleSheet.create({
   },
   gridCard: {
     width: (SCREEN_WIDTH - 60) / 2,
-    backgroundColor: CARD,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: 'rgba(44,26,14,0.08)',
   },
   gridCardPhoto: {
     width: '100%',
     height: 120,
-    backgroundColor: BG,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     borderTopLeftRadius: 11,
@@ -5068,99 +5082,107 @@ const wardrobeStyles = StyleSheet.create({
   },
   categoryTag: {
     alignSelf: 'flex-start',
-    paddingVertical: 3,
+    backgroundColor: 'rgba(188,199,183,0.30)',
+    paddingVertical: 2,
     paddingHorizontal: 10,
     borderRadius: 100,
     marginTop: 10,
     marginLeft: 10,
   },
   categoryTagText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 9,
-    color: '#fff',
-    letterSpacing: 0.5,
+    color: '#6B7E65',
+    letterSpacing: 0.3,
   },
   gridCardName: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 14,
-    color: CREAM,
+    color: '#2C1A0E',
     marginTop: 6,
     marginHorizontal: 10,
   },
   gridCardColour: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 10,
-    color: '#666',
+    color: '#5C4A3A',
     marginTop: 3,
     marginHorizontal: 10,
   },
   gridCardLastWorn: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 9,
-    color: '#555',
+    color: '#5C4A3A',
     marginTop: 4,
     marginHorizontal: 10,
   },
   gridCardPairLink: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 10,
-    color: G,
+    color: '#C87A52',
     marginTop: 6,
     marginHorizontal: 10,
     marginBottom: 12,
   },
   analyseButton: {
-    borderWidth: 1,
-    borderColor: G,
+    borderWidth: 1.5,
+    borderColor: '#BCC7B7',
     paddingVertical: 16,
     borderRadius: 100,
     marginBottom: 12,
     alignItems: 'center',
   },
   analyseButtonText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: G,
+    color: '#BCC7B7',
   },
   analyseCard: {
-    backgroundColor: CARD,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 20,
     borderWidth: 1,
-    borderColor: G + '30',
+    borderColor: 'rgba(44,26,14,0.08)',
     marginBottom: 12,
     alignItems: 'center',
   },
   analyseCardText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 12,
-    color: '#6A6058',
+    color: '#5C4A3A',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 16,
   },
   analyseCardButton: {
-    backgroundColor: G,
+    backgroundColor: '#BCC7B7',
     paddingVertical: 12,
     paddingHorizontal: 32,
     borderRadius: 100,
   },
   analyseCardButtonText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: BG,
+    color: '#2C1A0E',
   },
   vibeButton: {
-    backgroundColor: G,
+    backgroundColor: '#BCC7B7',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
     paddingVertical: 18,
     borderRadius: 100,
     marginBottom: 20,
     alignItems: 'center',
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   vibeButtonText: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 16,
-    color: BG,
+    color: '#2C1A0E',
   },
   editIcon: {
     position: 'absolute',
@@ -5169,14 +5191,14 @@ const wardrobeStyles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
   },
   editIconText: {
     fontSize: 14,
-    color: '#fff',
+    color: '#2C1A0E',
   },
   deleteIcon: {
     position: 'absolute',
@@ -5185,25 +5207,25 @@ const wardrobeStyles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
   },
   deleteIconText: {
     fontSize: 14,
-    color: '#fff',
+    color: '#2C1A0E',
   },
   deleteConfirm: {
-    backgroundColor: BG,
+    backgroundColor: '#FFFFFF',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    borderBottomColor: 'rgba(44,26,14,0.08)',
   },
   deleteConfirmText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 11,
-    color: CREAM,
+    color: '#5C4A3A',
     lineHeight: 18,
     marginBottom: 10,
   },
@@ -5213,28 +5235,28 @@ const wardrobeStyles = StyleSheet.create({
   },
   deleteConfirmRemove: {
     flex: 1,
-    backgroundColor: G,
+    backgroundColor: '#BCC7B7',
     paddingVertical: 10,
     borderRadius: 100,
     alignItems: 'center',
   },
   deleteConfirmRemoveText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 12,
-    color: BG,
+    color: '#2C1A0E',
   },
   deleteConfirmCancel: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: BORDER,
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.12)',
     paddingVertical: 10,
     borderRadius: 100,
     alignItems: 'center',
   },
   deleteConfirmCancelText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 12,
-    color: '#666',
+    color: '#2C1A0E',
   },
 });
 
