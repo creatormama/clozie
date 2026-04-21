@@ -23,7 +23,7 @@ import { DMMono_400Regular } from '@expo-google-fonts/dm-mono';
 import { DMSerifDisplay_400Regular, DMSerifDisplay_400Regular_Italic } from '@expo-google-fonts/dm-serif-display';
 import { Outfit_400Regular, Outfit_500Medium, Outfit_700Bold } from '@expo-google-fonts/outfit';
 import * as NativeSplash from 'expo-splash-screen';
-import Svg, { Path, Ellipse } from 'react-native-svg';
+import Svg, { Path, Ellipse, Circle, Line } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 
 // ── Design tokens — sacred, never change ─────────────────────────────────────
@@ -3615,6 +3615,65 @@ const settingsStyles = StyleSheet.create({
   },
 });
 
+// ── Tab bar icons (SVG) ─────────────────────────────────────────────────────
+function TabStarIcon({ active }) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 2l2.4 7.4L22 12l-7.6 2.6L12 22l-2.4-7.4L2 12l7.6-2.6z"
+        stroke={active ? '#C87A52' : 'rgba(44,26,14,0.28)'}
+        strokeWidth={active ? 1.9 : 1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function TabHangerIcon({ active }) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 4a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 0v3L3.5 13.5A1.5 1.5 0 0 0 4.5 16h15a1.5 1.5 0 0 0 1-2.5L12 7"
+        stroke={active ? '#C87A52' : 'rgba(44,26,14,0.28)'}
+        strokeWidth={active ? 1.9 : 1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function TabSunIcon({ active }) {
+  const stroke = active ? '#C87A52' : 'rgba(44,26,14,0.28)';
+  const strokeWidth = active ? 1.9 : 1.6;
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="4" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <Line x1="12" y1="2" x2="12" y2="4" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <Line x1="12" y1="20" x2="12" y2="22" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <Line x1="2" y1="12" x2="4" y2="12" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <Line x1="20" y1="12" x2="22" y2="12" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <Line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <Line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <Line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <Line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function TabMirrorIcon({ active }) {
+  const stroke = active ? '#C87A52' : 'rgba(44,26,14,0.28)';
+  const strokeWidth = active ? 1.9 : 1.6;
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="9" r="6" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <Line x1="12" y1="15" x2="12" y2="20" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <Line x1="9" y1="20" x2="15" y2="20" stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 // ── Main App Screen — 4 bottom tabs ─────────────────────────────────────────
 function MainAppScreen({ onSignOut }) {
   const [activeTab, setActiveTab] = useState(0);
@@ -3632,10 +3691,10 @@ function MainAppScreen({ onSignOut }) {
   }, []);
 
   const tabs = [
-    { label: 'My Style', icon: '✦' },
-    { label: `My Closet (${wardrobeItems.length})`, icon: '👗' },
-    { label: "Today's Vibe", icon: '🌤' },
-    { label: 'My Looks', icon: '◈' },
+    { label: 'My Style', icon: '✦', IconComponent: TabStarIcon },
+    { label: `My Closet (${wardrobeItems.length})`, icon: '👗', IconComponent: TabHangerIcon },
+    { label: "Today's Vibe", icon: '🌤', IconComponent: TabSunIcon },
+    { label: 'My Looks', icon: '◈', IconComponent: TabMirrorIcon },
   ];
 
   const tabTitles = ['YOUR STYLE DNA', 'YOUR WARDROBE', "TODAY'S VIBE", 'YOUR LOOKS'];
@@ -3671,15 +3730,21 @@ function MainAppScreen({ onSignOut }) {
               activeOpacity={0.7}
               onPress={() => setActiveTab(i)}
             >
-              {isActive && <View style={mainStyles.tabActiveBar} />}
-              <Text style={[
-                isActive ? mainStyles.tabIconActive : mainStyles.tabIcon,
-                { color: isActive ? G : '#555' },
-              ]}>{tab.icon}</Text>
+              {tab.IconComponent ? (
+                <View style={mainStyles.tabIconWrap}>
+                  <tab.IconComponent active={isActive} />
+                </View>
+              ) : (
+                <Text style={[
+                  isActive ? mainStyles.tabIconActive : mainStyles.tabIcon,
+                  { color: isActive ? G : '#555' },
+                ]}>{tab.icon}</Text>
+              )}
               <Text style={[
                 mainStyles.tabLabel,
-                { color: isActive ? G : '#555' },
+                { color: isActive ? '#C87A52' : 'rgba(44,26,14,0.28)' },
               ]}>{tab.label}</Text>
+              {isActive && <View style={mainStyles.tabActiveDot} />}
             </TouchableOpacity>
           );
         })}
@@ -5669,9 +5734,9 @@ const mainStyles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: CARD,
+    backgroundColor: '#E8E4CE',
     borderTopWidth: 1,
-    borderTopColor: BORDER,
+    borderTopColor: 'rgba(44,26,14,0.08)',
     paddingBottom: Platform.OS === 'ios' ? 30 : 14,
     paddingTop: 12,
   },
@@ -5693,17 +5758,19 @@ const mainStyles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 6,
   },
+  tabIconWrap: {
+    marginBottom: 5,
+  },
   tabLabel: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 10,
     letterSpacing: 0.5,
   },
-  tabActiveBar: {
-    position: 'absolute',
-    top: 0,
-    width: 24,
-    height: 2,
-    backgroundColor: G,
-    borderRadius: 1,
+  tabActiveDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#C87A52',
+    marginTop: 4,
   },
 });
