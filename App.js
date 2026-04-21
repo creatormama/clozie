@@ -800,7 +800,7 @@ function StyleDNATab({ onBuildCloset }) {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: BG }}
+      style={{ flex: 1, backgroundColor: '#E8E4CE' }}
       contentContainerStyle={dnaStyles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
@@ -827,7 +827,7 @@ function StyleDNATab({ onBuildCloset }) {
                 >
                   <Text style={[
                     dnaStyles.chipText,
-                    { color: isSelected ? BG : G },
+                    { color: isSelected ? '#FFFFFF' : '#2C1A0E' },
                   ]}>{style}</Text>
                 </TouchableOpacity>
               </Animated.View>
@@ -854,7 +854,7 @@ function StyleDNATab({ onBuildCloset }) {
                 >
                   <Text style={[
                     dnaStyles.chipText,
-                    { color: isSelected ? BG : G },
+                    { color: isSelected ? '#FFFFFF' : '#2C1A0E' },
                   ]}>{colour}</Text>
                 </TouchableOpacity>
               </Animated.View>
@@ -869,7 +869,7 @@ function StyleDNATab({ onBuildCloset }) {
         <TextInput
           style={dnaStyles.textInput}
           placeholder="e.g. neon colours, crop tops, animal print..."
-          placeholderTextColor="#555"
+          placeholderTextColor="rgba(44,26,14,0.35)"
           value={neverWear}
           onChangeText={setNeverWear}
           multiline={true}
@@ -896,6 +896,7 @@ function StyleDNATab({ onBuildCloset }) {
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={onBuildCloset}
+        hitSlop={{ top: 15, bottom: 15, left: 30, right: 30 }}
       >
         <Text style={dnaStyles.skipLink}>Skip</Text>
       </TouchableOpacity>
@@ -4713,34 +4714,34 @@ const dnaStyles = StyleSheet.create({
     marginBottom: 12,
   },
   heading: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 28,
-    color: CREAM,
+    color: '#2C1A0E',
     textAlign: 'center',
     marginBottom: 12,
   },
   subtitle: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 12,
-    color: '#6A6058',
+    color: '#5C4A3A',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 28,
   },
   card: {
-    backgroundColor: CARD,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 20,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: 'rgba(44,26,14,0.06)',
     width: '100%',
     marginBottom: 16,
   },
   cardHeading: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_700Bold',
     fontSize: 10,
-    color: G,
-    letterSpacing: 2,
+    color: '#C87A52',
+    letterSpacing: 2.5,
     marginBottom: 16,
   },
   chipRow: {
@@ -4749,63 +4750,70 @@ const dnaStyles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    paddingVertical: 10,
+    paddingVertical: 14,
     paddingHorizontal: 18,
     borderRadius: 100,
-    borderWidth: 1,
+    borderWidth: 1.5,
   },
   chipSelected: {
-    backgroundColor: G,
-    borderColor: G,
+    backgroundColor: '#BCC7B7',
+    borderColor: '#FFFFFF',
   },
   chipDefault: {
-    backgroundColor: 'transparent',
-    borderColor: G + '50',
+    backgroundColor: '#FFFFFF',
+    borderColor: 'rgba(44,26,14,0.12)',
   },
   chipText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 12,
   },
   textInput: {
-    backgroundColor: BG,
-    borderWidth: 1,
-    borderColor: BORDER,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.12)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 14,
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: CREAM,
+    color: '#5C4A3A',
     minHeight: 80,
   },
   learningNote: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 12,
-    color: G,
+    color: '#5C4A3A',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 28,
     marginTop: 8,
   },
   buildButton: {
-    backgroundColor: G,
+    backgroundColor: '#BCC7B7',
     paddingVertical: 18,
     paddingHorizontal: 64,
     borderRadius: 100,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
     marginBottom: 14,
     width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   buildButtonText: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 16,
-    color: BG,
+    color: '#FFFFFF',
     textAlign: 'center',
   },
   skipLink: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 12,
-    color: '#666',
+    color: '#5C4A3A',
     textAlign: 'center',
     marginBottom: 20,
   },
