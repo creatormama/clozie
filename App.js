@@ -1298,21 +1298,33 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
 
 // ── Today's Vibe Tab ────────────────────────────────────────────────────────
 function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
-  const [selectedWeather, setSelectedWeather] = useState(null);
+  const [selectedTemperature, setSelectedTemperature] = useState(null);
+  const [selectedCondition, setSelectedCondition] = useState(null);
   const [selectedOccasion, setSelectedOccasion] = useState(null);
+  const [indoors, setIndoors] = useState(false);
   const [pinnedItemId, setPinnedItemId] = useState(null);
   const [extraNotes, setExtraNotes] = useState('');
-  const weatherOptions = ['Sunny & Hot', 'Warm & Breezy', 'Mild & Cloudy', 'Cold & Dry', 'Rainy', 'Snowy'];
-  const occasionOptions = ['Casual Day', 'Work / Office', 'Date Night', 'Party', 'Outdoor / Sport', 'Formal Event', 'Weekend Errands', 'Travel'];
-  const weatherScaleAnims = useRef(weatherOptions.map(() => new Animated.Value(1))).current;
+  const temperatureOptions = ['Cold', 'Cool', 'Warm', 'Hot'];
+  const conditionOptions = ['Sunny', 'Cloudy', 'Rainy', 'Snowy'];
+  const occasionOptions = ['Casual Day', 'Work · Office', 'Going Out', 'Formal Event', 'Outdoor · Sport', 'Weekend Errands', 'Travel'];
+  const temperatureScaleAnims = useRef(temperatureOptions.map(() => new Animated.Value(1))).current;
+  const conditionScaleAnims = useRef(conditionOptions.map(() => new Animated.Value(1))).current;
   const occasionScaleAnims = useRef(occasionOptions.map(() => new Animated.Value(1))).current;
 
-  const toggleWeather = (weather, index) => {
+  const toggleTemperature = (temperature, index) => {
     Animated.sequence([
-      Animated.timing(weatherScaleAnims[index], { toValue: 0.92, duration: 80, useNativeDriver: true }),
-      Animated.timing(weatherScaleAnims[index], { toValue: 1, duration: 80, useNativeDriver: true }),
+      Animated.timing(temperatureScaleAnims[index], { toValue: 0.92, duration: 80, useNativeDriver: true }),
+      Animated.timing(temperatureScaleAnims[index], { toValue: 1, duration: 80, useNativeDriver: true }),
     ]).start();
-    setSelectedWeather((prev) => prev === weather ? null : weather);
+    setSelectedTemperature((prev) => prev === temperature ? null : temperature);
+  };
+
+  const toggleCondition = (condition, index) => {
+    Animated.sequence([
+      Animated.timing(conditionScaleAnims[index], { toValue: 0.92, duration: 80, useNativeDriver: true }),
+      Animated.timing(conditionScaleAnims[index], { toValue: 1, duration: 80, useNativeDriver: true }),
+    ]).start();
+    setSelectedCondition((prev) => prev === condition ? null : condition);
   };
 
   const toggleOccasion = (occasion, index) => {
@@ -1325,36 +1337,56 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: BG }}
+      style={{ flex: 1, backgroundColor: '#E8E4CE' }}
       contentContainerStyle={vibeStyles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
       <Text style={vibeStyles.heading}>Today's Vibe</Text>
-      <Text style={vibeStyles.subheading}>Let's dress you perfectly for today ✦</Text>
+      <Text style={vibeStyles.subheading}>✦ Let's dress you perfectly for today ✦</Text>
       <View style={vibeStyles.badge}>
-        <Text style={vibeStyles.badgeText}>✦ Styling from {wardrobeItemCount} items in your wardrobe</Text>
+        <Text style={vibeStyles.badgeText}>Styling from {wardrobeItemCount} items in your wardrobe</Text>
       </View>
 
       {/* WEATHER OUTSIDE card */}
       <View style={vibeStyles.card}>
-        <Text style={vibeStyles.cardHeading}>WEATHER OUTSIDE</Text>
+        <Text style={[vibeStyles.cardHeading, { color: '#2C1A0E' }]}>WEATHER OUTSIDE</Text>
+
+        <Text style={vibeStyles.subLabel}>TEMPERATURE</Text>
         <View style={vibeStyles.chipRow}>
-          {weatherOptions.map((weather, i) => {
-            const isSelected = selectedWeather === weather;
+          {temperatureOptions.map((temperature, i) => {
+            const isSelected = selectedTemperature === temperature;
             return (
-              <Animated.View key={weather} style={{ transform: [{ scale: weatherScaleAnims[i] }] }}>
+              <Animated.View key={temperature} style={{ transform: [{ scale: temperatureScaleAnims[i] }] }}>
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={() => toggleWeather(weather, i)}
+                  onPress={() => toggleTemperature(temperature, i)}
                   style={[
                     vibeStyles.chip,
                     isSelected ? vibeStyles.chipSelected : vibeStyles.chipDefault,
                   ]}
                 >
-                  <Text style={[
-                    vibeStyles.chipText,
-                    { color: isSelected ? BG : G },
-                  ]}>{weather}</Text>
+                  <Text style={vibeStyles.chipText}>{temperature}</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
+        </View>
+
+        <Text style={[vibeStyles.subLabel, { marginTop: 10 }]}>CONDITION</Text>
+        <View style={vibeStyles.chipRow}>
+          {conditionOptions.map((condition, i) => {
+            const isSelected = selectedCondition === condition;
+            return (
+              <Animated.View key={condition} style={{ transform: [{ scale: conditionScaleAnims[i] }] }}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => toggleCondition(condition, i)}
+                  style={[
+                    vibeStyles.chip,
+                    isSelected ? vibeStyles.chipSelected : vibeStyles.chipDefault,
+                  ]}
+                >
+                  <Text style={vibeStyles.chipText}>{condition}</Text>
                 </TouchableOpacity>
               </Animated.View>
             );
@@ -1378,23 +1410,32 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
                     isSelected ? vibeStyles.chipSelected : vibeStyles.chipDefault,
                   ]}
                 >
-                  <Text style={[
-                    vibeStyles.chipText,
-                    { color: isSelected ? BG : G },
-                  ]}>{occasion}</Text>
+                  <Text style={vibeStyles.chipText}>{occasion}</Text>
                 </TouchableOpacity>
               </Animated.View>
             );
           })}
+        </View>
+
+        <View style={vibeStyles.indoorsRow}>
+          <Text style={vibeStyles.indoorsLabel}>I'll be indoors</Text>
+          <Switch
+            value={indoors}
+            onValueChange={setIndoors}
+            trackColor={{ false: 'rgba(44,26,14,0.15)', true: '#BCC7B7' }}
+            thumbColor="#FFFFFF"
+            ios_backgroundColor="rgba(44,26,14,0.15)"
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          />
         </View>
       </View>
 
       {/* MUST INCLUDE ITEM card */}
       <View style={vibeStyles.card}>
         <Text style={vibeStyles.cardHeading}>MUST INCLUDE ITEM</Text>
-        <Text style={vibeStyles.cardSubtext}>Optional — pin one item and every outfit will include it ✦</Text>
+        <Text style={vibeStyles.cardSubtext}>Optional — pin one item and every outfit will include it</Text>
         {wardrobeItems.length === 0 ? (
-          <Text style={vibeStyles.emptyItemsText}>Add items to your wardrobe first ✦</Text>
+          <Text style={vibeStyles.emptyItemsText}>✦ Add items to your wardrobe first ✦</Text>
         ) : (
           <ScrollView
             horizontal={true}
@@ -1416,7 +1457,7 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
                   <Text style={{ fontSize: 22 }}>👗</Text>
                   <Text style={[
                     vibeStyles.itemThumbName,
-                    { color: isPinned ? G : '#999' },
+                    { color: isPinned ? '#2C1A0E' : '#5C4A3A' },
                   ]} numberOfLines={1}>{item.name}</Text>
                 </TouchableOpacity>
               );
@@ -1425,13 +1466,13 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
         )}
       </View>
 
-      {/* ANYTHING ELSE? card */}
+      {/* TELL CLOZIE MORE card */}
       <View style={vibeStyles.card}>
-        <Text style={vibeStyles.cardHeading}>ANYTHING ELSE?</Text>
+        <Text style={vibeStyles.cardHeading}>TELL CLOZIE MORE</Text>
         <TextInput
           style={vibeStyles.textInput}
-          placeholder="e.g. I want to feel confident, no heels today..."
-          placeholderTextColor="#555"
+          placeholder="Tell Clozie more — office is cold, walking outside, anniversary dinner…"
+          placeholderTextColor="rgba(44,26,14,0.40)"
           value={extraNotes}
           onChangeText={setExtraNotes}
           multiline={true}
@@ -1444,18 +1485,21 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
       <TouchableOpacity
         style={[
           vibeStyles.generateButton,
-          !(selectedWeather && selectedOccasion) && vibeStyles.generateButtonDisabled,
+          !(selectedTemperature && selectedCondition && selectedOccasion) && vibeStyles.generateButtonDisabled,
         ]}
-        activeOpacity={selectedWeather && selectedOccasion ? 0.8 : 1}
-        disabled={!(selectedWeather && selectedOccasion)}
+        activeOpacity={selectedTemperature && selectedCondition && selectedOccasion ? 0.8 : 1}
+        disabled={!(selectedTemperature && selectedCondition && selectedOccasion)}
         onPress={onGenerate}
       >
-        <Text style={vibeStyles.generateButtonText}>✦ Generate My Outfits →</Text>
+        <Text style={[
+          vibeStyles.generateButtonText,
+          !(selectedTemperature && selectedCondition && selectedOccasion) && vibeStyles.generateButtonTextDisabled,
+        ]}>✦ Generate My Outfits →</Text>
       </TouchableOpacity>
 
       {/* Hint text when button is greyed */}
-      {!(selectedWeather && selectedOccasion) && (
-        <Text style={vibeStyles.hintText}>Select weather and occasion first ✦</Text>
+      {!(selectedTemperature && selectedCondition && selectedOccasion) && (
+        <Text style={vibeStyles.hintText}>✦ Select temperature, condition and occasion first ✦</Text>
       )}
     </ScrollView>
   );
@@ -5270,53 +5314,74 @@ const vibeStyles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
   },
-  label: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: G,
-    letterSpacing: 3,
-    marginBottom: 12,
-  },
   heading: {
-    fontFamily: 'PlayfairDisplay_400Regular',
-    fontSize: 28,
-    color: CREAM,
-    marginBottom: 8,
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 32,
+    color: '#2C1A0E',
+    marginBottom: 6,
   },
   subheading: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 12,
-    color: '#6A6058',
-    marginBottom: 20,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
+    marginBottom: 18,
   },
   badge: {
-    backgroundColor: G + '15',
+    backgroundColor: '#FFFFFF',
     borderRadius: 100,
     paddingVertical: 8,
     paddingHorizontal: 16,
     alignSelf: 'flex-start',
-    marginBottom: 24,
+    marginBottom: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(44,26,14,0.08)',
   },
   badgeText: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: G,
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 13,
+    color: '#5C4A3A',
   },
   card: {
-    backgroundColor: CARD,
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 20,
-    borderWidth: 1,
-    borderColor: BORDER,
     width: '100%',
     marginBottom: 16,
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 1,
   },
   cardHeading: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_700Bold',
     fontSize: 10,
-    color: G,
-    letterSpacing: 2,
-    marginBottom: 16,
+    color: '#C87A52',
+    letterSpacing: 2.5,
+    marginBottom: 14,
+    textTransform: 'uppercase',
+  },
+  subLabel: {
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 10,
+    color: '#C87A52',
+    letterSpacing: 2.5,
+    marginBottom: 10,
+    textTransform: 'uppercase',
+  },
+  indoorsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(44,26,14,0.08)',
+  },
+  indoorsLabel: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 13,
+    color: '#2C1A0E',
   },
   chipRow: {
     flexDirection: 'row',
@@ -5324,34 +5389,42 @@ const vibeStyles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    paddingVertical: 10,
-    paddingHorizontal: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderRadius: 100,
-    borderWidth: 1,
+    borderWidth: 1.5,
   },
   chipSelected: {
-    backgroundColor: G,
-    borderColor: G,
+    backgroundColor: '#BCC7B7',
+    borderColor: '#FFFFFF',
+    borderWidth: 3,
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 1,
   },
   chipDefault: {
-    backgroundColor: 'transparent',
-    borderColor: G + '50',
+    backgroundColor: '#FFFFFF',
+    borderColor: 'rgba(44,26,14,0.12)',
   },
   chipText: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 12,
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 13,
+    color: '#2C1A0E',
   },
   cardSubtext: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: '#6A6058',
-    lineHeight: 18,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
+    lineHeight: 19,
     marginBottom: 14,
   },
   emptyItemsText: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 12,
-    color: '#555',
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    lineHeight: 19,
+    color: '#5C4A3A',
     textAlign: 'center',
     paddingVertical: 16,
   },
@@ -5359,57 +5432,72 @@ const vibeStyles = StyleSheet.create({
     flexDirection: 'row',
   },
   itemThumb: {
-    width: 80,
+    width: 84,
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 6,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: BORDER,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.12)',
+    backgroundColor: '#FFFFFF',
     marginRight: 8,
   },
   itemThumbPinned: {
-    borderColor: G,
-    backgroundColor: G + '15',
+    borderColor: '#FFFFFF',
+    borderWidth: 3,
+    backgroundColor: '#BCC7B7',
   },
   itemThumbName: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 9,
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 13,
     marginTop: 6,
     textAlign: 'center',
   },
   textInput: {
-    backgroundColor: BG,
-    borderWidth: 1,
-    borderColor: BORDER,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.12)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 14,
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 13,
-    color: CREAM,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 14,
+    color: '#2C1A0E',
     minHeight: 80,
   },
   generateButton: {
-    backgroundColor: G,
-    paddingVertical: 18,
+    backgroundColor: '#BCC7B7',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    paddingVertical: 15,
     borderRadius: 100,
     marginBottom: 10,
     alignItems: 'center',
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   generateButtonDisabled: {
-    opacity: 0.4,
+    backgroundColor: 'rgba(188, 199, 183, 0.45)',
+    borderColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   generateButtonText: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Outfit_700Bold',
     fontSize: 16,
-    color: BG,
+    color: '#2C1A0E',
+  },
+  generateButtonTextDisabled: {
+    color: 'rgba(255, 255, 255, 0.35)',
   },
   hintText: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: '#555',
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
     textAlign: 'center',
     marginBottom: 20,
   },
