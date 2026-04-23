@@ -1564,30 +1564,9 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
     );
   };
 
-  // Build 3 sample outfits from wardrobe items
-  const sampleOutfits = [
-    {
-      id: '1',
-      vibe: 'ROMANTIC',
-      name: 'Evening Glow',
-      description: '"The wrap silhouette is perfect for date night — elegant and effortless."',
-      items: wardrobeItems.slice(0, 3),
-    },
-    {
-      id: '2',
-      vibe: 'CASUAL',
-      name: 'Day Explorer',
-      description: '"Relaxed layers that work from morning coffee to evening drinks."',
-      items: wardrobeItems.slice(0, Math.min(wardrobeItems.length, 3)),
-    },
-    {
-      id: '3',
-      vibe: 'CHIC',
-      name: 'Weekend Ready',
-      description: '"Effortlessly put-together — because weekends deserve good outfits too."',
-      items: wardrobeItems.length > 1 ? wardrobeItems.slice(1, 4) : wardrobeItems.slice(0, 3),
-    },
-  ];
+  // Outfit shape: { id: string, vibe: string (uppercase), name: string,
+  //                 description: string (quoted), items: WardrobeItem[] }
+  const outfits = [];
 
   useEffect(() => {
     if (isGenerating && !hasGenerated) {
@@ -1617,7 +1596,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
   // Loading state
   if (loading) {
     return (
-      <View style={[looksStyles.scrollContent, { flex: 1, backgroundColor: BG, justifyContent: 'center', alignItems: 'center' }]}>
+      <View style={[looksStyles.scrollContent, { flex: 1, backgroundColor: '#E8E4CE', justifyContent: 'center', alignItems: 'center' }]}>
         <Animated.Text style={[looksStyles.spinStar, { transform: [{ rotate: spin }] }]}>✦</Animated.Text>
         <Text style={looksStyles.loadingTitle}>Styling your outfits...</Text>
         <Text style={looksStyles.loadingSubtext}>Clozie is working her magic ✦</Text>
@@ -1627,7 +1606,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: BG }}
+      style={{ flex: 1, backgroundColor: '#E8E4CE' }}
       contentContainerStyle={looksStyles.scrollContent}
       showsVerticalScrollIndicator={false}
     >
@@ -1635,11 +1614,11 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
         <Text style={looksStyles.heading}>Your Looks</Text>
         {savedOutfits.length > 0 && (
           <TouchableOpacity
-            style={{ paddingVertical: 8, paddingHorizontal: 4 }}
+            style={{ minHeight: 44, paddingHorizontal: 4, justifyContent: 'center' }}
             activeOpacity={0.7}
             onPress={() => setShowSavedScreen(true)}
           >
-            <Text style={{ fontFamily: 'DMMono_400Regular', fontSize: 13, color: G }}>
+            <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: '#C87A52' }}>
               ❤️ Saved ({savedOutfits.length})
             </Text>
           </TouchableOpacity>
@@ -1647,7 +1626,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
       </View>
 
       {/* Empty state — shown when no outfits generated yet */}
-      {!hasGenerated && (
+      {(!hasGenerated || outfits.length === 0) && (
         <View style={looksStyles.emptyState}>
           <Text style={looksStyles.emptyTitle}>No outfits yet ✦</Text>
           <Text style={looksStyles.emptyText}>
@@ -1664,14 +1643,14 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
       )}
 
       {/* Subtitle — only when outfits generated */}
-      {hasGenerated && (
+      {hasGenerated && outfits.length > 0 && (
         <Text style={looksStyles.subtitle}>
           Here are today's looks, styled just for you. ✦ Clozie learns your taste with every rating.
         </Text>
       )}
 
       {/* Outfit cards */}
-      {hasGenerated && sampleOutfits.map((outfit) => (
+      {hasGenerated && outfits.map((outfit) => (
         <View key={outfit.id} style={looksStyles.outfitCard}>
           {/* Item photo strip — 2 columns */}
           <View style={looksStyles.photoStrip}>
@@ -1710,7 +1689,11 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
           <Text style={looksStyles.outfitPotential}>These {outfit.items.length || 3} pieces create {(outfit.items.length || 3) * 4} outfits together</Text>
 
           {/* View Mood Board link */}
-          <TouchableOpacity activeOpacity={0.7} onPress={() => { setMoodBoardTab('moodboard'); setMoodBoardOutfit(outfit); }}>
+          <TouchableOpacity
+            style={{ marginTop: 10, minHeight: 44, justifyContent: 'center' }}
+            activeOpacity={0.7}
+            onPress={() => { setMoodBoardTab('moodboard'); setMoodBoardOutfit(outfit); }}
+          >
             <Text style={looksStyles.moodBoardLink}>✦ View mood board</Text>
           </TouchableOpacity>
 
@@ -1759,7 +1742,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
                 >
                   <Text style={[
                     looksStyles.ratingButtonText,
-                    { color: isSelected ? BG : CREAM },
+                    { color: '#2C1A0E' },
                   ]}>{r.label}</Text>
                 </TouchableOpacity>
               );
@@ -1772,12 +1755,14 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
           )}
 
           {/* Row 3: Share Outfit — primary filled */}
-          <TouchableOpacity
-            style={looksStyles.primaryButton}
-            activeOpacity={0.8}
-          >
-            <Text style={looksStyles.primaryButtonText}>Share Outfit ✦</Text>
-          </TouchableOpacity>
+          <View style={looksStyles.primaryButtonRing}>
+            <TouchableOpacity
+              style={looksStyles.primaryButton}
+              activeOpacity={0.8}
+            >
+              <Text style={looksStyles.primaryButtonText}>Share Outfit</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Row 4: Complete The Look — outline only */}
           <TouchableOpacity
@@ -1785,7 +1770,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
             activeOpacity={0.7}
             onPress={() => setShowBoutique((prev) => ({ ...prev, [outfit.id]: !prev[outfit.id] }))}
           >
-            <Text style={looksStyles.outlineButtonText}>✦ Complete The Look</Text>
+            <Text style={looksStyles.outlineButtonText}>Complete The Look</Text>
           </TouchableOpacity>
 
           {/* Boutique message */}
@@ -1796,7 +1781,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
       ))}
 
       {/* Bottom buttons — Regenerate + Save Feedback */}
-      {hasGenerated && (
+      {hasGenerated && outfits.length > 0 && (
         <View style={looksStyles.bottomRow}>
           <TouchableOpacity
             style={looksStyles.regenerateButton}
@@ -1805,17 +1790,19 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
           >
             <Text style={looksStyles.regenerateButtonText}>🔄 Regenerate</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              looksStyles.feedbackButton,
-              !hasAnyRating && looksStyles.feedbackButtonDisabled,
-            ]}
-            activeOpacity={hasAnyRating ? 0.8 : 1}
-            disabled={!hasAnyRating}
-            onPress={handleRegenerate}
-          >
-            <Text style={looksStyles.feedbackButtonText}>Save Feedback & Style Again →</Text>
-          </TouchableOpacity>
+          <View style={looksStyles.feedbackButtonRing}>
+            <TouchableOpacity
+              style={[
+                looksStyles.feedbackButton,
+                !hasAnyRating && looksStyles.feedbackButtonDisabled,
+              ]}
+              activeOpacity={hasAnyRating ? 0.8 : 1}
+              disabled={!hasAnyRating}
+              onPress={handleRegenerate}
+            >
+              <Text style={[looksStyles.feedbackButtonText, !hasAnyRating && { color: 'rgba(44,26,14,0.35)' }]}>Save Feedback & Style Again →</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
       {/* Mood Board Modal */}
@@ -2111,7 +2098,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
                 <Text style={savedStyles.countText}>{savedOutfits.length} saved look{savedOutfits.length !== 1 ? 's' : ''} ✦</Text>
                 <Text style={savedStyles.hintText}>Tap an outfit to see the mood board</Text>
 
-                {sampleOutfits
+                {outfits
                   .filter((o) => savedOutfits.includes(o.id))
                   .map((outfit) => (
                     <TouchableOpacity
@@ -5148,21 +5135,21 @@ const wardrobeStyles = StyleSheet.create({
   },
   gridCardColour: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 10,
+    fontSize: 11,
     color: '#5C4A3A',
     marginTop: 3,
     marginHorizontal: 10,
   },
   gridCardLastWorn: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 9,
+    fontSize: 11,
     color: '#5C4A3A',
     marginTop: 4,
     marginHorizontal: 10,
   },
   gridCardPairLink: {
     fontFamily: 'Outfit_500Medium',
-    fontSize: 10,
+    fontSize: 11,
     color: '#C87A52',
     marginTop: 6,
     marginHorizontal: 10,
@@ -5521,15 +5508,15 @@ const looksStyles = StyleSheet.create({
     marginBottom: 12,
   },
   heading: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 28,
-    color: CREAM,
+    color: '#2C1A0E',
     marginBottom: 8,
   },
   subtitle: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 12,
-    color: '#6A6058',
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
     lineHeight: 20,
     marginBottom: 24,
   },
@@ -5539,53 +5526,53 @@ const looksStyles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   emptyTitle: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 20,
-    color: CREAM,
+    color: '#2C1A0E',
     marginBottom: 12,
   },
   emptyText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: '#6A6058',
+    color: '#5C4A3A',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 28,
   },
   emptyButton: {
-    backgroundColor: G,
+    backgroundColor: '#BCC7B7',
     paddingVertical: 18,
     paddingHorizontal: 64,
     borderRadius: 100,
   },
   emptyButtonText: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 16,
-    color: BG,
+    color: '#2C1A0E',
     textAlign: 'center',
   },
   spinStar: {
     fontSize: 36,
-    color: G,
+    color: '#C87A52',
     marginBottom: 20,
   },
   loadingTitle: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 20,
-    color: CREAM,
+    color: '#2C1A0E',
     marginBottom: 8,
   },
   loadingSubtext: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 12,
-    color: G,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#C87A52',
   },
   outfitCard: {
-    backgroundColor: CARD,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: 'rgba(44,26,14,0.08)',
     marginBottom: 16,
     width: '100%',
   },
@@ -5602,16 +5589,16 @@ const looksStyles = StyleSheet.create({
   photoStripThumb: {
     width: '100%',
     height: 80,
-    backgroundColor: BG,
+    backgroundColor: '#E8E4CE',
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
   photoStripName: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 9,
-    color: '#999',
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 11,
+    color: '#5C4A3A',
     textAlign: 'center',
   },
   cardHeaderRow: {
@@ -5621,40 +5608,40 @@ const looksStyles = StyleSheet.create({
     marginBottom: 8,
   },
   vibeLabel: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 10,
-    color: G,
-    letterSpacing: 2,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 11,
+    color: '#C87A52',
+    letterSpacing: 2.5,
     marginBottom: 4,
   },
   outfitName: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 20,
-    color: CREAM,
+    color: '#2C1A0E',
   },
   outfitDesc: {
-    fontFamily: 'PlayfairDisplay_400Regular_Italic',
-    fontSize: 12,
-    color: '#7A6A58',
-    lineHeight: 19,
+    fontFamily: 'Outfit_400Regular',
+    fontStyle: 'italic',
+    fontSize: 13,
+    color: '#5C4A3A',
+    lineHeight: 20,
   },
   matchScore: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: G,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#C87A52',
     marginTop: 12,
   },
   outfitPotential: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 10,
-    color: '#555',
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
     marginTop: 4,
   },
   moodBoardLink: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: G,
-    marginTop: 10,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#C87A52',
   },
   saveButton: {
     borderWidth: 1,
@@ -5678,24 +5665,27 @@ const looksStyles = StyleSheet.create({
   },
   ratingButton: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: 'rgba(44,26,14,0.12)',
     borderRadius: 100,
+    minHeight: 44,
     paddingVertical: 10,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   ratingButtonSelected: {
-    backgroundColor: G,
-    borderColor: G,
+    backgroundColor: '#BCC7B7',
+    borderColor: '#BCC7B7',
   },
   ratingButtonText: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 10,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 11,
   },
   ratingFeedback: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: G,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#C87A52',
     marginTop: 10,
     textAlign: 'center',
   },
@@ -5708,9 +5698,9 @@ const looksStyles = StyleSheet.create({
     marginTop: 8,
   },
   actionButtonText: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: G,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#2C1A0E',
   },
   actionRow: {
     flexDirection: 'row',
@@ -5719,8 +5709,9 @@ const looksStyles = StyleSheet.create({
   },
   actionButtonHalf: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: G + '50',
+    borderColor: 'rgba(44,26,14,0.12)',
     borderRadius: 100,
     minHeight: 44,
     paddingVertical: 10,
@@ -5729,26 +5720,36 @@ const looksStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionButtonHalfSaved: {
-    borderColor: G,
+    borderColor: '#C87A52',
+  },
+  primaryButtonRing: {
+    marginTop: 12,
+    backgroundColor: '#FFFFFF',
+    padding: 3,
+    borderRadius: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
   },
   primaryButton: {
-    backgroundColor: G,
+    backgroundColor: '#BCC7B7',
     borderRadius: 100,
     minHeight: 48,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 12,
   },
   primaryButtonText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: BG,
+    color: '#2C1A0E',
     letterSpacing: 1,
   },
   outlineButton: {
     borderWidth: 1,
-    borderColor: G,
+    borderColor: '#C87A52',
     borderRadius: 100,
     minHeight: 44,
     paddingVertical: 10,
@@ -5758,14 +5759,14 @@ const looksStyles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   outlineButtonText: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: G,
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 13,
+    color: '#C87A52',
   },
   boutiqueMessage: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: '#6A6058',
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
     textAlign: 'center',
     marginTop: 6,
   },
@@ -5776,8 +5777,9 @@ const looksStyles = StyleSheet.create({
     marginBottom: 20,
   },
   regenerateButton: {
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: 'rgba(44,26,14,0.12)',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 12,
@@ -5785,13 +5787,23 @@ const looksStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   regenerateButtonText: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 12,
-    color: CREAM,
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 13,
+    color: '#2C1A0E',
+  },
+  feedbackButtonRing: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    padding: 3,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
   },
   feedbackButton: {
-    flex: 1,
-    backgroundColor: G,
+    backgroundColor: '#BCC7B7',
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 12,
@@ -5799,12 +5811,12 @@ const looksStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   feedbackButtonDisabled: {
-    opacity: 0.4,
+    backgroundColor: 'rgba(188,199,183,0.4)',
   },
   feedbackButtonText: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 12,
-    color: BG,
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 13,
+    color: '#2C1A0E',
     textAlign: 'center',
   },
 });
