@@ -2972,7 +2972,11 @@ function SettingsScreen({ onClose, onSignOut }) {
               <Text style={settingsStyles.cardName}>{displayName}</Text>
               <Text style={settingsStyles.cardEmail}>{userEmail}</Text>
             </View>
-            <TouchableOpacity activeOpacity={0.7} onPress={openEditProfile}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={openEditProfile}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <Text style={settingsStyles.goldLink}>Edit Profile</Text>
             </TouchableOpacity>
           </View>
@@ -3041,7 +3045,11 @@ function SettingsScreen({ onClose, onSignOut }) {
               <Text style={settingsStyles.cardRowLabel}>Subscription</Text>
               <Text style={settingsStyles.cardRowValue}>Free Plan</Text>
             </View>
-            <TouchableOpacity activeOpacity={0.7} onPress={() => setShowSubscription(true)}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setShowSubscription(true)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <Text style={settingsStyles.goldLink}>Upgrade ✦</Text>
             </TouchableOpacity>
           </View>
@@ -3055,7 +3063,11 @@ function SettingsScreen({ onClose, onSignOut }) {
               <Text style={settingsStyles.cardRowLabel}>Clear Clozie's Memory</Text>
               <Text style={settingsStyles.cardRowValue}>Reset learned preferences</Text>
             </View>
-            <TouchableOpacity activeOpacity={0.7} onPress={handleClearMemory}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleClearMemory}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <Text style={settingsStyles.goldLink}>Clear</Text>
             </TouchableOpacity>
           </View>
@@ -3069,7 +3081,11 @@ function SettingsScreen({ onClose, onSignOut }) {
               <Text style={settingsStyles.cardRowLabel}>Change password</Text>
               <Text style={settingsStyles.cardRowValue}>Update your password</Text>
             </View>
-            <TouchableOpacity activeOpacity={0.7} onPress={openChangePassword}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={openChangePassword}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <Text style={settingsStyles.goldLink}>Update</Text>
             </TouchableOpacity>
           </View>
@@ -3180,9 +3196,9 @@ function SettingsScreen({ onClose, onSignOut }) {
             <Switch
               value={false}
               disabled={true}
-              trackColor={{ false: BORDER, true: G }}
-              thumbColor="#555"
-              ios_backgroundColor={BORDER}
+              trackColor={{ false: 'rgba(44,26,14,0.15)', true: '#BCC7B7' }}
+              thumbColor="#FFFFFF"
+              ios_backgroundColor="rgba(44,26,14,0.15)"
             />
           </View>
         </View>
@@ -3192,7 +3208,7 @@ function SettingsScreen({ onClose, onSignOut }) {
           <View style={settingsStyles.cardRow}>
             <View style={{ flex: 1 }}>
               <Text style={settingsStyles.cardRowLabel}>Clozie</Text>
-              <Text style={settingsStyles.cardRowValue}>Version 1.0 — Your personal AI stylist</Text>
+              <Text style={settingsStyles.cardRowValue}>Version 1.0 — Your personal stylist</Text>
             </View>
             <Text style={settingsStyles.versionText}>v1.0</Text>
           </View>
@@ -3251,7 +3267,7 @@ function SettingsScreen({ onClose, onSignOut }) {
                 <View style={settingsStyles.deleteList}>
                   <Text style={settingsStyles.deleteListItem}>• All your wardrobe items</Text>
                   <Text style={settingsStyles.deleteListItem}>• All your saved outfits</Text>
-                  <Text style={settingsStyles.deleteListItem}>• Your Style DNA profile</Text>
+                  <Text style={settingsStyles.deleteListItem}>• Your Style profile</Text>
                   <Text style={settingsStyles.deleteListItem}>• All outfit ratings and learning data</Text>
                   <Text style={settingsStyles.deleteListItem}>• Your account</Text>
                 </View>
@@ -3325,7 +3341,7 @@ function SettingsScreen({ onClose, onSignOut }) {
 const settingsStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: '#E8E4CE',
     paddingTop: 60,
   },
   header: {
@@ -3335,7 +3351,7 @@ const settingsStyles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    borderBottomColor: 'rgba(44,26,14,0.08)',
   },
   backButton: {
     width: 44,
@@ -3345,31 +3361,32 @@ const settingsStyles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 22,
-    color: G,
+    color: '#2C1A0E',
   },
   logoWrap: {
     flexDirection: 'row',
     alignItems: 'baseline',
   },
   logoClo: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 22,
-    color: CREAM,
+    color: '#2C1A0E',
   },
   logoZie: {
-    fontFamily: 'PlayfairDisplay_400Regular_Italic',
+    fontFamily: 'DMSerifDisplay_400Regular_Italic',
     fontSize: 22,
-    color: G,
+    color: '#C87A52',
   },
   scrollContent: {
     padding: 24,
     paddingBottom: 40,
   },
   label: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: G,
-    letterSpacing: 3,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 10,
+    color: '#C87A52',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
     marginBottom: 8,
   },
   headingRow: {
@@ -3378,19 +3395,17 @@ const settingsStyles = StyleSheet.create({
     marginBottom: 24,
   },
   headingNormal: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 28,
-    color: CREAM,
+    color: '#2C1A0E',
   },
   headingItalic: {
-    fontFamily: 'PlayfairDisplay_400Regular_Italic',
+    fontFamily: 'DMSerifDisplay_400Regular_Italic',
     fontSize: 28,
-    color: G,
+    color: '#2C1A0E',
   },
   card: {
-    backgroundColor: CARD,
-    borderWidth: 1,
-    borderColor: BORDER,
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -3401,40 +3416,40 @@ const settingsStyles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   cardName: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 16,
-    color: CREAM,
+    color: '#2C1A0E',
     marginBottom: 2,
   },
   cardEmail: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 12,
-    color: '#888',
+    color: '#5C4A3A',
   },
   goldLink: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 12,
-    color: G,
+    color: '#C87A52',
   },
   divider: {
     height: 1,
-    backgroundColor: BORDER,
+    backgroundColor: 'rgba(44,26,14,0.08)',
     marginVertical: 14,
   },
   cardRowLabel: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: CREAM,
+    color: '#2C1A0E',
     marginBottom: 2,
   },
   cardRowValue: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 12,
-    color: '#888',
+    color: '#5C4A3A',
   },
   editPanel: {
     borderTopWidth: 1,
-    borderTopColor: BORDER,
+    borderTopColor: 'rgba(44,26,14,0.08)',
     marginTop: 14,
     paddingTop: 14,
   },
@@ -3445,45 +3460,46 @@ const settingsStyles = StyleSheet.create({
     marginBottom: 16,
   },
   editPanelLabel: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: G,
-    letterSpacing: 3,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 10,
+    color: '#C87A52',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
   },
   editPanelClose: {
     fontSize: 18,
-    color: G,
+    color: '#2C1A0E',
     width: 44,
     height: 44,
     textAlign: 'center',
     lineHeight: 44,
   },
   fieldLabel: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 12,
-    color: CREAM,
+    color: '#2C1A0E',
     marginBottom: 6,
   },
   textInput: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 14,
-    color: CREAM,
-    backgroundColor: BG,
+    color: '#2C1A0E',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: 'rgba(44,26,14,0.12)',
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 14,
   },
   textInputDisabled: {
-    color: '#555',
-    backgroundColor: '#0F0E0C',
+    color: 'rgba(44,26,14,0.45)',
+    backgroundColor: '#F5F0E6',
   },
   fieldNote: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 11,
-    color: '#555',
+    color: '#5C4A3A',
     marginTop: -10,
     marginBottom: 14,
   },
@@ -3494,43 +3510,51 @@ const settingsStyles = StyleSheet.create({
   },
   saveButton: {
     flex: 1,
-    backgroundColor: G,
+    backgroundColor: '#BCC7B7',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
     borderRadius: 100,
     paddingVertical: 14,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   saveButtonText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: BG,
+    color: '#FFFFFF',
   },
   cancelButton: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: 'rgba(44,26,14,0.20)',
     borderRadius: 100,
     paddingVertical: 14,
     alignItems: 'center',
   },
   cancelButtonText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: CREAM,
+    color: '#2C1A0E',
   },
   passwordWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: BG,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: 'rgba(44,26,14,0.12)',
     borderRadius: 10,
     marginBottom: 14,
   },
   passwordInput: {
     flex: 1,
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 14,
-    color: CREAM,
+    color: '#2C1A0E',
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
@@ -3542,23 +3566,25 @@ const settingsStyles = StyleSheet.create({
   },
   eyeIcon: {
     fontSize: 18,
+    color: '#2C1A0E',
   },
   versionText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 12,
-    color: '#555',
+    color: '#5C4A3A',
   },
   deleteAccountButton: {
-    borderWidth: 1,
-    borderColor: '#5A2A2A',
-    borderRadius: 100,
-    paddingVertical: 12,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#C87A52',
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: 'center',
   },
   deleteAccountButtonText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: '#C47A7A',
+    color: '#C87A52',
   },
   deleteOverlay: {
     flex: 1,
@@ -3568,25 +3594,23 @@ const settingsStyles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   deleteModal: {
-    backgroundColor: CARD,
-    borderWidth: 1,
-    borderColor: BORDER,
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 24,
     width: '100%',
     maxWidth: 360,
   },
   deleteHeading: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 22,
-    color: '#C47A7A',
+    color: '#2C1A0E',
     marginBottom: 16,
     textAlign: 'center',
   },
   deleteWarningText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: CREAM,
+    color: '#2C1A0E',
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -3594,24 +3618,25 @@ const settingsStyles = StyleSheet.create({
     marginBottom: 12,
   },
   deleteListItem: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 12,
-    color: '#888',
+    color: '#5C4A3A',
     lineHeight: 22,
   },
   deleteCannotUndo: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 12,
-    color: '#C47A7A',
+    color: '#C87A52',
+    opacity: 0.88,
     marginBottom: 20,
   },
   deleteInput: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 16,
-    color: CREAM,
-    backgroundColor: BG,
+    color: '#2C1A0E',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: 'rgba(44,26,14,0.12)',
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -3620,8 +3645,10 @@ const settingsStyles = StyleSheet.create({
     letterSpacing: 2,
   },
   deleteRedButton: {
-    backgroundColor: '#5A2A2A',
-    borderRadius: 100,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#C87A52',
+    borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 10,
@@ -3630,34 +3657,36 @@ const settingsStyles = StyleSheet.create({
     opacity: 0.4,
   },
   deleteRedButtonText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: '#C47A7A',
+    color: '#C87A52',
   },
   deleteCancelButton: {
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 100,
+    borderColor: 'rgba(44,26,14,0.20)',
+    borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
   },
   deleteCancelButtonText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: CREAM,
+    color: '#2C1A0E',
   },
   signOutButton: {
-    borderWidth: 1,
-    borderColor: '#5A2A2A',
-    borderRadius: 100,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: '#C87A52',
+    borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 8,
   },
   signOutButtonText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 14,
-    color: '#C47A7A',
+    color: '#C87A52',
   },
 });
 
