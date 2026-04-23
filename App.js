@@ -1508,7 +1508,10 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
 // ── Your Looks Tab ──────────────────────────────────────────────────────────
 function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
   const [loading, setLoading] = useState(false);
-  const [hasGenerated, setHasGenerated] = useState(false);
+  // TEMPORARY MOCK DATA - REMOVE IN PHASE 2
+  // Start with hasGenerated=true so the mock outfit below is visible on app open
+  // so Grace can test the Mood Board modal. Revert to useState(false) in Phase 2.
+  const [hasGenerated, setHasGenerated] = useState(true);
   const spinAnim = useRef(new Animated.Value(0)).current;
   const [savedOutfits, setSavedOutfits] = useState([]);
   const [ratings, setRatings] = useState({});
@@ -1566,7 +1569,25 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
 
   // Outfit shape: { id: string, vibe: string (uppercase), name: string,
   //                 description: string (quoted), items: WardrobeItem[] }
-  const outfits = [];
+  // TEMPORARY MOCK DATA - REMOVE IN PHASE 2
+  // One hardcoded outfit so Grace can tap "View mood board" and test the modal.
+  // Real outfits come from Clozie's generation in Phase 2. Delete this whole array
+  // and restore `const outfits = [];` when real generation is wired up.
+  const outfits = [
+    {
+      id: 'mock-outfit-1',
+      vibe: 'ROMANTIC',
+      name: 'Evening Glow',
+      description: '"A soft, feminine look — perfect for a dinner out."',
+      items: [
+        { id: 'mock-item-1', name: 'Cream silk blouse', category: 'Tops' },
+        { id: 'mock-item-2', name: 'High-waist trousers', category: 'Bottoms' },
+        { id: 'mock-item-3', name: 'Nude heels', category: 'Shoes' },
+        { id: 'mock-item-4', name: 'Gold hoop earrings', category: 'Accessories' },
+      ],
+    },
+  ];
+  // END TEMPORARY MOCK DATA
 
   useEffect(() => {
     if (isGenerating && !hasGenerated) {
@@ -1829,7 +1850,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
             </TouchableOpacity>
           </View>
 
-          {/* Tabs — Mood Board / On Body */}
+          {/* Tabs — Mood Board / Hanger View */}
           <View style={moodBoardStyles.tabRow}>
             <TouchableOpacity
               style={[
@@ -1855,7 +1876,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
               <Text style={[
                 moodBoardStyles.tabText,
                 moodBoardTab === 'onbody' && moodBoardStyles.tabTextActive,
-              ]}>✦ On Body</Text>
+              ]}>✦ Hanger View</Text>
             </TouchableOpacity>
           </View>
 
@@ -1881,7 +1902,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
                       <View style={moodBoardStyles.itemPhoto}>
                         <Text style={{ fontSize: 32 }}>{getCategoryEmoji(item.category)}</Text>
                       </View>
-                      <View style={[moodBoardStyles.itemCategoryTag, { backgroundColor: getCategoryColour(item.category) }]}>
+                      <View style={moodBoardStyles.itemCategoryTag}>
                         <Text style={moodBoardStyles.itemCategoryText}>{item.category || 'Tops'}</Text>
                       </View>
                       <Text style={moodBoardStyles.itemName} numberOfLines={2}>{item.name}</Text>
@@ -1896,7 +1917,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
               </View>
             )}
 
-            {moodBoardTab === 'onbody' && (() => {
+            {moodBoardTab === 'onbody' && moodBoardOutfit && (() => {
               // Determine which items go in which zone — exactly as web app
               const allItems = moodBoardOutfit.items || [];
               const isDress = allItems.find(i => i.category === 'Dresses');
@@ -1915,7 +1936,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
 
               return (
               <View style={moodBoardStyles.mannequinContainer}>
-                <View style={[moodBoardStyles.mannequinBg, { backgroundColor: { Cream: '#F5F0E8', White: '#FFFFFF', Grey: '#9E9E9E', Dark: '#2A2A2A', Sage: '#B5BFA0' }[mannequinBg] }]}>
+                <View style={[moodBoardStyles.mannequinBg, { backgroundColor: { Cream: '#F5F0E8', White: '#FFFFFF', Sage: '#E8E4CE', Dark: '#2C1A0E', 'Sage green': '#BCC7B7' }[mannequinBg] }]}>
                   {/* Mannequin SVG + clothing overlays in one relative container */}
                   <View style={{ position: 'relative', width: 200, height: 420 }}>
                     <Svg width={200} height={420} viewBox="0 0 200 420">
@@ -1987,14 +2008,14 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
                   </View>
                 </View>
 
-                {/* Item list with gold dots below mannequin */}
+                {/* Item list with terracotta dots below mannequin */}
                 <View style={{ marginTop: 12, paddingHorizontal: 20 }}>
                   {itemList.map((item, i) => (
                     <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: G }} />
-                      <Text style={{ fontFamily: 'DMMono_400Regular', fontSize: 11, color: '#888' }}>{item.name}</Text>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#C87A52' }} />
+                      <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 11, color: '#5C4A3A' }}>{item.name}</Text>
                       {item.category && (
-                        <Text style={{ fontFamily: 'DMMono_400Regular', fontSize: 10, color: G, opacity: 0.6 }}>{item.category}</Text>
+                        <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 10, color: '#C87A52', opacity: 0.6 }}>{item.category}</Text>
                       )}
                     </View>
                   ))}
@@ -2005,15 +2026,16 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
                   {[
                     { name: 'Cream', color: '#F5F0E8' },
                     { name: 'White', color: '#FFFFFF' },
-                    { name: 'Grey', color: '#9E9E9E' },
-                    { name: 'Dark', color: '#2A2A2A' },
-                    { name: 'Sage', color: '#B5BFA0' },
+                    { name: 'Sage', color: '#E8E4CE' },
+                    { name: 'Dark', color: '#2C1A0E' },
+                    { name: 'Sage green', color: '#BCC7B7' },
                   ].map((bg) => (
                     <TouchableOpacity
                       key={bg.name}
                       style={moodBoardStyles.bgOption}
                       activeOpacity={0.7}
                       onPress={() => setMannequinBg(bg.name)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
                       <View style={[
                         moodBoardStyles.bgCircle,
@@ -2022,7 +2044,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
                       ]} />
                       <Text style={[
                         moodBoardStyles.bgLabel,
-                        mannequinBg === bg.name && { color: G },
+                        mannequinBg === bg.name && { color: '#C87A52' },
                       ]}>{bg.name}</Text>
                     </TouchableOpacity>
                   ))}
@@ -2340,7 +2362,7 @@ const savedStyles = StyleSheet.create({
 const moodBoardStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: '#FFFFFF',
     paddingTop: 60,
   },
   header: {
@@ -2350,20 +2372,20 @@ const moodBoardStyles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    borderBottomColor: 'rgba(44,26,14,0.08)',
   },
   vibeLabel: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: G,
-    letterSpacing: 2,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 10,
+    color: '#C87A52',
+    letterSpacing: 2.5,
     textTransform: 'uppercase',
     marginBottom: 4,
   },
   outfitName: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 22,
-    color: CREAM,
+    color: '#2C1A0E',
   },
   closeButton: {
     width: 44,
@@ -2373,7 +2395,7 @@ const moodBoardStyles = StyleSheet.create({
   },
   closeButtonText: {
     fontSize: 22,
-    color: G,
+    color: '#2C1A0E',
   },
   tabRow: {
     flexDirection: 'row',
@@ -2389,15 +2411,15 @@ const moodBoardStyles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabActive: {
-    borderBottomColor: G,
+    borderBottomColor: '#C87A52',
   },
   tabText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: '#666',
+    color: 'rgba(92,74,58,0.6)',
   },
   tabTextActive: {
-    color: G,
+    color: '#2C1A0E',
   },
   itemGrid: {
     flexDirection: 'row',
@@ -2405,22 +2427,23 @@ const moodBoardStyles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   itemCard: {
-    backgroundColor: CARD,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: 'rgba(44,26,14,0.12)',
     marginBottom: 16,
     overflow: 'hidden',
   },
   itemPhoto: {
     width: '100%',
     aspectRatio: 1,
-    backgroundColor: '#1a1916',
+    backgroundColor: '#F5F0E8',
     alignItems: 'center',
     justifyContent: 'center',
   },
   itemCategoryTag: {
     alignSelf: 'flex-start',
+    backgroundColor: 'rgba(188,199,183,0.30)',
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -2428,36 +2451,37 @@ const moodBoardStyles = StyleSheet.create({
     marginLeft: 10,
   },
   itemCategoryText: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 10,
-    color: '#fff',
+    color: '#6B7E65',
     textTransform: 'uppercase',
   },
   itemName: {
-    fontFamily: 'PlayfairDisplay_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 14,
-    color: CREAM,
+    color: '#5C4A3A',
     paddingHorizontal: 10,
     paddingTop: 6,
     paddingBottom: 12,
   },
   storeDivider: {
     height: 1,
-    backgroundColor: BORDER,
+    backgroundColor: 'rgba(44,26,14,0.08)',
     marginTop: 8,
     marginBottom: 20,
   },
   storeLabel: {
-    fontFamily: 'DMMono_400Regular',
-    fontSize: 11,
-    color: G,
-    letterSpacing: 2,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 10,
+    color: '#C87A52',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
     marginBottom: 8,
   },
   storePlaceholder: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: '#888',
+    color: '#5C4A3A',
     fontStyle: 'italic',
   },
   mannequinContainer: {
@@ -2485,16 +2509,16 @@ const moodBoardStyles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: BORDER,
+    borderColor: 'rgba(44,26,14,0.12)',
   },
   bgCircleActive: {
     borderWidth: 2,
-    borderColor: G,
+    borderColor: '#C87A52',
   },
   bgLabel: {
-    fontFamily: 'DMMono_400Regular',
+    fontFamily: 'Outfit_400Regular',
     fontSize: 10,
-    color: '#666',
+    color: 'rgba(92,74,58,0.6)',
     marginTop: 4,
   },
 });
