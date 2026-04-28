@@ -34,7 +34,7 @@ const BORDER = '#252320';   // border color
 const CREAM = '#EDE5D8';    // logo "Clo" color
 
 // ── Welcome Screen photo asset ───────────────────────────────────────────────
-const WELCOME_PHOTO = require('./assets/welcome-photo.jpeg');
+const WELCOME_PHOTO = require('./assets/New-welcome-screen-photo.jpg');
 const POSTLOGIN_PHOTO = require('./assets/mirror-photo-post-login.jpg');
 
 // Keep native splash visible while fonts load
@@ -117,11 +117,11 @@ function WelcomeScreen({ onNext, onSignIn }) {
         source={WELCOME_PHOTO}
         style={welcomeStyles.photo}
         imageStyle={welcomeStyles.photoImage}
-        resizeMode="cover"
+        resizeMode="contain"
       >
         <LinearGradient
-          colors={['rgba(0,0,0,0.65)', 'rgba(0,0,0,0)']}
-          locations={[0, 1]}
+          colors={['rgba(44,26,14,0.30)', 'rgba(44,26,14,0.12)', 'transparent']}
+          locations={[0, 0.4, 1]}
           style={welcomeStyles.topGradient}
           pointerEvents="none"
         />
@@ -142,8 +142,7 @@ function WelcomeScreen({ onNext, onSignIn }) {
 
         <View style={welcomeStyles.bottomBlock}>
           <Text style={welcomeStyles.tagline}>
-            Everyone says I have nothing to wear.{'\n'}
-            Clozie solves that in 30 seconds.
+            Everyone says I have nothing to wear.{'\n'}Clozie solves that in 30 seconds.
           </Text>
 
           <View style={welcomeStyles.buttonRing}>
@@ -152,14 +151,20 @@ function WelcomeScreen({ onNext, onSignIn }) {
               activeOpacity={0.85}
               onPress={onNext}
             >
-              <Text style={welcomeStyles.buttonText}>Next →</Text>
+              <Text style={welcomeStyles.buttonText}>Look Inside →</Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={welcomeStyles.signInRow}>
-            Already have an account?{' '}
-            <Text style={welcomeStyles.signInLink} onPress={onSignIn}>Sign in</Text>
-          </Text>
+          <View style={welcomeStyles.signInRow}>
+            <Text style={welcomeStyles.signInRowText}>Already have an account? </Text>
+            <TouchableOpacity
+              onPress={onSignIn}
+              hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+              accessibilityRole="link"
+            >
+              <Text style={welcomeStyles.signInLink}>Sign in</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ImageBackground>
     </Animated.View>
@@ -4078,7 +4083,7 @@ const welcomeStyles = StyleSheet.create({
   photoImage: {
     width: '100%',
     height: undefined,
-    aspectRatio: 1099 / 1546,
+    aspectRatio: 1019 / 1358,
     top: 0,
   },
   topGradient: {
@@ -4108,7 +4113,7 @@ const welcomeStyles = StyleSheet.create({
   logoClo: {
     fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 64,
-    color: '#F7F0E3',
+    color: '#2C1A0E',
   },
   logoZie: {
     fontFamily: 'DMSerifDisplay_400Regular_Italic',
@@ -4116,12 +4121,11 @@ const welcomeStyles = StyleSheet.create({
     color: '#DC8F68',
   },
   eyebrow: {
-    fontFamily: 'Outfit_500Medium',
-    fontSize: 9,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 11,
     letterSpacing: 3.5,
-    color: '#F7F0E3',
-    opacity: 0.78,
-    marginTop: 13,
+    color: 'rgba(247,240,227,0.90)',
+    marginTop: 43,
     textAlign: 'center',
   },
   bottomBlock: {
@@ -4163,14 +4167,19 @@ const welcomeStyles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   signInRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 18,
+  },
+  signInRowText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 13,
     color: '#5C4A3A',
-    textAlign: 'center',
-    marginTop: 18,
   },
   signInLink: {
     fontFamily: 'Outfit_500Medium',
+    fontSize: 13,
     color: '#DC8F68',
   },
 });
