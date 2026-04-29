@@ -1466,6 +1466,272 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
   );
 }
 
+// ── Mood Board polaroid system ──────────────────────────────────────────────
+// Placeholder fill colors per category (used until real item photos land in Phase 2)
+const MOOD_PLACEHOLDER_COLORS = {
+  Tops:        '#E8E0D5',
+  Bottoms:     '#3A4555',
+  Outerwear:   '#C9A878',
+  Dresses:     '#D8A8A0',
+  Shoes:       '#6B4D38',
+  Accessories: '#D4B888',
+};
+
+// Anatomical sort order for accessories: head → ears → neck → wrist → waist → hand
+const accessoryRank = (name) => {
+  const n = (name || '').toLowerCase();
+  if (/(hat|cap|beret|beanie|headband)/.test(n)) return 1;
+  if (/(earring|hoop|stud)/.test(n)) return 2;
+  if (/(necklace|choker|pendant)/.test(n)) return 3;
+  if (/(bracelet|cuff|watch)/.test(n)) return 4;
+  if (/(belt|sash)/.test(n)) return 5;
+  if (/(ring|bag|purse|clutch|tote|glove)/.test(n)) return 6;
+  return 7;
+};
+
+// Auto-detect which of the 8 layouts to use from outfit composition
+const detectMoodLayout = (items) => {
+  const hasDress = items.some(i => i.category === 'Dresses');
+  const hasOuter = items.some(i => i.category === 'Outerwear');
+  const hasAcc   = items.some(i => i.category === 'Accessories');
+  if (hasDress && !hasOuter && !hasAcc) return 'D';
+  if (hasDress && !hasOuter && hasAcc)  return 'F';
+  if (hasDress && hasOuter && !hasAcc)  return 'E-fix';
+  if (hasDress && hasOuter && hasAcc)   return 'G';
+  if (!hasDress && !hasOuter && !hasAcc) return 'C';
+  if (!hasDress && !hasOuter && hasAcc)  return 'A';
+  if (!hasDress && hasOuter && !hasAcc)  return 'B-lite';
+  return 'B';
+};
+
+// Decorative outfit palette — first 4 unique category colors, padded with cream
+const buildMoodSwatches = (items) => {
+  const colors = [];
+  const seen = new Set();
+  items.forEach(i => {
+    const c = MOOD_PLACEHOLDER_COLORS[i.category] || '#E8E0D5';
+    if (!seen.has(c)) { seen.add(c); colors.push(c); }
+  });
+  while (colors.length < 4) colors.push('#E8E0D5');
+  return colors.slice(0, 4);
+};
+
+// Build the array of polaroid specs for a given layout key
+const buildMoodPolaroids = (layout, items) => {
+  const dress  = items.find(i => i.category === 'Dresses');
+  const top    = items.find(i => i.category === 'Tops');
+  const outer  = items.find(i => i.category === 'Outerwear');
+  const bottom = items.find(i => i.category === 'Bottoms');
+  const shoes  = items.find(i => i.category === 'Shoes');
+  const accs   = items
+    .filter(i => i.category === 'Accessories')
+    .sort((a, b) => accessoryRank(a.name) - accessoryRank(b.name));
+
+  let specs;
+  switch (layout) {
+    case 'A':
+      specs = [
+        { kind: 'item', item: top,    w: 130, h: 168, top: 70,    left: 22,     rot: -5 },
+        { kind: 'acc',  items: accs,  w: 130, h: 130, top: 90,    right: 22,    rot:  4 },
+        { kind: 'item', item: bottom, w: 130, h: 110, bottom: 95, left: 22,     rot: -2 },
+        { kind: 'item', item: shoes,  w: 130, h: 110, bottom: 70, right: 22,    rot:  2 },
+      ];
+      break;
+    case 'B':
+      specs = [
+        { kind: 'item', item: top,    w: 120, h: 150, top: 50,    left: 22,     rot: -5 },
+        { kind: 'item', item: outer,  w: 120, h: 150, top: 64,    right: 22,    rot:  4 },
+        { kind: 'item', item: bottom, w: 120, h: 150, top: 220,   center: true, rot: -2 },
+        { kind: 'item', item: shoes,  w: 120, h: 100, bottom: 30, left: 22,     rot: -3 },
+        { kind: 'acc',  items: accs,  w: 120, h: 120, bottom: 20, right: 22,    rot:  3 },
+      ];
+      break;
+    case 'B-lite':
+      specs = [
+        { kind: 'item', item: top,    w: 130, h: 168, top: 70,    left: 22,  rot: -5 },
+        { kind: 'item', item: outer,  w: 130, h: 168, top: 90,    right: 22, rot:  4 },
+        { kind: 'item', item: bottom, w: 130, h: 110, bottom: 95, left: 22,  rot: -2 },
+        { kind: 'item', item: shoes,  w: 130, h: 110, bottom: 70, right: 22, rot:  2 },
+      ];
+      break;
+    case 'C':
+      specs = [
+        { kind: 'item', item: top,    w: 130, h: 168, top: 70,    left: 22,     rot: -5 },
+        { kind: 'item', item: bottom, w: 130, h: 168, top: 130,   right: 22,    rot:  4 },
+        { kind: 'item', item: shoes,  w: 145, h: 105, bottom: 30, center: true, rot: -2 },
+      ];
+      break;
+    case 'D':
+      specs = [
+        { kind: 'item', item: dress, w: 150, h: 200, top: 70,    left: 30,  rot: -4 },
+        { kind: 'item', item: shoes, w: 140, h: 105, bottom: 65, right: 30, rot:  3 },
+      ];
+      break;
+    case 'E-fix':
+      specs = [
+        { kind: 'item', item: dress, w: 130, h: 168, top: 70,    left: 22,     rot: -5 },
+        { kind: 'item', item: outer, w: 130, h: 168, top: 130,   right: 22,    rot:  4 },
+        { kind: 'item', item: shoes, w: 145, h: 105, bottom: 30, center: true, rot: -2 },
+      ];
+      break;
+    case 'F':
+      specs = [
+        { kind: 'item', item: dress, w: 165, h: 220, top: 105,   left: 22,     rot: -3 },
+        { kind: 'acc',  items: accs, w:  90, h:  90, top: 50,    right: 14,    rot:  6 },
+        { kind: 'item', item: shoes, w: 140, h: 105, bottom: 35, center: true, rot:  2 },
+      ];
+      break;
+    case 'G':
+      specs = [
+        { kind: 'item', item: dress, w: 130, h: 168, top: 70,    left: 22,  rot: -5 },
+        { kind: 'item', item: outer, w: 130, h: 168, top: 90,    right: 22, rot:  4 },
+        { kind: 'item', item: shoes, w: 130, h: 110, bottom: 70, left: 22,  rot: -2 },
+        { kind: 'acc',  items: accs, w: 130, h: 130, bottom: 60, right: 22, rot:  3 },
+      ];
+      break;
+    default:
+      specs = [];
+  }
+
+  // Drop polaroids whose source data is missing (e.g. layout expects outerwear but none present)
+  return specs.filter(s => s.kind === 'acc' ? (s.items && s.items.length > 0) : !!s.item);
+};
+
+// Single accessory cell — colored fill, or empty, or "+N" terracotta capsule
+function MoodAccCell({ cell }) {
+  if (cell.kind === 'empty') return <View style={{ flex: 1 }} />;
+  if (cell.kind === 'overflow') {
+    return (
+      <View style={{
+        flex: 1,
+        backgroundColor: '#A44A34',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 100,
+      }}>
+        <Text style={{ fontFamily: 'Outfit_500Medium', fontSize: 11, color: '#FFFFFF' }}>+{cell.count}</Text>
+      </View>
+    );
+  }
+  return <View style={{ flex: 1, backgroundColor: MOOD_PLACEHOLDER_COLORS.Accessories }} />;
+}
+
+// Accessory grid — 1 / 2x1 / 2x2 (with empty) / 2x2 / 2x2 + overflow
+function MoodAccessoryGrid({ items }) {
+  let rows;
+  if (items.length === 1) {
+    rows = [[{ kind: 'item', item: items[0] }]];
+  } else if (items.length === 2) {
+    rows = [[{ kind: 'item', item: items[0] }, { kind: 'item', item: items[1] }]];
+  } else if (items.length === 3) {
+    rows = [
+      [{ kind: 'item', item: items[0] }, { kind: 'item', item: items[1] }],
+      [{ kind: 'item', item: items[2] }, { kind: 'empty' }],
+    ];
+  } else if (items.length === 4) {
+    rows = [
+      [{ kind: 'item', item: items[0] }, { kind: 'item', item: items[1] }],
+      [{ kind: 'item', item: items[2] }, { kind: 'item', item: items[3] }],
+    ];
+  } else {
+    rows = [
+      [{ kind: 'item', item: items[0] }, { kind: 'item', item: items[1] }],
+      [{ kind: 'item', item: items[2] }, { kind: 'overflow', count: items.length - 3 }],
+    ];
+  }
+  return (
+    <View style={{ width: '92%', height: '92%', flexDirection: 'column', gap: 3 }}>
+      {rows.map((row, i) => (
+        <View key={i} style={{ flex: 1, flexDirection: 'row', gap: 3 }}>
+          {row.map((cell, j) => (
+            <View key={j} style={{ flex: 1 }}>
+              <MoodAccCell cell={cell} />
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// One polaroid — handles both single-item and accessory variants
+function MoodPolaroid({ kind, item, items, w, h, top, bottom, left, right, center, rot }) {
+  const positionStyle = { position: 'absolute', width: w, height: h };
+  if (top    !== undefined) positionStyle.top    = top;
+  if (bottom !== undefined) positionStyle.bottom = bottom;
+  if (left   !== undefined) positionStyle.left   = left;
+  if (right  !== undefined) positionStyle.right  = right;
+  if (center) {
+    positionStyle.left = '50%';
+    positionStyle.marginLeft = -w / 2;
+  }
+
+  const labelText = kind === 'acc'
+    ? items.map(i => i.name).join(' · ')
+    : (item?.name || '');
+
+  return (
+    <View style={[positionStyle, polaroidStyles.card, { transform: [{ rotate: rot + 'deg' }] }]}>
+      <View style={polaroidStyles.clip} />
+      <View style={polaroidStyles.photoZone}>
+        {kind === 'acc' ? (
+          <MoodAccessoryGrid items={items} />
+        ) : (
+          <View style={{
+            width: '92%',
+            height: '92%',
+            backgroundColor: MOOD_PLACEHOLDER_COLORS[item?.category] || '#E8E0D5',
+          }} />
+        )}
+      </View>
+      <Text style={polaroidStyles.label} numberOfLines={1}>{labelText}</Text>
+    </View>
+  );
+}
+
+const polaroidStyles = StyleSheet.create({
+  card: {
+    backgroundColor: '#FFFFFF',
+    paddingTop: 8,
+    paddingHorizontal: 8,
+    paddingBottom: 22,
+    borderRadius: 2,
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.20,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  clip: {
+    position: 'absolute',
+    top: -7,
+    left: '50%',
+    marginLeft: -11,
+    width: 22,
+    height: 12,
+    backgroundColor: 'rgba(200,122,82,0.7)',
+    borderRadius: 2,
+    zIndex: 2,
+  },
+  photoZone: {
+    flex: 1,
+    backgroundColor: '#FBFAF3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  label: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    right: 4,
+    textAlign: 'center',
+    fontFamily: 'DMSerifDisplay_400Regular_Italic',
+    fontSize: 11,
+    color: '#5C4A3A',
+  },
+});
+
 // ── Your Looks Tab ──────────────────────────────────────────────────────────
 function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
   const [loading, setLoading] = useState(false);
@@ -1480,6 +1746,70 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
   const [moodBoardTab, setMoodBoardTab] = useState('moodboard');
   const [mannequinBg, setMannequinBg] = useState('Cream');
   const [showSavedScreen, setShowSavedScreen] = useState(false);
+  // ── DEBUG (temporary — remove before shipping) ───────────────────────────
+  // Layout switcher state for testing all 8 Mood Board polaroid layouts
+  const [debugLayout, setDebugLayout] = useState('A');
+  const DEBUG_LAYOUTS = {
+    A:       { name: 'Layout A (4 — top + pants + shoes + acc)',     items: [
+      { id: 'd1', name: 'Cream Silk Top',   category: 'Tops' },
+      { id: 'd2', name: 'Tailored Trousers', category: 'Bottoms' },
+      { id: 'd3', name: 'Tan Loafers',       category: 'Shoes' },
+      { id: 'd4', name: 'Gold Hoops',        category: 'Accessories' },
+      { id: 'd5', name: 'Brown Tote',        category: 'Accessories' },
+    ]},
+    B:       { name: 'Layout B (5 — top + jacket + pants + shoes + acc)', items: [
+      { id: 'd1', name: 'Cream Silk Top',     category: 'Tops' },
+      { id: 'd6', name: 'Beige Blazer',       category: 'Outerwear' },
+      { id: 'd2', name: 'Tailored Trousers',  category: 'Bottoms' },
+      { id: 'd3', name: 'Tan Loafers',        category: 'Shoes' },
+      { id: 'd4', name: 'Gold Hoops',         category: 'Accessories' },
+      { id: 'd5', name: 'Brown Tote',         category: 'Accessories' },
+    ]},
+    'B-lite':{ name: 'Layout B-lite (4 — top + jacket + pants + shoes)', items: [
+      { id: 'd1', name: 'Cream Silk Top',    category: 'Tops' },
+      { id: 'd6', name: 'Beige Blazer',      category: 'Outerwear' },
+      { id: 'd2', name: 'Tailored Trousers', category: 'Bottoms' },
+      { id: 'd3', name: 'Tan Loafers',       category: 'Shoes' },
+    ]},
+    C:       { name: 'Layout C (3 — top + pants + shoes)', items: [
+      { id: 'd1', name: 'Cream Silk Top',    category: 'Tops' },
+      { id: 'd2', name: 'Tailored Trousers', category: 'Bottoms' },
+      { id: 'd3', name: 'Tan Loafers',       category: 'Shoes' },
+    ]},
+    D:       { name: 'Layout D (2 — dress + shoes)', items: [
+      { id: 'd7', name: 'Linen Sundress', category: 'Dresses' },
+      { id: 'd3', name: 'Tan Loafers',    category: 'Shoes' },
+    ]},
+    'E-fix':{ name: 'Layout E-fix (3 — dress + jacket + shoes)', items: [
+      { id: 'd7', name: 'Linen Sundress', category: 'Dresses' },
+      { id: 'd6', name: 'Beige Blazer',   category: 'Outerwear' },
+      { id: 'd3', name: 'Tan Loafers',    category: 'Shoes' },
+    ]},
+    F:       { name: 'Layout F (3 — dress + acc + shoes)', items: [
+      { id: 'd7', name: 'Linen Sundress', category: 'Dresses' },
+      { id: 'd4', name: 'Gold Hoops',     category: 'Accessories' },
+      { id: 'd5', name: 'Brown Tote',     category: 'Accessories' },
+      { id: 'd3', name: 'Tan Loafers',    category: 'Shoes' },
+    ]},
+    G:       { name: 'Layout G (4 — dress + jacket + shoes + acc)', items: [
+      { id: 'd7', name: 'Linen Sundress', category: 'Dresses' },
+      { id: 'd6', name: 'Beige Blazer',   category: 'Outerwear' },
+      { id: 'd3', name: 'Tan Loafers',    category: 'Shoes' },
+      { id: 'd4', name: 'Gold Hoops',     category: 'Accessories' },
+      { id: 'd5', name: 'Brown Tote',     category: 'Accessories' },
+    ]},
+  };
+  const buildDebugOutfit = (key) => ({
+    id: 'debug-' + key,
+    name: 'Debug Outfit',
+    vibe: 'TEST',
+    items: DEBUG_LAYOUTS[key].items,
+  });
+  const openDebugModal = (key) => {
+    setDebugLayout(key);
+    setMoodBoardTab('moodboard');
+    setMoodBoardOutfit(buildDebugOutfit(key));
+  };
 
   const handleRate = (outfitId, rating) => {
     setRatings((prev) => ({ ...prev, [outfitId]: rating }));
@@ -1600,6 +1930,25 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
           >
             <Text style={looksStyles.emptyButtonText}>Go to Today's Vibe →</Text>
           </TouchableOpacity>
+
+          {/* DEBUG — temporary, remove before shipping */}
+          <View style={{ marginTop: 24, alignItems: 'center', paddingHorizontal: 20 }}>
+            <Text style={{ fontFamily: 'Outfit_500Medium', fontSize: 10, color: '#A44A34', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>
+              ✦ DEBUG — Mood Board Test ✦
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => openDebugModal('A')}
+              style={{ backgroundColor: '#A44A34', paddingVertical: 12, paddingHorizontal: 22, borderRadius: 100 }}
+            >
+              <Text style={{ fontFamily: 'Outfit_500Medium', fontSize: 13, color: '#FFFFFF' }}>
+                Open Mood Board (fake outfit)
+              </Text>
+            </TouchableOpacity>
+            <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 10, color: '#5C4A3A', opacity: 0.6, marginTop: 8, textAlign: 'center' }}>
+              Inside the modal — switch between Layouts A → G
+            </Text>
+          </View>
         </View>
       )}
 
@@ -1769,11 +2118,14 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
       {/* Mood Board Modal */}
       <Modal
         visible={moodBoardOutfit !== null}
-        animationType="slide"
-        transparent={false}
+        animationType="fade"
+        transparent={true}
         onRequestClose={() => setMoodBoardOutfit(null)}
       >
-        <View style={moodBoardStyles.container}>
+        {/* Step 1 — dim near-black backdrop */}
+        <View style={moodBoardStyles.backdrop}>
+          {/* Step 2 — sage wrapper (chrome) */}
+          <View style={moodBoardStyles.wrapper}>
           {/* Header */}
           <View style={moodBoardStyles.header}>
             <View style={{ flex: 1 }}>
@@ -1803,7 +2155,8 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
               <Text style={[
                 moodBoardStyles.tabText,
                 moodBoardTab === 'moodboard' && moodBoardStyles.tabTextActive,
-              ]}>🖼 Mood Board</Text>
+              ]}>Mood Board</Text>
+              <Text style={moodBoardStyles.tabSubtitle}>Photos side by side</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -1816,9 +2169,45 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
               <Text style={[
                 moodBoardStyles.tabText,
                 moodBoardTab === 'onbody' && moodBoardStyles.tabTextActive,
-              ]}>✦ Hanger View</Text>
+              ]}>Hanger View</Text>
+              <Text style={moodBoardStyles.tabSubtitle}>Styled together.</Text>
             </TouchableOpacity>
           </View>
+
+          {/* DEBUG — layout switcher (temporary, remove before shipping) */}
+          {moodBoardOutfit && String(moodBoardOutfit.id || '').startsWith('debug-') && (
+            <View style={{ paddingHorizontal: 12, paddingVertical: 8, backgroundColor: 'rgba(164,74,52,0.08)' }}>
+              <Text style={{ fontFamily: 'Outfit_500Medium', fontSize: 9, color: '#A44A34', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6, textAlign: 'center' }}>
+                ✦ Debug — current: {debugLayout} ✦
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingHorizontal: 4 }}>
+                {Object.keys(DEBUG_LAYOUTS).map((key) => {
+                  const active = debugLayout === key;
+                  return (
+                    <TouchableOpacity
+                      key={key}
+                      activeOpacity={0.8}
+                      onPress={() => { setDebugLayout(key); setMoodBoardOutfit(buildDebugOutfit(key)); }}
+                      style={{
+                        paddingVertical: 6,
+                        paddingHorizontal: 12,
+                        borderRadius: 100,
+                        backgroundColor: active ? '#A44A34' : 'transparent',
+                        borderWidth: 1,
+                        borderColor: active ? '#A44A34' : 'rgba(44,26,14,0.25)',
+                      }}
+                    >
+                      <Text style={{
+                        fontFamily: 'Outfit_500Medium',
+                        fontSize: 11,
+                        color: active ? '#FFFFFF' : '#2C1A0E',
+                      }}>{key}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
 
           {/* Tab content */}
           <ScrollView
@@ -1828,26 +2217,39 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
           >
             {moodBoardTab === 'moodboard' && moodBoardOutfit && (
               <View>
-                <View style={moodBoardStyles.itemGrid}>
-                  {moodBoardOutfit.items.map((item) => (
-                    <View
-                      key={item.id}
-                      style={[
-                        moodBoardStyles.itemCard,
-                        moodBoardOutfit.items.length === 1
-                          ? { width: '100%' }
-                          : { width: '48%' },
-                      ]}
-                    >
-                      <View style={moodBoardStyles.itemPhoto}>
-                        <Text style={{ fontSize: 32 }}>{getCategoryEmoji(item.category)}</Text>
-                      </View>
-                      <View style={moodBoardStyles.itemCategoryTag}>
-                        <Text style={moodBoardStyles.itemCategoryText}>{item.category || 'Tops'}</Text>
-                      </View>
-                      <Text style={moodBoardStyles.itemName} numberOfLines={2}>{item.name}</Text>
-                    </View>
-                  ))}
+                {/* Step 2 — cream stage panel with subtle warmth gradient overlay */}
+                <View style={moodBoardStyles.stage}>
+                  {/* Warmth gradient overlays — two soft tints, non-interactive */}
+                  <LinearGradient
+                    pointerEvents="none"
+                    colors={['rgba(220,143,104,0.06)', 'rgba(220,143,104,0)']}
+                    start={{ x: 0.2, y: 0.3 }}
+                    end={{ x: 0.7, y: 0.8 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <LinearGradient
+                    pointerEvents="none"
+                    colors={['rgba(188,199,183,0.08)', 'rgba(188,199,183,0)']}
+                    start={{ x: 0.8, y: 0.7 }}
+                    end={{ x: 0.3, y: 0.2 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  {/* Color swatches band — decorative outfit palette */}
+                  <View style={moodBoardStyles.swatchRow}>
+                    {buildMoodSwatches(moodBoardOutfit.items).map((color, i) => (
+                      <View key={i} style={[moodBoardStyles.swatch, { backgroundColor: color }]} />
+                    ))}
+                  </View>
+
+                  {/* Polaroid composition — debug mode picks layout from switcher, otherwise auto-detect */}
+                  {(() => {
+                    const isDebug = String(moodBoardOutfit.id || '').startsWith('debug-');
+                    const layoutKey = isDebug ? debugLayout : detectMoodLayout(moodBoardOutfit.items);
+                    const polaroids = buildMoodPolaroids(layoutKey, moodBoardOutfit.items);
+                    return polaroids.map((p, i) => (
+                      <MoodPolaroid key={layoutKey + '-' + i} {...p} />
+                    ));
+                  })()}
                 </View>
 
                 {/* Store Suggestions */}
@@ -1994,6 +2396,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
             })()}
           </ScrollView>
 
+          </View>
         </View>
       </Modal>
 
@@ -2311,10 +2714,79 @@ const savedStyles = StyleSheet.create({
 
 // ── Mood Board Modal Styles ─────────────────────────────────────────────────
 const moodBoardStyles = StyleSheet.create({
+  // Step 1 — dim near-black backdrop behind the whole modal
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.93)',
+  },
+  // Step 2 — sage chrome wrapper, inset from edges so backdrop shows through
+  wrapper: {
+    flex: 1,
+    backgroundColor: '#E8E4CE',
+    marginTop: 60,
+    marginHorizontal: 12,
+    marginBottom: 24,
+    borderRadius: 18,
+    overflow: 'hidden',
+    paddingTop: 16,
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
     paddingTop: 60,
+  },
+  // Step 2 — cream stage panel inside the sage wrapper
+  stage: {
+    backgroundColor: '#F5F0E8',
+    borderRadius: 14,
+    height: 520,
+    overflow: 'hidden',
+    marginBottom: 8,
+    // iOS inset shadow approximation (subtle)
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+  },
+  stagePlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stagePlaceholderText: {
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 18,
+    color: '#5C4A3A',
+  },
+  stagePlaceholderSub: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 12,
+    color: '#5C4A3A',
+    opacity: 0.6,
+    marginTop: 4,
+  },
+  // Step 3 — decorative palette swatches at top of stage
+  swatchRow: {
+    position: 'absolute',
+    top: 14,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4,
+    zIndex: 10,
+  },
+  swatch: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
   },
   header: {
     flexDirection: 'row',
@@ -2362,7 +2834,7 @@ const moodBoardStyles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabActive: {
-    borderBottomColor: '#C87A52',
+    borderBottomColor: '#A44A34',
   },
   tabText: {
     fontFamily: 'Outfit_400Regular',
@@ -2371,6 +2843,12 @@ const moodBoardStyles = StyleSheet.create({
   },
   tabTextActive: {
     color: '#2C1A0E',
+  },
+  tabSubtitle: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 10,
+    color: 'rgba(92,74,58,0.55)',
+    marginTop: 2,
   },
   itemGrid: {
     flexDirection: 'row',
