@@ -173,11 +173,7 @@ function WelcomeScreen({ onNext, onSignIn }) {
 
 // ── Peek Inside Screen (How It Works) ────────────────────────────────────────
 function PeekInsideScreen({ onStartStyling, onSignIn }) {
-  const [activeStep, setActiveStep] = useState(0);
-  const [hasTapped, setHasTapped] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const hintPulse = useRef(new Animated.Value(1)).current;
-  const bounceAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -185,46 +181,26 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
       duration: 600,
       useNativeDriver: true,
     }).start();
-
-    Animated.sequence([
-      Animated.timing(hintPulse, { toValue: 0.4, duration: 600, useNativeDriver: true }),
-      Animated.timing(hintPulse, { toValue: 1, duration: 600, useNativeDriver: true }),
-      Animated.timing(hintPulse, { toValue: 0.4, duration: 600, useNativeDriver: true }),
-      Animated.timing(hintPulse, { toValue: 1, duration: 600, useNativeDriver: true }),
-      Animated.timing(hintPulse, { toValue: 0.4, duration: 600, useNativeDriver: true }),
-      Animated.timing(hintPulse, { toValue: 1, duration: 600, useNativeDriver: true }),
-    ]).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(bounceAnim, { toValue: -5, duration: 500, useNativeDriver: true }),
-        Animated.timing(bounceAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
-      ])
-    ).start();
   }, []);
 
-  const handleTabTap = (index) => {
-    setActiveStep(index);
-    setHasTapped(true);
-  };
-
   const Step1Visual = () => (
-    <View style={peekStyles.visualCard}>
+    <View style={peekStyles.innerPreview}>
       <View style={peekStyles.itemRow}>
         <View style={peekStyles.itemIcon}>
           <Text style={{ fontSize: 28 }}>👗</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={peekStyles.recognisedLabel}>RECOGNISED ✦</Text>
-          <Text style={peekStyles.itemName}>Navy Blue Wrap Dress</Text>
-          <Text style={peekStyles.itemMeta}>Dresses · Navy blue · Midi length</Text>
+          <Text style={peekStyles.recognisedLabel}>CLOZIE RECOGNISED ✦</Text>
+          <Text style={peekStyles.itemName}>Teal Wrap Dress</Text>
+          <Text style={peekStyles.itemMeta}>Teal · Midi Length</Text>
         </View>
         <View style={peekStyles.checkCircle}>
           <Text style={{ fontSize: 11 }}>✅</Text>
         </View>
       </View>
+      <View style={peekStyles.scanProgressBar} />
       <View style={peekStyles.tagRow}>
-        {['👗 Tops · 3', '👖 Bottoms · 2', '👠 Shoes · 3'].map((tag, i) => (
+        {['👚 Tops · 3', '👖 Bottoms · 2', '👟 Shoes · 3'].map((tag, i) => (
           <View key={i} style={peekStyles.tagChip}>
             <Text style={peekStyles.tagChipText}>{tag}</Text>
           </View>
@@ -233,50 +209,68 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
     </View>
   );
 
-  const Step2Visual = () => (
-    <View style={peekStyles.visualCard}>
-      <Text style={peekStyles.vibeLabel}>TODAY'S VIBE</Text>
-      <View style={peekStyles.chipRow}>
-        {['Sunny & Hot', 'Warm & Breezy', 'Cold & Dry'].map((w, i) => (
-          <View key={i} style={[
-            peekStyles.chip,
-            i === 0 ? peekStyles.chipSelected : peekStyles.chipDefault,
-          ]}>
-            <Text style={[peekStyles.chipText, { color: i === 0 ? '#FFFFFF' : '#5C4A3A' }]}>{w}</Text>
-          </View>
-        ))}
+  const Step2Visual = () => {
+    const temps = ['Cold', 'Cool', 'Warm', 'Hot'];
+    const conds = ['Sunny', 'Cloudy', 'Rainy', 'Snowy'];
+    const occs = ['Work · Office', 'Casual Day', 'Going Out', 'Formal Event', 'Outdoor · Sport', 'Weekend Errands', 'Travel'];
+    const tempSel = 1;
+    const condSel = 0;
+    const occSel = 0;
+    return (
+      <View style={peekStyles.innerPreview}>
+        <Text style={peekStyles.vibeLabel}>TODAY'S VIBE</Text>
+        <View style={peekStyles.chipRow}>
+          {temps.map((t, i) => (
+            <View key={i} style={[
+              peekStyles.chip,
+              i === tempSel ? peekStyles.chipSelected : peekStyles.chipDefault,
+            ]}>
+              <Text style={[peekStyles.chipText, { color: i === tempSel ? '#FFFFFF' : '#5C4A3A' }]}>{t}</Text>
+            </View>
+          ))}
+        </View>
+        <View style={peekStyles.chipRow}>
+          {conds.map((c, i) => (
+            <View key={i} style={[
+              peekStyles.chip,
+              i === condSel ? peekStyles.chipSelected : peekStyles.chipDefault,
+            ]}>
+              <Text style={[peekStyles.chipText, { color: i === condSel ? '#FFFFFF' : '#5C4A3A' }]}>{c}</Text>
+            </View>
+          ))}
+        </View>
+        <View style={peekStyles.chipRow}>
+          {occs.map((o, i) => (
+            <View key={i} style={[
+              peekStyles.chip,
+              i === occSel ? peekStyles.chipSelected : peekStyles.chipDefault,
+            ]}>
+              <Text style={[peekStyles.chipText, { color: i === occSel ? '#FFFFFF' : '#5C4A3A' }]}>{o}</Text>
+            </View>
+          ))}
+        </View>
       </View>
-      <View style={peekStyles.chipRow}>
-        {['Date Night', 'Casual Day', 'Work / Office'].map((o, i) => (
-          <View key={i} style={[
-            peekStyles.chip,
-            i === 0 ? peekStyles.chipAccent : peekStyles.chipDefault,
-          ]}>
-            <Text style={[peekStyles.chipText, { color: i === 0 ? '#FFFFFF' : '#5C4A3A' }]}>{o}</Text>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
+    );
+  };
 
   const Step3Visual = () => (
-    <View style={[peekStyles.visualCard, { borderColor: 'rgba(200,122,82,0.35)' }]}>
+    <View style={peekStyles.innerPreview}>
       <View style={peekStyles.outfitHeader}>
         <View>
           <Text style={peekStyles.outfitVibe}>ROMANTIC</Text>
           <Text style={peekStyles.outfitName}>Evening Glow</Text>
         </View>
-        <View style={{ flexDirection: 'row', gap: 6 }}>
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
           <View style={peekStyles.moodTab}>
             <Text style={peekStyles.moodTabText}>🖼 Mood Board</Text>
           </View>
           <View style={peekStyles.bodyTab}>
-            <Text style={peekStyles.bodyTabText}>✦ On Body</Text>
+            <Text style={peekStyles.bodyTabText}>✦ Hanger View</Text>
           </View>
         </View>
       </View>
       <View style={peekStyles.tagRow}>
-        {['Navy Wrap Dress', 'Brown Flats', 'Gold Earrings'].map((item, i) => (
+        {['Teal Wrap Dress', 'Brown Flats', 'Gold Earrings'].map((item, i) => (
           <View key={i} style={peekStyles.outfitChip}>
             <Text style={peekStyles.outfitChipText}>{item}</Text>
           </View>
@@ -291,104 +285,66 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
   const visuals = [<Step1Visual />, <Step2Visual />, <Step3Visual />];
   const titles = ['Snap & Add Your Clothes', 'Tell Clozie Your Day', 'Get 3 Perfect Outfits'];
   const descs = [
-    'Take a photo of any item — Clozie instantly fills in all the details. Your wardrobe is ready in minutes.',
+    'Take a photo of any clothing item, shoes or accessories — best on a white background. Clozie instantly fills in all the details.',
     'Pick the weather and your occasion. Heading to work? Date night? Weekend errands? Clozie styles you perfectly for the moment.',
-    'Clozie creates 3 styled outfits from YOUR actual clothes. See them in a mood board or on the mannequin. Rate them and Clozie learns your taste.',
+    'Clozie creates 3 styled outfits from YOUR actual clothes. See them in a mood board or on the hanger. Rate them and Clozie learns your taste.',
   ];
-  const icons = ['📸', '🌤', '✨'];
 
   return (
     <View style={peekStyles.screen}>
       <StatusBar style="dark" />
-      <ScrollView
-        contentContainerStyle={peekStyles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <Animated.View style={{ opacity: fadeAnim, width: '100%', alignItems: 'center' }}>
+      <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
 
-          <View style={peekStyles.headerBlock}>
-            <Text style={[styles.logo, { marginBottom: 4 }]}>
-              <Text style={peekStyles.peekLogoClo}>Clo</Text>
-              <Text style={peekStyles.peekLogoZie}>zie</Text>
-            </Text>
-            <Text style={peekStyles.howLabel}>✦ HERE'S HOW IT WORKS ✦</Text>
-          </View>
+        <View style={peekStyles.fixedHeader}>
+          <Text style={[styles.logo, { marginBottom: 4 }]}>
+            <Text style={peekStyles.peekLogoClo}>Clo</Text>
+            <Text style={peekStyles.peekLogoZie}>zie</Text>
+          </Text>
+          <Text style={peekStyles.howLabel}>✦ YOUR OUTFIT IN 3 STEPS ✦</Text>
+        </View>
 
-          <View style={peekStyles.tabRow}>
-            {icons.map((icon, i) => (
-              <TouchableOpacity
-                key={i}
-                activeOpacity={0.7}
-                onPress={() => handleTabTap(i)}
-                style={[
-                  peekStyles.tab,
-                  {
-                    borderColor: activeStep === i ? '#C87A52' : 'rgba(44,26,14,0.12)',
-                    backgroundColor: activeStep === i ? 'rgba(200,122,82,0.08)' : '#FFFFFF',
-                  },
-                ]}
-              >
-                {i === 0 && !hasTapped && (
-                  <Animated.View
-                    style={[
-                      peekStyles.bounceDot,
-                      { transform: [{ translateY: bounceAnim }] },
-                    ]}
-                  />
-                )}
-                <Text style={{ fontSize: 18, marginBottom: 3 }}>{icon}</Text>
-                <Text style={[
-                  peekStyles.tabLabel,
-                  { color: activeStep === i ? '#C87A52' : '#5C4A3A' },
-                ]}>STEP {i + 1}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={peekStyles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={peekStyles.contentCard}>
+              <Text style={peekStyles.stepEyebrow}>STEP {i + 1}</Text>
+              <Text style={peekStyles.cardTitle}>{titles[i]}</Text>
+              <Text style={peekStyles.cardDesc}>{descs[i]}</Text>
+              {visuals[i]}
+            </View>
+          ))}
+        </ScrollView>
 
-          {!hasTapped && (
-            <Animated.View style={{ opacity: hintPulse, marginBottom: 14 }}>
-              <Text style={peekStyles.hintText}>✦ Tap each step to explore</Text>
-            </Animated.View>
-          )}
-          {hasTapped && <View style={{ marginBottom: 14 }} />}
-
-          <View style={peekStyles.contentCard}>
-            <Text style={peekStyles.cardTitle}>{titles[activeStep]}</Text>
-            <Text style={peekStyles.cardDesc}>{descs[activeStep]}</Text>
-            {visuals[activeStep]}
-          </View>
-
-          <View style={peekStyles.dotRow}>
-            {[0, 1, 2].map((i) => (
-              <TouchableOpacity
-                key={i}
-                activeOpacity={0.7}
-                onPress={() => handleTabTap(i)}
-              >
-                <View style={[
-                  peekStyles.dot,
-                  {
-                    width: activeStep === i ? 24 : 8,
-                    backgroundColor: activeStep === i ? '#C87A52' : 'rgba(44,26,14,0.15)',
-                  },
-                ]} />
-              </TouchableOpacity>
-            ))}
-          </View>
-
+        <View style={peekStyles.footer}>
+          <LinearGradient
+            colors={['rgba(232,228,206,0)', '#E8E4CE']}
+            style={peekStyles.fade}
+            pointerEvents="none"
+          />
           <View style={peekStyles.buttonRing}>
             <TouchableOpacity style={peekStyles.button} activeOpacity={0.85} onPress={onStartStyling}>
               <Text style={peekStyles.buttonText}>✦ Start Styling — It's Free</Text>
             </TouchableOpacity>
           </View>
+          <TouchableOpacity
+            style={peekStyles.signInTouch}
+            activeOpacity={0.7}
+            onPress={onSignIn}
+            accessibilityRole="button"
+            accessibilityLabel="Already have an account? Sign in"
+            hitSlop={{ top: 8, bottom: 8, left: 16, right: 16 }}
+          >
+            <Text style={peekStyles.signInRow}>
+              Already have an account?{' '}
+              <Text style={peekStyles.signInLink}>Sign in</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-          <Text style={peekStyles.signInRow}>
-            Already have an account?{' '}
-            <Text style={peekStyles.signInLink} onPress={onSignIn}>Sign in</Text>
-          </Text>
-
-        </Animated.View>
-      </ScrollView>
+      </Animated.View>
     </View>
   );
 }
@@ -4193,18 +4149,36 @@ const peekStyles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 24,
+    alignItems: 'center',
+    maxWidth: 480,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  fixedHeader: {
     paddingTop: 60,
+    paddingBottom: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 4,
     paddingBottom: 40,
     alignItems: 'center',
     maxWidth: 480,
     alignSelf: 'center',
     width: '100%',
   },
-
-  headerBlock: {
-    alignItems: 'center',
-    marginBottom: 28,
+  fade: {
+    position: 'absolute',
+    top: -32,
+    left: 0,
+    right: 0,
+    height: 32,
   },
+
   peekLogoClo: {
     fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 36,
@@ -4219,93 +4193,59 @@ const peekStyles = StyleSheet.create({
   },
   howLabel: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 12,
-    color: '#C87A52',
+    fontSize: 10,
+    color: '#A44A34',
     letterSpacing: 2.5,
     marginTop: 12,
   },
 
-  tabRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 6,
-    width: '100%',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabLabel: {
-    fontFamily: 'Outfit_700Bold',
-    fontSize: 9,
-    letterSpacing: 1,
-  },
-
-  bounceDot: {
-    position: 'absolute',
-    top: -6,
-    right: -4,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#C87A52',
-    borderWidth: 2,
-    borderColor: '#E8E4CE',
-  },
-
-  hintText: {
-    fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
-    color: '#C87A52',
-    letterSpacing: 1,
-    textAlign: 'center',
-  },
-
   contentCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(44,26,14,0.08)',
+    borderRadius: 20,
+    paddingTop: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 26,
+    marginBottom: 14,
     width: '100%',
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  stepEyebrow: {
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 10,
+    color: '#A44A34',
+    letterSpacing: 2.5,
+    marginBottom: 8,
   },
   cardTitle: {
     fontFamily: 'DMSerifDisplay_400Regular',
-    fontSize: 22,
+    fontSize: 24,
     color: '#2C1A0E',
     marginBottom: 8,
   },
   cardDesc: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 11,
+    fontSize: 14,
     color: '#5C4A3A',
-    lineHeight: 20,
+    lineHeight: 22,
     marginBottom: 16,
   },
 
-  dotRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 24,
-  },
-  dot: {
-    height: 8,
-    borderRadius: 100,
-  },
-
-  visualCard: {
+  innerPreview: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 14,
+    padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(44,26,14,0.12)',
+    borderColor: 'rgba(200,122,82,0.18)',
+  },
+  scanProgressBar: {
+    height: 3,
+    backgroundColor: '#BCC7B7',
+    borderRadius: 2,
+    marginVertical: 10,
   },
   itemRow: {
     flexDirection: 'row',
@@ -4324,7 +4264,7 @@ const peekStyles = StyleSheet.create({
   recognisedLabel: {
     fontFamily: 'Outfit_700Bold',
     fontSize: 10,
-    color: '#C87A52',
+    color: '#A44A34',
     letterSpacing: 2.5,
     marginBottom: 3,
   },
@@ -4349,29 +4289,26 @@ const peekStyles = StyleSheet.create({
   },
   tagRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 6,
   },
   tagChip: {
-    flex: 1,
-    paddingVertical: 5,
-    paddingHorizontal: 4,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(44,26,14,0.12)',
+    paddingVertical: 2,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(188,199,183,0.30)',
+    borderRadius: 100,
   },
   tagChipText: {
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 9,
-    color: '#5C4A3A',
-    textAlign: 'center',
+    color: '#6B7E65',
+    letterSpacing: 0.3,
   },
 
   vibeLabel: {
     fontFamily: 'Outfit_700Bold',
     fontSize: 10,
-    color: '#C87A52',
+    color: '#A44A34',
     letterSpacing: 2.5,
     marginBottom: 10,
   },
@@ -4389,11 +4326,13 @@ const peekStyles = StyleSheet.create({
   },
   chipSelected: {
     backgroundColor: '#BCC7B7',
-    borderColor: '#BCC7B7',
-  },
-  chipAccent: {
-    backgroundColor: '#BCC7B7',
-    borderColor: '#BCC7B7',
+    borderColor: '#FFFFFF',
+    borderWidth: 3,
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 1,
   },
   chipDefault: {
     backgroundColor: '#FFFFFF',
@@ -4413,62 +4352,64 @@ const peekStyles = StyleSheet.create({
   outfitVibe: {
     fontFamily: 'Outfit_700Bold',
     fontSize: 10,
-    color: '#C87A52',
+    color: '#A44A34',
     letterSpacing: 2.5,
   },
   outfitName: {
     fontFamily: 'DMSerifDisplay_400Regular_Italic',
-    fontSize: 16,
+    fontSize: 20,
     color: '#2C1A0E',
   },
   moodTab: {
     paddingVertical: 4,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 100,
+    borderWidth: 1.5,
     borderColor: 'rgba(44,26,14,0.12)',
   },
   moodTabText: {
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 9,
     color: '#5C4A3A',
   },
   bodyTab: {
     paddingVertical: 4,
-    paddingHorizontal: 8,
-    backgroundColor: 'rgba(200,122,82,0.12)',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(200,122,82,0.5)',
+    paddingHorizontal: 10,
+    backgroundColor: '#BCC7B7',
+    borderRadius: 100,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 1,
   },
   bodyTabText: {
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'Outfit_500Medium',
     fontSize: 9,
-    color: '#C87A52',
+    color: '#FFFFFF',
   },
   outfitChip: {
-    flex: 1,
     paddingVertical: 5,
-    paddingHorizontal: 4,
+    paddingHorizontal: 12,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    alignItems: 'center',
+    borderRadius: 100,
     borderWidth: 1.5,
     borderColor: 'rgba(44,26,14,0.12)',
   },
   outfitChipText: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 9,
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 10,
     color: '#5C4A3A',
-    textAlign: 'center',
   },
   outfitDesc: {
     fontFamily: 'DMSerifDisplay_400Regular_Italic',
-    fontSize: 11,
+    fontSize: 14,
     color: '#5C4A3A',
-    marginTop: 8,
-    lineHeight: 17,
+    marginTop: 12,
+    lineHeight: 22,
   },
 
   buttonRing: {
@@ -4490,21 +4431,27 @@ const peekStyles = StyleSheet.create({
   },
   buttonText: {
     fontFamily: 'Outfit_500Medium',
-    fontSize: 15,
+    fontSize: 16,
     color: '#FFFFFF',
     textAlign: 'center',
     letterSpacing: 0.3,
+  },
+  signInTouch: {
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+    paddingHorizontal: 16,
   },
   signInRow: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 13,
     color: '#5C4A3A',
     textAlign: 'center',
-    marginTop: 18,
   },
   signInLink: {
     fontFamily: 'Outfit_500Medium',
-    color: '#C87A52',
+    color: '#A44A34',
   },
 });
 
