@@ -23,7 +23,7 @@ import { DMMono_400Regular } from '@expo-google-fonts/dm-mono';
 import { DMSerifDisplay_400Regular, DMSerifDisplay_400Regular_Italic } from '@expo-google-fonts/dm-serif-display';
 import { Outfit_400Regular, Outfit_500Medium, Outfit_700Bold } from '@expo-google-fonts/outfit';
 import * as NativeSplash from 'expo-splash-screen';
-import Svg, { Path, Ellipse, Circle, Line } from 'react-native-svg';
+import Svg, { Path, Circle, Line } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 
 // ── Design tokens — sacred, never change ─────────────────────────────────────
@@ -2161,14 +2161,14 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
             <TouchableOpacity
               style={[
                 moodBoardStyles.tab,
-                moodBoardTab === 'onbody' && moodBoardStyles.tabActive,
+                moodBoardTab === 'hanger' && moodBoardStyles.tabActive,
               ]}
               activeOpacity={0.7}
-              onPress={() => setMoodBoardTab('onbody')}
+              onPress={() => setMoodBoardTab('hanger')}
             >
               <Text style={[
                 moodBoardStyles.tabText,
-                moodBoardTab === 'onbody' && moodBoardStyles.tabTextActive,
+                moodBoardTab === 'hanger' && moodBoardStyles.tabTextActive,
               ]}>Hanger View</Text>
               <Text style={moodBoardStyles.tabSubtitle}>Styled together.</Text>
             </TouchableOpacity>
@@ -2259,139 +2259,164 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
               </View>
             )}
 
-            {moodBoardTab === 'onbody' && moodBoardOutfit && (() => {
-              // Determine which items go in which zone — exactly as web app
+            {moodBoardTab === 'hanger' && moodBoardOutfit && (() => {
+              // ── Item categorisation for Hanger View ───────────────────────────
               const allItems = moodBoardOutfit.items || [];
-              const isDress = allItems.find(i => i.category === 'Dresses');
-              const top = isDress || allItems.find(i => ['Tops', 'Outerwear'].includes(i.category)) || null;
-              const bottom = isDress ? null : (allItems.find(i => i.category === 'Bottoms') || null);
+              const dress = allItems.find(i => i.category === 'Dresses') || null;
+              const top = dress || allItems.find(i => i.category === 'Tops') || null;
+              const pants = dress ? null : (allItems.find(i => i.category === 'Bottoms') || null);
               const shoes = allItems.find(i => i.category === 'Shoes') || null;
-              const allAcc = allItems.filter(i => i.category === 'Accessories');
-              const hat = allAcc.find(i => /(hat|cap|beret|beanie|headband)/i.test(i.name || ''));
-              const earring = allAcc.find(i => /(earring|ear|stud|hoop)/i.test(i.name || ''));
-              const bag = allAcc.find(i => /(bag|purse|clutch|tote)/i.test(i.name || ''));
-              const acc1 = hat || earring || allAcc[0] || null;
-              const acc2 = bag || (hat ? earring : null) || allAcc[1] || null;
-              // Items list for gold dots below mannequin
-              const itemList = [isDress ? null : top, bottom, shoes, acc1, acc2].filter(Boolean);
-              if (isDress) itemList.unshift(isDress);
+              // Heavy outerwear silently dropped; everything else in Outerwear = light
+              const HEAVY_OUTER_RE = /(trench|puffer|parka|winter coat|wrap coat)/i;
+              const outerCandidate = allItems.find(i => i.category === 'Outerwear');
+              const lightOuter = (outerCandidate && !HEAVY_OUTER_RE.test(outerCandidate.name || '')) ? outerCandidate : null;
+              // Accessories ordered head → ears → neck → wrist → waist → hand
+              const accs = allItems
+                .filter(i => i.category === 'Accessories')
+                .sort((a, b) => accessoryRank(a.name) - accessoryRank(b.name))
+                .slice(0, 5);
+
+              const stageBg = { Cream: '#F5F0E8', White: '#FFFFFF', Sage: '#E8E4CE', Dark: '#2C1A0E', 'Sage green': '#BCC7B7' }[mannequinBg] || '#F5F0E8';
 
               return (
-              <View style={moodBoardStyles.mannequinContainer}>
-                <View style={[moodBoardStyles.mannequinBg, { backgroundColor: { Cream: '#F5F0E8', White: '#FFFFFF', Sage: '#E8E4CE', Dark: '#2C1A0E', 'Sage green': '#BCC7B7' }[mannequinBg] }]}>
-                  {/* Mannequin SVG + clothing overlays in one relative container */}
-                  <View style={{ position: 'relative', width: 200, height: 420 }}>
-                    <Svg width={200} height={420} viewBox="0 0 200 420">
-                      {/* Head */}
-                      <Ellipse cx="100" cy="30" rx="24" ry="30" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
-                      {/* Neck */}
-                      <Path d="M92 58 L92 75 L108 75 L108 58" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
-                      {/* Torso */}
-                      <Path d="M60 80 L58 90 L55 130 L58 180 L65 220 L90 228 L100 230 L110 228 L135 220 L142 180 L145 130 L142 90 L140 80 Z" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
-                      {/* Left arm */}
-                      <Path d="M60 80 L45 100 L35 140 L30 180 L28 210 L32 215 L38 210 L42 180 L48 140 L55 110 L58 90" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
-                      {/* Right arm */}
-                      <Path d="M140 80 L155 100 L165 140 L170 180 L172 210 L168 215 L162 210 L158 180 L152 140 L145 110 L142 90" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
-                      {/* Left leg */}
-                      <Path d="M75 225 L70 270 L68 320 L66 370 L65 400 L60 410 L58 415 L75 418 L80 412 L78 400 L80 370 L82 320 L85 270 L95 228" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
-                      {/* Right leg */}
-                      <Path d="M125 225 L130 270 L132 320 L134 370 L135 400 L140 410 L142 415 L125 418 L120 412 L122 400 L120 370 L118 320 L115 270 L105 228" fill="#DDD0BC" stroke="#C8B8A2" strokeWidth="1.5" />
-                    </Svg>
-
-                    {/* Dress zone — covers top and bottom */}
-                    {isDress && (
-                      <View style={{ position: 'absolute', top: 60, left: 36, width: 128, height: 340, borderRadius: 10, overflow: 'hidden', opacity: 0.93, backgroundColor: '#f0ede8', alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ fontSize: 48 }}>{getCategoryEmoji(isDress.category)}</Text>
-                        <Text style={{ fontFamily: 'DMMono_400Regular', fontSize: 9, color: '#666', marginTop: 4 }}>{isDress.name}</Text>
-                      </View>
-                    )}
-
-                    {/* Top zone — only if no dress */}
-                    {!isDress && top && (
-                      <View style={{ position: 'absolute', top: 58, left: 38, width: 124, height: 170, borderRadius: 8, overflow: 'hidden', opacity: 0.93, backgroundColor: '#f0ede8', alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ fontSize: 40 }}>{getCategoryEmoji(top.category)}</Text>
-                        <Text style={{ fontFamily: 'DMMono_400Regular', fontSize: 9, color: '#666', marginTop: 4 }}>{top.name}</Text>
-                      </View>
-                    )}
-
-                    {/* Bottom zone — only if no dress */}
-                    {!isDress && bottom && (
-                      <View style={{ position: 'absolute', top: 220, left: 38, width: 124, height: 190, borderRadius: 8, overflow: 'hidden', opacity: 0.93, backgroundColor: '#f0ede8', alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ fontSize: 40 }}>{getCategoryEmoji(bottom.category)}</Text>
-                        <Text style={{ fontFamily: 'DMMono_400Regular', fontSize: 9, color: '#666', marginTop: 4 }}>{bottom.name}</Text>
-                      </View>
-                    )}
-
-                    {/* Shoes zone */}
-                    {shoes && (
-                      <View style={{ position: 'absolute', top: 402, left: 40, width: 120, height: 70, borderRadius: 8, overflow: 'hidden', backgroundColor: '#f0ede8', alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ fontSize: 28 }}>{getCategoryEmoji(shoes.category)}</Text>
-                      </View>
-                    )}
-
-                    {/* Accessory 1 — hat on head, otherwise left side */}
-                    {acc1 && /(hat|cap|beret|beanie|headband)/i.test(acc1.name || '') && (
-                      <View style={{ position: 'absolute', top: -10, left: 68, width: 64, height: 44, borderRadius: 8, overflow: 'hidden', backgroundColor: '#f0ede8', alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ fontSize: 22 }}>{getCategoryEmoji(acc1.category)}</Text>
-                      </View>
-                    )}
-                    {acc1 && !/(hat|cap|beret|beanie|headband)/i.test(acc1.name || '') && (
-                      <View style={{ position: 'absolute', top: 18, left: 14, width: 36, height: 36, borderRadius: 18, overflow: 'hidden', borderWidth: 2, borderColor: '#fff', backgroundColor: '#f0ede8', alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ fontSize: 16 }}>{getCategoryEmoji(acc1.category)}</Text>
-                      </View>
-                    )}
-
-                    {/* Accessory 2 — right side */}
-                    {acc2 && (
-                      <View style={{ position: 'absolute', top: 18, right: 14, width: 36, height: 36, borderRadius: 18, overflow: 'hidden', borderWidth: 2, borderColor: '#fff', backgroundColor: '#f0ede8', alignItems: 'center', justifyContent: 'center' }}>
-                        <Text style={{ fontSize: 16 }}>{getCategoryEmoji(acc2.category)}</Text>
-                      </View>
-                    )}
+                <View style={[moodBoardStyles.hangerStage, { backgroundColor: stageBg }]}>
+                  {/* 5-dot background colour picker — top of stage */}
+                  <View style={moodBoardStyles.hangerDotsRow}>
+                    {[
+                      { name: 'Cream', color: '#F5F0E8' },
+                      { name: 'White', color: '#FFFFFF' },
+                      { name: 'Sage', color: '#E8E4CE' },
+                      { name: 'Dark', color: '#2C1A0E' },
+                      { name: 'Sage green', color: '#BCC7B7' },
+                    ].map((bg) => {
+                      const active = mannequinBg === bg.name;
+                      return (
+                        <TouchableOpacity
+                          key={bg.name}
+                          activeOpacity={0.7}
+                          onPress={() => setMannequinBg(bg.name)}
+                          hitSlop={{ top: 13, bottom: 13, left: 6, right: 6 }}
+                        >
+                          {active ? (
+                            <View style={moodBoardStyles.hangerDotRingOuter}>
+                              <View style={moodBoardStyles.hangerDotRingInner}>
+                                <View style={[moodBoardStyles.hangerDot, { backgroundColor: bg.color }]} />
+                              </View>
+                            </View>
+                          ) : (
+                            <View style={moodBoardStyles.hangerDotWrap}>
+                              <View style={[moodBoardStyles.hangerDot, moodBoardStyles.hangerDotInactiveBorder, { backgroundColor: bg.color }]} />
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
-                </View>
 
-                {/* Item list with terracotta dots below mannequin */}
-                <View style={{ marginTop: 12, paddingHorizontal: 20 }}>
-                  {itemList.map((item, i) => (
-                    <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#C87A52' }} />
-                      <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 11, color: '#5C4A3A' }}>{item.name}</Text>
-                      {item.category && (
-                        <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 10, color: '#C87A52', opacity: 0.6 }}>{item.category}</Text>
+                  {/* Closet rod — 80% width, centered, vertical gradient */}
+                  <LinearGradient
+                    colors={['#B8A890', '#A89878']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={moodBoardStyles.hangerRod}
+                  />
+
+                  {/* Hook — vertical connector from rod to hanger */}
+                  <View style={moodBoardStyles.hangerHook} />
+
+                  {/* Hanger SVG */}
+                  <View style={moodBoardStyles.hangerSvgWrap} pointerEvents="none">
+                    <Svg width={130} height={30} viewBox="0 0 130 30">
+                      <Path
+                        d="M 65 4 Q 65 2 67 2 L 73 2 Q 75 2 75 4 Q 75 8 70 12"
+                        stroke="#C8B8A2"
+                        strokeWidth={2}
+                        fill="none"
+                        strokeLinecap="round"
+                      />
+                      <Path
+                        d="M 6 22 Q 65 14 124 22"
+                        stroke="#C8B8A2"
+                        strokeWidth={3}
+                        fill="none"
+                        strokeLinecap="round"
+                      />
+                    </Svg>
+                  </View>
+
+                  {/* Centre stack — top/dress, pants, shoes */}
+                  {top && (
+                    <View style={moodBoardStyles.hangerSlotTop}>
+                      {top.image ? (
+                        <Image source={{ uri: top.image }} resizeMode="contain" style={moodBoardStyles.hangerImage} />
+                      ) : (
+                        <View style={[StyleSheet.absoluteFill, { backgroundColor: MOOD_PLACEHOLDER_COLORS[top.category] || '#E8E0D5' }]} />
                       )}
                     </View>
-                  ))}
-                </View>
+                  )}
+                  {pants && (
+                    <View style={moodBoardStyles.hangerSlotPants}>
+                      {pants.image ? (
+                        <Image source={{ uri: pants.image }} resizeMode="contain" style={moodBoardStyles.hangerImage} />
+                      ) : (
+                        <View style={[StyleSheet.absoluteFill, { backgroundColor: MOOD_PLACEHOLDER_COLORS[pants.category] || '#E8E0D5' }]} />
+                      )}
+                    </View>
+                  )}
+                  {shoes && (
+                    <View style={moodBoardStyles.hangerSlotShoes}>
+                      {shoes.image ? (
+                        <Image source={{ uri: shoes.image }} resizeMode="contain" style={moodBoardStyles.hangerImage} />
+                      ) : (
+                        <View style={[StyleSheet.absoluteFill, { backgroundColor: MOOD_PLACEHOLDER_COLORS[shoes.category] || '#E8E0D5' }]} />
+                      )}
+                    </View>
+                  )}
 
-                {/* Background colour selector */}
-                <View style={moodBoardStyles.bgSelectorRow}>
-                  {[
-                    { name: 'Cream', color: '#F5F0E8' },
-                    { name: 'White', color: '#FFFFFF' },
-                    { name: 'Sage', color: '#E8E4CE' },
-                    { name: 'Dark', color: '#2C1A0E' },
-                    { name: 'Sage green', color: '#BCC7B7' },
-                  ].map((bg) => (
-                    <TouchableOpacity
-                      key={bg.name}
-                      style={moodBoardStyles.bgOption}
-                      activeOpacity={0.7}
-                      onPress={() => setMannequinBg(bg.name)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <View style={[
-                        moodBoardStyles.bgCircle,
-                        { backgroundColor: bg.color },
-                        mannequinBg === bg.name && moodBoardStyles.bgCircleActive,
-                      ]} />
-                      <Text style={[
-                        moodBoardStyles.bgLabel,
-                        mannequinBg === bg.name && { color: '#C87A52' },
-                      ]}>{bg.name}</Text>
-                    </TouchableOpacity>
-                  ))}
+                  {/* Left side card — light outerwear (heavy is silently dropped in categorisation) */}
+                  {lightOuter && (
+                    <View style={moodBoardStyles.hangerLightOuterCard}>
+                      <View style={moodBoardStyles.hangerLightOuterClip} />
+                      <View style={moodBoardStyles.hangerLightOuterInner}>
+                        {lightOuter.image ? (
+                          <Image source={{ uri: lightOuter.image }} resizeMode="contain" style={moodBoardStyles.hangerSideImage} />
+                        ) : (
+                          <View style={[moodBoardStyles.hangerSideImage, { backgroundColor: MOOD_PLACEHOLDER_COLORS[lightOuter.category] || '#E8E0D5' }]} />
+                        )}
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Right accessory stack — anatomical order, up to 5 cards */}
+                  {accs.map((acc, i) => {
+                    const ACC_POSITIONS = [
+                      { top: 96,  rot: '3deg'  },
+                      { top: 156, rot: '-2deg' },
+                      { top: 216, rot: '2deg'  },
+                      { top: 276, rot: '-3deg' },
+                      { top: 336, rot: '2deg'  },
+                    ];
+                    const pos = ACC_POSITIONS[i];
+                    return (
+                      <View
+                        key={acc.id || ('acc-' + i)}
+                        style={[
+                          moodBoardStyles.hangerAccCard,
+                          { top: pos.top, transform: [{ rotate: pos.rot }] },
+                        ]}
+                      >
+                        <View style={moodBoardStyles.hangerAccClip} />
+                        <View style={moodBoardStyles.hangerAccInner}>
+                          {acc.image ? (
+                            <Image source={{ uri: acc.image }} resizeMode="contain" style={moodBoardStyles.hangerAccImage} />
+                          ) : (
+                            <View style={[moodBoardStyles.hangerAccImage, { backgroundColor: MOOD_PLACEHOLDER_COLORS[acc.category] || '#E8E0D5' }]} />
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
-              </View>
               );
             })()}
           </ScrollView>
@@ -2913,42 +2938,204 @@ const moodBoardStyles = StyleSheet.create({
     color: '#5C4A3A',
     fontStyle: 'italic',
   },
-  mannequinContainer: {
-    alignItems: 'center',
-    paddingTop: 8,
+
+  // ── Hanger View styles (April 28 2026 spec) ─────────────────────────────────
+  hangerStage: {
+    height: 580,
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 8,
+    position: 'relative',
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
   },
-  mannequinBg: {
-    width: 260,
-    height: 460,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bgSelectorRow: {
+  hangerDotsRow: {
+    position: 'absolute',
+    top: 18,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 16,
-    marginTop: 20,
+    gap: 10,
+    zIndex: 10,
   },
-  bgOption: {
+  hangerDotWrap: {
+    width: 26,
+    height: 26,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  bgCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(44,26,14,0.12)',
+  hangerDotRingOuter: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#A44A34',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  bgCircleActive: {
-    borderWidth: 2,
-    borderColor: '#C87A52',
+  hangerDotRingInner: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  bgLabel: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 10,
-    color: 'rgba(92,74,58,0.6)',
-    marginTop: 4,
+  hangerDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+  },
+  hangerDotInactiveBorder: {
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.15)',
+  },
+  hangerRod: {
+    position: 'absolute',
+    top: 56,
+    left: '10%',
+    right: '10%',
+    height: 4,
+    borderRadius: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 4,
+    elevation: 2,
+    zIndex: 5,
+  },
+  hangerHook: {
+    position: 'absolute',
+    top: 60,
+    left: '50%',
+    marginLeft: -1,
+    width: 2,
+    height: 16,
+    backgroundColor: '#A89878',
+    zIndex: 6,
+  },
+  hangerSvgWrap: {
+    position: 'absolute',
+    top: 68,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 6,
+  },
+  // Centre stack slots — top/dress at 96, pants at 248, shoes at 438
+  hangerSlotTop: {
+    position: 'absolute',
+    top: 96,
+    left: '50%',
+    marginLeft: -70,
+    width: 140,
+    height: 158,
+    overflow: 'hidden',
+    zIndex: 3,
+  },
+  hangerSlotPants: {
+    position: 'absolute',
+    top: 248,
+    left: '50%',
+    marginLeft: -82.5,
+    width: 165,
+    height: 195,
+    overflow: 'hidden',
+    zIndex: 3,
+  },
+  hangerSlotShoes: {
+    position: 'absolute',
+    top: 438,
+    left: '50%',
+    marginLeft: -52.5,
+    width: 105,
+    height: 72,
+    overflow: 'hidden',
+    zIndex: 3,
+  },
+  hangerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  // Left side card — light outerwear
+  hangerLightOuterCard: {
+    position: 'absolute',
+    top: 116,
+    left: 14,
+    width: 76,
+    height: 96,
+    padding: 5,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+    transform: [{ rotate: '-4deg' }],
+    zIndex: 4,
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  hangerLightOuterClip: {
+    position: 'absolute',
+    top: -5,
+    left: '50%',
+    marginLeft: -9,
+    width: 18,
+    height: 9,
+    backgroundColor: 'rgba(200,122,82,0.7)',
+    borderRadius: 2,
+    zIndex: 5,
+  },
+  hangerLightOuterInner: {
+    flex: 1,
+    backgroundColor: '#FBFAF3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  hangerSideImage: {
+    width: '88%',
+    height: '88%',
+  },
+  // Right accessory stack — 56×56 cards
+  hangerAccCard: {
+    position: 'absolute',
+    right: 14,
+    width: 56,
+    height: 56,
+    padding: 4,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+    zIndex: 4,
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  hangerAccClip: {
+    position: 'absolute',
+    top: -5,
+    left: '50%',
+    marginLeft: -8,
+    width: 16,
+    height: 8,
+    backgroundColor: 'rgba(200,122,82,0.7)',
+    borderRadius: 2,
+    zIndex: 5,
+  },
+  hangerAccInner: {
+    flex: 1,
+    backgroundColor: '#FBFAF3',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  hangerAccImage: {
+    width: '84%',
+    height: '84%',
   },
 });
 
