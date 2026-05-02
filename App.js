@@ -254,12 +254,10 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
 
   const Step3Visual = () => (
     <View style={peekStyles.innerPreview}>
-      <View style={peekStyles.outfitHeader}>
-        <View>
-          <Text style={peekStyles.outfitVibe}>ROMANTIC</Text>
-          <Text style={peekStyles.outfitName}>Evening Glow</Text>
-        </View>
-        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+      <View style={{ marginBottom: 10 }}>
+        <Text style={peekStyles.outfitVibe}>ROMANTIC</Text>
+        <Text style={peekStyles.outfitName}>Evening Glow</Text>
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', marginTop: 6 }}>
           <View style={peekStyles.moodTab}>
             <Text style={peekStyles.moodTabText}>🖼 Mood Board</Text>
           </View>
@@ -624,7 +622,7 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
                 >
                   <Text style={[styles.goldButtonText, {
                     fontFamily: 'Outfit_500Medium',
-                    color: '#FFFFFF',
+                    color: '#2C1A0E',
                   }]}>{buttonLabel}</Text>
                 </TouchableOpacity>
 
@@ -789,7 +787,7 @@ function StyleDNATab({ onBuildCloset }) {
                 >
                   <Text style={[
                     dnaStyles.chipText,
-                    { color: isSelected ? '#FFFFFF' : '#2C1A0E' },
+                    { color: '#2C1A0E' },
                   ]}>{style}</Text>
                 </TouchableOpacity>
               </Animated.View>
@@ -816,7 +814,7 @@ function StyleDNATab({ onBuildCloset }) {
                 >
                   <Text style={[
                     dnaStyles.chipText,
-                    { color: isSelected ? '#FFFFFF' : '#2C1A0E' },
+                    { color: '#2C1A0E' },
                   ]}>{colour}</Text>
                 </TouchableOpacity>
               </Animated.View>
@@ -1028,6 +1026,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
                     <TouchableOpacity
                       style={wardrobeStyles.deleteConfirmRemove}
                       activeOpacity={0.8}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       onPress={() => handleDeleteItem(item.id)}
                     >
                       <Text style={wardrobeStyles.deleteConfirmRemoveText}>Remove</Text>
@@ -1035,6 +1034,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
                     <TouchableOpacity
                       style={wardrobeStyles.deleteConfirmCancel}
                       activeOpacity={0.7}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       onPress={() => setDeleteConfirmId(null)}
                     >
                       <Text style={wardrobeStyles.deleteConfirmCancelText}>Cancel</Text>
@@ -1057,8 +1057,10 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
               <Text style={wardrobeStyles.gridCardLastWorn}>
                 {item.lastWorn ? `Last worn: ${item.lastWorn}` : 'Never worn'}
               </Text>
-              {/* What goes with this */}
-              <Text style={wardrobeStyles.gridCardPairLink}>What goes with this?</Text>
+              {/* What goes with this — hidden until tappable feature is built (Phase 2) */}
+              {false && (
+                <Text style={wardrobeStyles.gridCardPairLink}>What goes with this?</Text>
+              )}
             </View>
           ))}
         </View>
@@ -1130,6 +1132,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           <TouchableOpacity
             style={wardrobeStyles.fieldInput}
             activeOpacity={0.7}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             onPress={() => setShowCategoryPicker(!showCategoryPicker)}
           >
             <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: newItemCategory ? '#2C1A0E' : 'rgba(44,26,14,0.40)' }}>
@@ -1202,6 +1205,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           <TouchableOpacity
             style={wardrobeStyles.cancelButton}
             activeOpacity={0.7}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             onPress={() => {
               setShowAddPanel(false);
               setEditingItemId(null);
@@ -1217,8 +1221,8 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
         </View>
       )}
 
-      {/* Analyse My Wardrobe button */}
-      {itemCount > 0 && !showAddPanel && (
+      {/* Analyse My Wardrobe button — hidden until real Wardrobe Intelligence is built (Phase 2) */}
+      {false && itemCount > 0 && !showAddPanel && (
         <TouchableOpacity
           style={wardrobeStyles.analyseButton}
           activeOpacity={0.7}
@@ -1228,8 +1232,8 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
         </TouchableOpacity>
       )}
 
-      {/* Analyse message */}
-      {showAnalyseMessage && (
+      {/* Analyse message — hidden with the button (Phase 2) */}
+      {false && showAnalyseMessage && (
         <View style={wardrobeStyles.analyseCard}>
           <Text style={wardrobeStyles.analyseCardText}>
             Wardrobe analysis is coming soon ✦ Keep adding items and Clozie will have more to work with!
@@ -1237,6 +1241,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           <TouchableOpacity
             style={wardrobeStyles.analyseCardButton}
             activeOpacity={0.8}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={() => setShowAnalyseMessage(false)}
           >
             <Text style={wardrobeStyles.analyseCardButtonText}>Got it ✦</Text>
@@ -2036,11 +2041,15 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
           {/* Description */}
           <Text style={looksStyles.outfitDesc}>{outfit.description}</Text>
 
-          {/* Style Match Score */}
-          <Text style={looksStyles.matchScore}>94% match with Your Style</Text>
+          {/* Style Match Score — hidden until real calculation is built (Phase 2) */}
+          {false && (
+            <Text style={looksStyles.matchScore}>94% match with Your Style</Text>
+          )}
 
-          {/* Outfit Potential */}
-          <Text style={looksStyles.outfitPotential}>These {outfit.items.length || 3} pieces create {(outfit.items.length || 3) * 4} outfits together</Text>
+          {/* Outfit Potential — hidden until real calculation is built (Phase 2) */}
+          {false && (
+            <Text style={looksStyles.outfitPotential}>These {outfit.items.length || 3} pieces create {(outfit.items.length || 3) * 4} outfits together</Text>
+          )}
 
           {/* View Mood Board link */}
           <TouchableOpacity
@@ -2730,7 +2739,7 @@ const savedStyles = StyleSheet.create({
   emptyButtonText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#2C1A0E',
     textAlign: 'center',
   },
   outfitCard: {
@@ -3006,15 +3015,15 @@ const moodBoardStyles = StyleSheet.create({
   tabText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: 'rgba(92,74,58,0.6)',
+    color: 'rgba(92,74,58,0.85)',
   },
   tabTextActive: {
     color: '#2C1A0E',
   },
   tabSubtitle: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 10,
-    color: 'rgba(92,74,58,0.55)',
+    fontSize: 11,
+    color: 'rgba(92,74,58,0.85)',
     marginTop: 2,
   },
   itemGrid: {
@@ -3636,8 +3645,8 @@ const subStyles = StyleSheet.create({
 // ── Settings Screen ─────────────────────────────────────────────────────────
 function SettingsScreen({ onClose, onSignOut }) {
   // Placeholder user data — will come from Supabase in Phase 2
-  const [displayName, setDisplayName] = useState('Grace');
-  const userEmail = 'insuredbyjacek@msn.com';
+  const [displayName, setDisplayName] = useState('');
+  const userEmail = 'hello@clozie.net';
 
   // Subscription modal state
   const [showSubscription, setShowSubscription] = useState(false);
@@ -3807,6 +3816,7 @@ function SettingsScreen({ onClose, onSignOut }) {
                 <TouchableOpacity
                   style={settingsStyles.saveButton}
                   activeOpacity={0.8}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   onPress={saveProfile}
                 >
                   <Text style={settingsStyles.saveButtonText}>Save Changes</Text>
@@ -3814,6 +3824,7 @@ function SettingsScreen({ onClose, onSignOut }) {
                 <TouchableOpacity
                   style={settingsStyles.cancelButton}
                   activeOpacity={0.7}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   onPress={cancelEditProfile}
                 >
                   <Text style={settingsStyles.cancelButtonText}>Cancel</Text>
@@ -3957,6 +3968,7 @@ function SettingsScreen({ onClose, onSignOut }) {
                 <TouchableOpacity
                   style={settingsStyles.saveButton}
                   activeOpacity={0.8}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   onPress={handleUpdatePassword}
                 >
                   <Text style={settingsStyles.saveButtonText}>Update Password</Text>
@@ -3964,6 +3976,7 @@ function SettingsScreen({ onClose, onSignOut }) {
                 <TouchableOpacity
                   style={settingsStyles.cancelButton}
                   activeOpacity={0.7}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   onPress={cancelChangePassword}
                 >
                   <Text style={settingsStyles.cancelButtonText}>Cancel</Text>
@@ -3973,22 +3986,24 @@ function SettingsScreen({ onClose, onSignOut }) {
           )}
         </View>
 
-        {/* PREFERENCES card */}
-        <View style={settingsStyles.card}>
-          <View style={settingsStyles.cardRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={settingsStyles.cardRowLabel}>Daily outfit notifications</Text>
-              <Text style={settingsStyles.cardRowValue}>Get styled every morning · coming soon</Text>
+        {/* PREFERENCES card — hidden until Daily Notifications is built (Phase 2) */}
+        {false && (
+          <View style={settingsStyles.card}>
+            <View style={settingsStyles.cardRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={settingsStyles.cardRowLabel}>Daily outfit notifications</Text>
+                <Text style={settingsStyles.cardRowValue}>Get styled every morning · coming soon</Text>
+              </View>
+              <Switch
+                value={false}
+                disabled={true}
+                trackColor={{ false: 'rgba(44,26,14,0.15)', true: '#BCC7B7' }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor="rgba(44,26,14,0.15)"
+              />
             </View>
-            <Switch
-              value={false}
-              disabled={true}
-              trackColor={{ false: 'rgba(44,26,14,0.15)', true: '#BCC7B7' }}
-              thumbColor="#FFFFFF"
-              ios_backgroundColor="rgba(44,26,14,0.15)"
-            />
           </View>
-        </View>
+        )}
 
         {/* ABOUT card */}
         <View style={settingsStyles.card}>
@@ -4007,6 +4022,7 @@ function SettingsScreen({ onClose, onSignOut }) {
           <TouchableOpacity
             style={settingsStyles.deleteAccountButton}
             activeOpacity={0.7}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             onPress={openDeleteAccount}
           >
             <Text style={settingsStyles.deleteAccountButtonText}>Delete Account</Text>
@@ -4017,6 +4033,7 @@ function SettingsScreen({ onClose, onSignOut }) {
         <TouchableOpacity
           style={settingsStyles.signOutButton}
           activeOpacity={0.7}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           onPress={() => {
             onClose();
             if (onSignOut) onSignOut();
@@ -4345,7 +4362,7 @@ const settingsStyles = StyleSheet.create({
   saveButtonText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: '#FFFFFF',
+    color: '#2C1A0E',
   },
   cancelButton: {
     flex: 1,
@@ -5130,7 +5147,7 @@ const peekStyles = StyleSheet.create({
   },
   itemMeta: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 10,
+    fontSize: 11,
     color: '#5C4A3A',
     marginTop: 2,
   },
@@ -5195,7 +5212,7 @@ const peekStyles = StyleSheet.create({
   },
   chipText: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 10,
+    fontSize: 11,
   },
 
   outfitHeader: {
@@ -5225,7 +5242,7 @@ const peekStyles = StyleSheet.create({
   },
   moodTabText: {
     fontFamily: 'Outfit_500Medium',
-    fontSize: 9,
+    fontSize: 11,
     color: '#5C4A3A',
   },
   bodyTab: {
@@ -5243,7 +5260,7 @@ const peekStyles = StyleSheet.create({
   },
   bodyTabText: {
     fontFamily: 'Outfit_500Medium',
-    fontSize: 9,
+    fontSize: 11,
     color: '#FFFFFF',
   },
   outfitChip: {
@@ -5256,7 +5273,7 @@ const peekStyles = StyleSheet.create({
   },
   outfitChipText: {
     fontFamily: 'Outfit_500Medium',
-    fontSize: 10,
+    fontSize: 11,
     color: '#5C4A3A',
   },
   outfitDesc: {
@@ -5287,7 +5304,7 @@ const peekStyles = StyleSheet.create({
   buttonText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 16,
-    color: '#FFFFFF',
+    color: '#2C1A0E',
     textAlign: 'center',
     letterSpacing: 0.3,
   },
@@ -5683,7 +5700,7 @@ const dnaStyles = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 64,
     borderRadius: 100,
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: '#FFFFFF',
     marginBottom: 14,
     width: '100%',
@@ -5696,7 +5713,7 @@ const dnaStyles = StyleSheet.create({
   buildButtonText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 16,
-    color: '#FFFFFF',
+    color: '#2C1A0E',
     textAlign: 'center',
   },
   skipLink: {
@@ -5919,10 +5936,17 @@ const wardrobeStyles = StyleSheet.create({
   },
   addToClosetButton: {
     backgroundColor: '#BCC7B7',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
     paddingVertical: 18,
     borderRadius: 100,
     marginTop: 20,
     marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   addToClosetButtonDisabled: {
     opacity: 0.4,
@@ -6024,7 +6048,7 @@ const wardrobeStyles = StyleSheet.create({
   analyseButtonText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: '#BCC7B7',
+    color: '#2C1A0E',
   },
   analyseCard: {
     backgroundColor: '#FFFFFF',
@@ -6045,9 +6069,16 @@ const wardrobeStyles = StyleSheet.create({
   },
   analyseCardButton: {
     backgroundColor: '#BCC7B7',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
     paddingVertical: 12,
     paddingHorizontal: 32,
     borderRadius: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   analyseCardButtonText: {
     fontFamily: 'Outfit_500Medium',
@@ -6125,9 +6156,16 @@ const wardrobeStyles = StyleSheet.create({
   deleteConfirmRemove: {
     flex: 1,
     backgroundColor: '#BCC7B7',
-    paddingVertical: 10,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    paddingVertical: 14,
     borderRadius: 100,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   deleteConfirmRemoveText: {
     fontFamily: 'Outfit_500Medium',
@@ -6138,7 +6176,7 @@ const wardrobeStyles = StyleSheet.create({
     flex: 1,
     borderWidth: 1.5,
     borderColor: 'rgba(44,26,14,0.12)',
-    paddingVertical: 10,
+    paddingVertical: 14,
     borderRadius: 100,
     alignItems: 'center',
   },
@@ -6399,9 +6437,16 @@ const looksStyles = StyleSheet.create({
   },
   emptyButton: {
     backgroundColor: '#BCC7B7',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
     paddingVertical: 18,
     paddingHorizontal: 64,
     borderRadius: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   emptyButtonText: {
     fontFamily: 'Outfit_500Medium',
