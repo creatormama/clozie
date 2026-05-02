@@ -3283,36 +3283,50 @@ const moodBoardStyles = StyleSheet.create({
 
 // ── Subscription Screen ─────────────────────────────────────────────────────
 function SubscriptionScreen({ onClose }) {
-  const [notifiedPro, setNotifiedPro] = useState(false);
-  const [notifiedElite, setNotifiedElite] = useState(false);
+  // PRO LAUNCH: uncomment below
+  // const [notifiedPro, setNotifiedPro] = useState(false);
+  // const [notifiedElite, setNotifiedElite] = useState(false);
+  //
+  // const handleNotifyPro = () => {
+  //   // Supabase save comes in Phase 2 when auth is connected
+  //   setNotifiedPro(true);
+  // };
 
-  const handleNotifyPro = () => {
-    // Supabase save comes in Phase 2 when auth is connected
-    setNotifiedPro(true);
-  };
+  // PRO LAUNCH: uncomment below
+  // const proFeatures = [
+  //   { emoji: '🧳', text: 'Trip Planner — real weather, day by day outfits, activities, missing item alerts, packing list' },
+  //   { emoji: '🧹', text: 'Clear Out — items unworn 6+ months, Sell/Donate/Swap' },
+  //   { emoji: '🔄', text: 'Clothes Swap — share items with friends' },
+  //   { emoji: '🗓', text: 'Outfit Wear History — track what you wore and when' },
+  // ];
 
-  const proFeatures = [
-    { emoji: '🧳', text: 'Trip Planner — real weather, day by day outfits, activities, missing item alerts, packing list' },
-    { emoji: '🧹', text: 'Clear Out — items unworn 6+ months, Sell/Donate/Swap' },
-    { emoji: '🔄', text: 'Clothes Swap — share items with friends' },
-    { emoji: '🗓', text: 'Outfit Wear History — track what you wore and when' },
-  ];
-
+  // PRO LAUNCH: uncomment below, delete simple version above
+  // const freeFeatures = [
+  //   'Up to 30 wardrobe items',
+  //   '7 outfits per week',
+  //   'Clozie styling + learning',
+  //   'Saved favourites',
+  //   'Style DNA profile',
+  //   'Clozie photo recognition',
+  //   'Share outfits with friends',
+  //   'Selfie sharing',
+  //   "Clozie's Pick — one boutique suggestion per outfit",
+  //   'Store suggestions in Mood Board',
+  //   'Wardrobe Intelligence',
+  //   'Style Match Score + Outfit Potential',
+  //   'What Goes With This',
+  //   // 'Seasonal Wardrobe Report', // Hidden May 2026 — moved to Phase 4+ Pro feature
+  // ];
   const freeFeatures = [
-    'Up to 30 wardrobe items',
-    '7 outfits per week',
-    'Clozie styling + learning',
-    'Saved favourites',
-    'Style DNA profile',
-    'Clozie photo recognition',
-    'Share outfits with friends',
-    'Selfie sharing',
-    "Clozie's Pick — one boutique suggestion per outfit",
-    'Store suggestions in Mood Board',
-    'Wardrobe Intelligence',
-    'Style Match Score + Outfit Potential',
-    'What Goes With This',
-    // 'Seasonal Wardrobe Report', // Hidden May 2026 — moved to Phase 4+ Pro feature
+    'Up to 30 items in your closet',
+    '12 styling sessions every week',
+    'Add your clothes — Clozie fills in the details',
+    'Pin one item — Clozie builds around it',
+    '3 fresh outfit ideas every session',
+    'Rate your looks — Clozie takes note',
+    'Mood board for every outfit',
+    'Save your favorite looks',
+    'Share outfit cards',
   ];
 
   return (
@@ -3338,9 +3352,7 @@ function SubscriptionScreen({ onClose }) {
         contentContainerStyle={subStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={subStyles.label}>✦ PLANS & PRICING ✦</Text>
-        <Text style={subStyles.heading}>Choose Your <Text style={subStyles.headingItalic}>Plan</Text></Text>
-        <Text style={subStyles.subtext}>Simple, honest pricing. No surprises.</Text>
+        <Text style={subStyles.heading}>Your Plan</Text>
 
         {/* FREE card */}
         <View style={subStyles.card}>
@@ -3356,7 +3368,8 @@ function SubscriptionScreen({ onClose }) {
           </View>
         </View>
 
-        {/* PRO card */}
+        {/* PRO LAUNCH: uncomment below
+        PRO card
         <View style={[subStyles.card, subStyles.proCard]}>
           <Text style={subStyles.proPlanName}>✦ PRO — Coming Soon</Text>
           <Text style={subStyles.proPricing}>$6.99/month · $67.99/year</Text>
@@ -3383,8 +3396,10 @@ function SubscriptionScreen({ onClose }) {
             </View>
           )}
         </View>
+        */}
 
-        {/* ELITE card */}
+        {/* PRO LAUNCH: uncomment below
+        ELITE card
         <View style={[subStyles.card, subStyles.proCard]}>
           <Text style={subStyles.proPlanName}>✦ ELITE — Coming Soon</Text>
           <Text style={subStyles.proPricing}>$9.99/month · $95.99/year</Text>
@@ -3417,9 +3432,12 @@ function SubscriptionScreen({ onClose }) {
             </View>
           )}
         </View>
+        */}
 
-        {/* Footer */}
+        {/* PRO LAUNCH: uncomment below
+        Footer
         <Text style={subStyles.footer}>Secure payment · Cancel anytime · No hidden fees</Text>
+        */}
       </ScrollView>
     </View>
   );
@@ -3457,12 +3475,12 @@ const subStyles = StyleSheet.create({
   },
   logoClo: {
     fontFamily: 'DMSerifDisplay_400Regular',
-    fontSize: 22,
+    fontSize: 32,
     color: '#2C1A0E',
   },
   logoZie: {
     fontFamily: 'DMSerifDisplay_400Regular_Italic',
-    fontSize: 22,
+    fontSize: 32,
     color: '#C87A52',
   },
   scrollContent: {
@@ -3482,6 +3500,7 @@ const subStyles = StyleSheet.create({
     fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 28,
     color: '#2C1A0E',
+    marginTop: 32,
     marginBottom: 8,
     textAlign: 'center',
   },
@@ -3514,7 +3533,7 @@ const subStyles = StyleSheet.create({
   featureRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 10,
+    marginBottom: 16,
   },
   featureCheck: {
     fontFamily: 'Outfit_400Regular',
@@ -3539,7 +3558,7 @@ const subStyles = StyleSheet.create({
   currentPlanText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: 'rgba(255,255,255,0.35)',
+    color: '#2C1A0E',
   },
   footer: {
     fontFamily: 'Outfit_400Regular',
@@ -3817,7 +3836,8 @@ function SettingsScreen({ onClose, onSignOut }) {
               onPress={() => setShowSubscription(true)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Text style={settingsStyles.goldLink}>Upgrade ✦</Text>
+              {/* PRO LAUNCH: change label back to "Upgrade ✦" */}
+              <Text style={settingsStyles.goldLink}>View Plan</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -4169,12 +4189,12 @@ const settingsStyles = StyleSheet.create({
   },
   logoClo: {
     fontFamily: 'DMSerifDisplay_400Regular',
-    fontSize: 22,
+    fontSize: 32,
     color: '#2C1A0E',
   },
   logoZie: {
     fontFamily: 'DMSerifDisplay_400Regular_Italic',
-    fontSize: 22,
+    fontSize: 32,
     color: '#C87A52',
   },
   scrollContent: {
@@ -4572,7 +4592,7 @@ function MainAppScreen({ onSignOut }) {
     { label: 'My Looks', icon: '◈', IconComponent: TabMirrorIcon },
   ];
 
-  const tabTitles = ['YOUR STYLE DNA', 'YOUR WARDROBE', "TODAY'S VIBE", 'YOUR LOOKS'];
+  const tabTitles = ['YOUR STYLE PROFILE', 'YOUR WARDROBE', "TODAY'S VIBE", 'YOUR LOOKS'];
 
   return (
     <View style={mainStyles.container}>
