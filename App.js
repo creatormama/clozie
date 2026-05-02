@@ -11,7 +11,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
-  Alert,
   Switch,
   Image,
   ImageBackground,
@@ -286,7 +285,7 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
   const titles = ['Snap & Add Your Clothes', 'Tell Clozie Your Day', 'Get 3 Perfect Outfits'];
   const descs = [
     'Take a photo of any clothing item, shoes or accessories — best on a white background. Clozie instantly fills in all the details.',
-    'Pick the weather and your occasion. Heading to work? Date night? Weekend errands? Clozie styles you perfectly for the moment.',
+    'Pick the weather and your plans. Heading to work? Going out? Weekend errands? Clozie styles you for the moment.',
     'Clozie creates 3 styled outfits from YOUR actual clothes. See them in a mood board or on the hanger. Rate them and Clozie learns your taste.',
   ];
 
@@ -381,15 +380,15 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
     // ── Sign Up validation ──
     if (!isLogin && !isForgot) {
       if (!name.trim()) {
-        setError('Please tell us your name ✦');
+        setError('Please tell us your name');
         return;
       }
       if (!email.trim() || !email.includes('@') || !email.includes('.')) {
-        setError("That email doesn't look right — please check it ✦");
+        setError("That email doesn't look right — please check it");
         return;
       }
       if (password.length < 8) {
-        setError('Password needs at least 8 characters ✦');
+        setError('Password needs at least 8 characters');
         return;
       }
       // Pass data up — Supabase integration comes in Phase 2
@@ -400,7 +399,7 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
     // ── Login validation ──
     if (isLogin) {
       if (!email.trim() || !password.trim()) {
-        setError('Please enter your email and password ✦');
+        setError('Please enter your email and password');
         return;
       }
       onDone({ email: email.trim(), password, mode: 'login' });
@@ -410,7 +409,7 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
     // ── Forgot Password validation ──
     if (isForgot) {
       if (!email.trim() || !email.includes('@') || !email.includes('.')) {
-        setError("That email doesn't look right — please check it ✦");
+        setError("That email doesn't look right — please check it");
         return;
       }
       setResetSent(true);
@@ -474,7 +473,8 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
             {/* Social buttons — NOT shown on Forgot Password */}
             {!isForgot && (
               <View style={authStyles.socialBlock}>
-                {/* Continue with Google */}
+                {/* Continue with Google — HIDDEN for Apple review (May 2026). To re-enable, change `false` to `true`. */}
+                {false && (
                 <TouchableOpacity
                   style={authStyles.socialButton}
                   activeOpacity={0.7}
@@ -488,6 +488,7 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
                   </Svg>
                   <Text style={authStyles.socialText}>Continue with Google</Text>
                 </TouchableOpacity>
+                )}
 
                 {/* Continue with Apple */}
                 <TouchableOpacity
@@ -517,7 +518,7 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
             {isForgot && resetSent ? (
               <View style={authStyles.resetSentBlock}>
                 <Text style={authStyles.resetSentText}>
-                  ✦ Check your email — We've sent a reset link to {email}
+                  Check your email — We've sent a reset link to {email}
                 </Text>
                 <TouchableOpacity
                   style={{ marginTop: 24, minHeight: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12 }}
@@ -637,7 +638,7 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
                   >
                     <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 14, color: '#5C4A3A', textAlign: 'center' }}>
                       {isLogin ? "Don't have an account? " : 'Already have an account? '}
-                      <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 14, color: '#C87A52' }}>
+                      <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 14, color: '#A44A34' }}>
                         {isLogin ? 'Sign up' : 'Sign in'}
                       </Text>
                     </Text>
@@ -712,7 +713,7 @@ function PostLoginWelcomeScreen({ onStart }) {
             activeOpacity={0.85}
             onPress={onStart}
           >
-            <Text style={postLoginStyles.buttonText}>Let's Start ✦</Text>
+            <Text style={postLoginStyles.buttonText}>Let's Start</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -767,7 +768,7 @@ function StyleDNATab({ onBuildCloset }) {
     >
       <Text style={dnaStyles.heading}>Your Style</Text>
       <Text style={dnaStyles.subtitle}>
-        Clozie uses this to personalize every outfit, the more you use her the better she knows you ✦
+        Clozie uses this to personalize every outfit, the more you use her the better she knows you
       </Text>
 
       {/* STYLES I LOVE card */}
@@ -841,7 +842,7 @@ function StyleDNATab({ onBuildCloset }) {
 
       {/* Learning notes — no ratings yet */}
       <Text style={dnaStyles.learningNote}>
-        ✦ Rate your first outfit and Clozie will start learning your taste
+        Rate your first outfit and Clozie will start learning your taste
       </Text>
 
       {/* Build My Closet button */}
@@ -1057,7 +1058,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
                 {item.lastWorn ? `Last worn: ${item.lastWorn}` : 'Never worn'}
               </Text>
               {/* What goes with this */}
-              <Text style={wardrobeStyles.gridCardPairLink}>What goes with this? ✦</Text>
+              <Text style={wardrobeStyles.gridCardPairLink}>What goes with this?</Text>
             </View>
           ))}
         </View>
@@ -1223,7 +1224,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           activeOpacity={0.7}
           onPress={() => setShowAnalyseMessage(true)}
         >
-          <Text style={wardrobeStyles.analyseButtonText}>✦ Analyse My Wardrobe</Text>
+          <Text style={wardrobeStyles.analyseButtonText}>Analyse My Wardrobe</Text>
         </TouchableOpacity>
       )}
 
@@ -1303,7 +1304,7 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
       showsVerticalScrollIndicator={false}
     >
       <Text style={vibeStyles.heading}>Today's Vibe</Text>
-      <Text style={vibeStyles.subheading}>✦ Let's dress you perfectly for today ✦</Text>
+      <Text style={vibeStyles.subheading}>Pick your weather and occasion — Clozie does the rest.</Text>
       <View style={vibeStyles.badge}>
         <Text style={vibeStyles.badgeText}>Styling from {wardrobeItemCount} items in your wardrobe</Text>
       </View>
@@ -1394,7 +1395,7 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
       {/* MUST INCLUDE ITEM card */}
       <View style={vibeStyles.card}>
         <Text style={vibeStyles.cardHeading}>MUST INCLUDE ITEM</Text>
-        <Text style={vibeStyles.cardSubtext}>Optional — pin one item and every outfit will include it</Text>
+        <Text style={vibeStyles.cardSubtext}>Something in mind? Pin it — Clozie builds around it.{'\n'}A jacket, a dress, those new shoes.</Text>
         {wardrobeItems.length === 0 ? (
           <Text style={vibeStyles.emptyItemsText}>✦ Add items to your wardrobe first ✦</Text>
         ) : (
@@ -1432,7 +1433,7 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
         <Text style={vibeStyles.cardHeading}>TELL CLOZIE MORE</Text>
         <TextInput
           style={vibeStyles.textInput}
-          placeholder="Tell Clozie more — office is cold, walking outside, anniversary dinner…"
+          placeholder="Tell Clozie more — which jacket? office is cold, dinner out, no heels today…"
           placeholderTextColor="rgba(44,26,14,0.40)"
           value={extraNotes}
           onChangeText={setExtraNotes}
@@ -1460,7 +1461,7 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
 
       {/* Hint text when button is greyed */}
       {!(selectedTemperature && selectedCondition && selectedOccasion) && (
-        <Text style={vibeStyles.hintText}>✦ Select temperature, condition and occasion first ✦</Text>
+        <Text style={vibeStyles.hintText}>Select weather and occasion first</Text>
       )}
     </ScrollView>
   );
@@ -1734,10 +1735,13 @@ const polaroidStyles = StyleSheet.create({
 
 // ── Your Looks Tab ──────────────────────────────────────────────────────────
 function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
+  // ── DEMO_MODE: flip to `true` for visual testing (HIG audit, Mood Board / Hanger View / Saved Outfits review). Production: always `false`. ──
+  const DEMO_MODE = false;
+
   const [loading, setLoading] = useState(false);
-  const [hasGenerated, setHasGenerated] = useState(false);
+  const [hasGenerated, setHasGenerated] = useState(DEMO_MODE);
   const spinAnim = useRef(new Animated.Value(0)).current;
-  const [savedOutfits, setSavedOutfits] = useState([]);
+  const [savedOutfits, setSavedOutfits] = useState(DEMO_MODE ? ['demo-2'] : []);
   const [ratings, setRatings] = useState({});
   const [ratingFeedback, setRatingFeedback] = useState({});
   const [wornToday, setWornToday] = useState({});
@@ -1746,6 +1750,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
   const [moodBoardTab, setMoodBoardTab] = useState('moodboard');
   const [mannequinBg, setMannequinBg] = useState('Cream');
   const [showSavedScreen, setShowSavedScreen] = useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = useState(null);
   // ── DEBUG (temporary — remove before shipping) ───────────────────────────
   // Layout switcher state for testing all 8 Mood Board polaroid layouts
   const [debugLayout, setDebugLayout] = useState('A');
@@ -1857,7 +1862,44 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
 
   // Outfit shape: { id: string, vibe: string (uppercase), name: string,
   //                 description: string (quoted), items: WardrobeItem[] }
-  const outfits = [];
+  // Production: empty. DEMO_MODE: 3 fixture outfits covering main layouts (top+bottom+shoes+acc, dress, outerwear).
+  const outfits = DEMO_MODE ? [
+    {
+      id: 'demo-1',
+      vibe: 'ROMANTIC',
+      name: 'Soft Glow',
+      description: 'Floaty, warm, made for golden-hour walks.',
+      items: [
+        { id: 'd1-1', name: 'Cream Silk Top',     category: 'Tops' },
+        { id: 'd1-2', name: 'Tailored Trousers',  category: 'Bottoms' },
+        { id: 'd1-3', name: 'Tan Loafers',        category: 'Shoes' },
+        { id: 'd1-4', name: 'Gold Hoops',         category: 'Accessories' },
+      ],
+    },
+    {
+      id: 'demo-2',
+      vibe: 'MINIMALIST',
+      name: 'Clean Lines',
+      description: 'One dress. One bag. Nothing extra.',
+      items: [
+        { id: 'd2-1', name: 'Black Slip Dress', category: 'Dresses' },
+        { id: 'd2-2', name: 'Strappy Heels',    category: 'Shoes' },
+        { id: 'd2-3', name: 'Pearl Studs',      category: 'Accessories' },
+      ],
+    },
+    {
+      id: 'demo-3',
+      vibe: 'EDGY',
+      name: 'Power Move',
+      description: 'Sharp, layered, ready to be looked at.',
+      items: [
+        { id: 'd3-1', name: 'White Tee',         category: 'Tops' },
+        { id: 'd3-2', name: 'Leather Jacket',    category: 'Outerwear' },
+        { id: 'd3-3', name: 'Black Jeans',       category: 'Bottoms' },
+        { id: 'd3-4', name: 'Chelsea Boots',     category: 'Shoes' },
+      ],
+    },
+  ] : [];
 
   useEffect(() => {
     if (isGenerating && !hasGenerated) {
@@ -1909,7 +1951,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
             activeOpacity={0.7}
             onPress={() => setShowSavedScreen(true)}
           >
-            <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: '#C87A52' }}>
+            <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: '#A44A34' }}>
               ❤️ Saved ({savedOutfits.length})
             </Text>
           </TouchableOpacity>
@@ -1919,7 +1961,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
       {/* Empty state — shown when no outfits generated yet */}
       {(!hasGenerated || outfits.length === 0) && (
         <View style={looksStyles.emptyState}>
-          <Text style={looksStyles.emptyTitle}>No outfits yet ✦</Text>
+          <Text style={looksStyles.emptyTitle}>No outfits yet</Text>
           <Text style={looksStyles.emptyText}>
             Head to Today's Vibe, tell Clozie about your day, and she'll create your perfect looks.
           </Text>
@@ -1931,9 +1973,10 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
             <Text style={looksStyles.emptyButtonText}>Go to Today's Vibe →</Text>
           </TouchableOpacity>
 
-          {/* DEBUG — temporary, remove before shipping */}
+          {/* DEBUG — Mood Board layout switcher button. Gated behind DEMO_MODE (May 2026). */}
+          {DEMO_MODE && (
           <View style={{ marginTop: 24, alignItems: 'center', paddingHorizontal: 20 }}>
-            <Text style={{ fontFamily: 'Outfit_500Medium', fontSize: 10, color: '#A44A34', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>
+            <Text style={{ fontFamily: 'Outfit_500Medium', fontSize: 11, color: '#A44A34', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 8 }}>
               ✦ DEBUG — Mood Board Test ✦
             </Text>
             <TouchableOpacity
@@ -1949,6 +1992,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
               Inside the modal — switch between Layouts A → G
             </Text>
           </View>
+          )}
         </View>
       )}
 
@@ -1993,7 +2037,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
           <Text style={looksStyles.outfitDesc}>{outfit.description}</Text>
 
           {/* Style Match Score */}
-          <Text style={looksStyles.matchScore}>✦ 94% match with Your Style</Text>
+          <Text style={looksStyles.matchScore}>94% match with Your Style</Text>
 
           {/* Outfit Potential */}
           <Text style={looksStyles.outfitPotential}>These {outfit.items.length || 3} pieces create {(outfit.items.length || 3) * 4} outfits together</Text>
@@ -2004,7 +2048,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
             activeOpacity={0.7}
             onPress={() => { setMoodBoardTab('moodboard'); setMoodBoardOutfit(outfit); }}
           >
-            <Text style={looksStyles.moodBoardLink}>✦ View mood board</Text>
+            <Text style={looksStyles.moodBoardLink}>View mood board</Text>
           </TouchableOpacity>
 
           {/* Row 1: Save + I wore this today — equal pills */}
@@ -2074,7 +2118,8 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
             </TouchableOpacity>
           </View>
 
-          {/* Row 4: Complete The Look — outline only */}
+          {/* Row 4: Complete The Look — HIDDEN for Apple review (May 2026). To re-enable, change `false` to `true`. */}
+          {false && (
           <TouchableOpacity
             style={looksStyles.outlineButton}
             activeOpacity={0.7}
@@ -2082,10 +2127,11 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
           >
             <Text style={looksStyles.outlineButtonText}>Complete The Look</Text>
           </TouchableOpacity>
+          )}
 
           {/* Boutique message */}
-          {showBoutique[outfit.id] && (
-            <Text style={looksStyles.boutiqueMessage}>Boutique partners coming soon ✦</Text>
+          {false && showBoutique[outfit.id] && (
+            <Text style={looksStyles.boutiqueMessage}>Boutique partners coming soon</Text>
           )}
         </View>
       ))}
@@ -2252,10 +2298,14 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
                   })()}
                 </View>
 
-                {/* Store Suggestions */}
+                {/* Store Suggestions — HIDDEN for Apple review (May 2026). To re-enable, change `false` to `true`. */}
+                {false && (
+                <>
                 <View style={moodBoardStyles.storeDivider} />
                 <Text style={moodBoardStyles.storeLabel}>STORE SUGGESTIONS</Text>
-                <Text style={moodBoardStyles.storePlaceholder}>Boutique partners coming soon ✦</Text>
+                <Text style={moodBoardStyles.storePlaceholder}>Boutique partners coming soon</Text>
+                </>
+                )}
               </View>
             )}
 
@@ -2295,7 +2345,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
                           key={bg.name}
                           activeOpacity={0.7}
                           onPress={() => setMannequinBg(bg.name)}
-                          hitSlop={{ top: 13, bottom: 13, left: 6, right: 6 }}
+                          hitSlop={{ top: 9, bottom: 9, left: 9, right: 9 }}
                         >
                           {active ? (
                             <View style={moodBoardStyles.hangerDotRingOuter}>
@@ -2464,7 +2514,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
             {savedOutfits.length === 0 && (
               <View style={savedStyles.emptyState}>
                 <Text style={{ fontSize: 48, marginBottom: 16, color: '#C87A52' }}>♡</Text>
-                <Text style={savedStyles.emptyTitle}>Your saved looks will live here ✦</Text>
+                <Text style={savedStyles.emptyTitle}>Your saved looks will live here</Text>
                 <Text style={savedStyles.emptyText}>
                   Generate outfits and save the ones you love.
                 </Text>
@@ -2484,7 +2534,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
             {/* Saved outfits list */}
             {savedOutfits.length > 0 && (
               <>
-                <Text style={savedStyles.countText}>{savedOutfits.length} saved look{savedOutfits.length !== 1 ? 's' : ''} ✦</Text>
+                <Text style={savedStyles.countText}>{savedOutfits.length} saved look{savedOutfits.length !== 1 ? 's' : ''}</Text>
                 <Text style={savedStyles.hintText}>Tap an outfit to see the mood board</Text>
 
                 {outfits
@@ -2528,22 +2578,7 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
                       <TouchableOpacity
                         style={savedStyles.removeButton}
                         activeOpacity={0.7}
-                        onPress={() => {
-                          Alert.alert(
-                            'Remove ' + outfit.name + '?',
-                            'Remove ' + outfit.name + ' from your collection? This cannot be undone.',
-                            [
-                              { text: 'Cancel', style: 'cancel' },
-                              {
-                                text: 'Remove',
-                                style: 'destructive',
-                                onPress: () => {
-                                  setSavedOutfits((prev) => prev.filter((id) => id !== outfit.id));
-                                },
-                              },
-                            ]
-                          );
-                        }}
+                        onPress={() => setConfirmRemoveId(outfit.id)}
                       >
                         <Text style={savedStyles.removeButtonText}>Remove</Text>
                       </TouchableOpacity>
@@ -2552,6 +2587,42 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
               </>
             )}
           </ScrollView>
+
+          {/* Confirm remove modal — replaces Alert.alert (May 2026) */}
+          <Modal
+            visible={confirmRemoveId !== null}
+            animationType="fade"
+            transparent={true}
+            onRequestClose={() => setConfirmRemoveId(null)}
+          >
+            <View style={savedStyles.confirmOverlay}>
+              <View style={savedStyles.confirmModal}>
+                <Text style={savedStyles.confirmHeading}>Remove this look?</Text>
+                <Text style={savedStyles.confirmBody}>
+                  This will remove it from your saved collection. You can always save it again.
+                </Text>
+                <View style={savedStyles.confirmPrimaryRing}>
+                  <TouchableOpacity
+                    style={savedStyles.confirmPrimaryButton}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setSavedOutfits((prev) => prev.filter((id) => id !== confirmRemoveId));
+                      setConfirmRemoveId(null);
+                    }}
+                  >
+                    <Text style={savedStyles.confirmPrimaryButtonText}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity
+                  style={savedStyles.confirmCancelButton}
+                  activeOpacity={0.7}
+                  onPress={() => setConfirmRemoveId(null)}
+                >
+                  <Text style={savedStyles.confirmCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
         </View>
       </Modal>
 
@@ -2600,8 +2671,8 @@ const savedStyles = StyleSheet.create({
   },
   label: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
-    color: '#C87A52',
+    fontSize: 11,
+    color: '#A44A34',
     letterSpacing: 2.5,
     textTransform: 'uppercase',
     marginBottom: 8,
@@ -2615,7 +2686,7 @@ const savedStyles = StyleSheet.create({
   countText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: '#C87A52',
+    color: '#A44A34',
     marginBottom: 4,
   },
   hintText: {
@@ -2691,8 +2762,8 @@ const savedStyles = StyleSheet.create({
   },
   vibeLabel: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
-    color: '#C87A52',
+    fontSize: 11,
+    color: '#A44A34',
     letterSpacing: 2.5,
     textTransform: 'uppercase',
     marginBottom: 4,
@@ -2717,7 +2788,7 @@ const savedStyles = StyleSheet.create({
   },
   chipText: {
     fontFamily: 'Outfit_500Medium',
-    fontSize: 9,
+    fontSize: 11,
     color: '#6B7E65',
     letterSpacing: 0.3,
   },
@@ -2733,7 +2804,78 @@ const savedStyles = StyleSheet.create({
   removeButtonText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 12,
-    color: '#C87A52',
+    color: '#A44A34',
+  },
+
+  // Confirm modal — shared between Saved Outfits remove and Settings Clear Memory
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  confirmModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 360,
+  },
+  confirmHeading: {
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 22,
+    color: '#2C1A0E',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  confirmBody: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
+    lineHeight: 20,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  confirmPrimaryRing: {
+    backgroundColor: '#FFFFFF',
+    padding: 3,
+    borderRadius: 100,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  confirmPrimaryButton: {
+    backgroundColor: '#BCC7B7',
+    borderRadius: 100,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  confirmPrimaryButtonText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 13,
+    color: '#2C1A0E',
+    letterSpacing: 1,
+  },
+  confirmCancelButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(44,26,14,0.20)',
+    borderRadius: 100,
+    paddingVertical: 14,
+    alignItems: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  confirmCancelButtonText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 13,
+    color: '#2C1A0E',
   },
 });
 
@@ -2824,8 +2966,8 @@ const moodBoardStyles = StyleSheet.create({
   },
   vibeLabel: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
-    color: '#C87A52',
+    fontSize: 11,
+    color: '#A44A34',
     letterSpacing: 2.5,
     textTransform: 'uppercase',
     marginBottom: 4,
@@ -2906,7 +3048,7 @@ const moodBoardStyles = StyleSheet.create({
   },
   itemCategoryText: {
     fontFamily: 'Outfit_500Medium',
-    fontSize: 10,
+    fontSize: 11,
     color: '#6B7E65',
     textTransform: 'uppercase',
   },
@@ -2926,8 +3068,8 @@ const moodBoardStyles = StyleSheet.create({
   },
   storeLabel: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
-    color: '#C87A52',
+    fontSize: 11,
+    color: '#A44A34',
     letterSpacing: 2.5,
     textTransform: 'uppercase',
     marginBottom: 8,
@@ -3165,12 +3307,12 @@ function SubscriptionScreen({ onClose }) {
     'Clozie photo recognition',
     'Share outfits with friends',
     'Selfie sharing',
-    'Complete The Look',
+    "Clozie's Pick — one boutique suggestion per outfit",
     'Store suggestions in Mood Board',
     'Wardrobe Intelligence',
     'Style Match Score + Outfit Potential',
     'What Goes With This',
-    'Seasonal Wardrobe Report',
+    // 'Seasonal Wardrobe Report', // Hidden May 2026 — moved to Phase 4+ Pro feature
   ];
 
   return (
@@ -3329,8 +3471,8 @@ const subStyles = StyleSheet.create({
   },
   label: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
-    color: '#C87A52',
+    fontSize: 11,
+    color: '#A44A34',
     letterSpacing: 2.5,
     textTransform: 'uppercase',
     marginBottom: 8,
@@ -3377,7 +3519,7 @@ const subStyles = StyleSheet.create({
   featureCheck: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: '#C87A52',
+    color: '#A44A34',
     width: 22,
   },
   featureText: {
@@ -3530,20 +3672,15 @@ function SettingsScreen({ onClose, onSignOut }) {
     setShowChangePassword(false);
   };
 
+  const [showClearMemoryModal, setShowClearMemoryModal] = useState(false);
+
   const handleClearMemory = () => {
-    Alert.alert(
-      'Clear Clozie\'s Memory',
-      'This will reset everything Clozie has learned about your taste. Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Yes, reset',
-          onPress: () => {
-            // Supabase clearing comes in Phase 2
-          },
-        },
-      ]
-    );
+    setShowClearMemoryModal(true);
+  };
+
+  const confirmClearMemory = () => {
+    // Supabase clearing comes in Phase 2
+    setShowClearMemoryModal(false);
   };
 
   // Delete Account state
@@ -3879,6 +4016,39 @@ function SettingsScreen({ onClose, onSignOut }) {
         <SubscriptionScreen onClose={() => setShowSubscription(false)} />
       </Modal>
 
+      {/* Clear Clozie's Memory confirm modal — replaces Alert.alert (May 2026) */}
+      <Modal
+        visible={showClearMemoryModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowClearMemoryModal(false)}
+      >
+        <View style={savedStyles.confirmOverlay}>
+          <View style={savedStyles.confirmModal}>
+            <Text style={savedStyles.confirmHeading}>Clear Clozie's Memory?</Text>
+            <Text style={savedStyles.confirmBody}>
+              This will reset everything Clozie has learned about your taste. Your saved outfits and wardrobe stay safe.
+            </Text>
+            <View style={savedStyles.confirmPrimaryRing}>
+              <TouchableOpacity
+                style={savedStyles.confirmPrimaryButton}
+                activeOpacity={0.8}
+                onPress={confirmClearMemory}
+              >
+                <Text style={savedStyles.confirmPrimaryButtonText}>Yes, reset</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={savedStyles.confirmCancelButton}
+              activeOpacity={0.7}
+              onPress={() => setShowClearMemoryModal(false)}
+            >
+              <Text style={savedStyles.confirmCancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Delete Account Modal — 2-step confirmation */}
       <Modal
         visible={showDeleteModal}
@@ -4013,8 +4183,8 @@ const settingsStyles = StyleSheet.create({
   },
   label: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
-    color: '#C87A52',
+    fontSize: 11,
+    color: '#A44A34',
     letterSpacing: 2.5,
     textTransform: 'uppercase',
     marginBottom: 8,
@@ -4059,7 +4229,7 @@ const settingsStyles = StyleSheet.create({
   goldLink: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 12,
-    color: '#C87A52',
+    color: '#A44A34',
   },
   divider: {
     height: 1,
@@ -4091,8 +4261,8 @@ const settingsStyles = StyleSheet.create({
   },
   editPanelLabel: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
-    color: '#C87A52',
+    fontSize: 11,
+    color: '#A44A34',
     letterSpacing: 2.5,
     textTransform: 'uppercase',
   },
@@ -4214,7 +4384,7 @@ const settingsStyles = StyleSheet.create({
   deleteAccountButtonText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: '#C87A52',
+    color: '#A44A34',
   },
   deleteOverlay: {
     flex: 1,
@@ -4256,7 +4426,7 @@ const settingsStyles = StyleSheet.create({
   deleteCannotUndo: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 12,
-    color: '#C87A52',
+    color: '#A44A34',
     opacity: 0.88,
     marginBottom: 20,
   },
@@ -4289,7 +4459,7 @@ const settingsStyles = StyleSheet.create({
   deleteRedButtonText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: '#C87A52',
+    color: '#A44A34',
   },
   deleteCancelButton: {
     backgroundColor: '#FFFFFF',
@@ -4316,7 +4486,7 @@ const settingsStyles = StyleSheet.create({
   signOutButtonText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 14,
-    color: '#C87A52',
+    color: '#A44A34',
   },
 });
 
@@ -4326,7 +4496,7 @@ function TabStarIcon({ active }) {
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
       <Path
         d="M12 2l2.4 7.4L22 12l-7.6 2.6L12 22l-2.4-7.4L2 12l7.6-2.6z"
-        stroke={active ? '#C87A52' : 'rgba(44,26,14,0.28)'}
+        stroke={active ? '#A44A34' : 'rgba(44,26,14,0.28)'}
         strokeWidth={active ? 1.9 : 1.6}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -4340,7 +4510,7 @@ function TabHangerIcon({ active }) {
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
       <Path
         d="M12 4a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 0v3L3.5 13.5A1.5 1.5 0 0 0 4.5 16h15a1.5 1.5 0 0 0 1-2.5L12 7"
-        stroke={active ? '#C87A52' : 'rgba(44,26,14,0.28)'}
+        stroke={active ? '#A44A34' : 'rgba(44,26,14,0.28)'}
         strokeWidth={active ? 1.9 : 1.6}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -4350,7 +4520,7 @@ function TabHangerIcon({ active }) {
 }
 
 function TabSunIcon({ active }) {
-  const stroke = active ? '#C87A52' : 'rgba(44,26,14,0.28)';
+  const stroke = active ? '#A44A34' : 'rgba(44,26,14,0.28)';
   const strokeWidth = active ? 1.9 : 1.6;
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
@@ -4368,7 +4538,7 @@ function TabSunIcon({ active }) {
 }
 
 function TabMirrorIcon({ active }) {
-  const stroke = active ? '#C87A52' : 'rgba(44,26,14,0.28)';
+  const stroke = active ? '#A44A34' : 'rgba(44,26,14,0.28)';
   const strokeWidth = active ? 1.9 : 1.6;
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
@@ -4447,7 +4617,7 @@ function MainAppScreen({ onSignOut }) {
               )}
               <Text style={[
                 mainStyles.tabLabel,
-                { color: isActive ? '#C87A52' : 'rgba(44,26,14,0.28)' },
+                { color: isActive ? '#A44A34' : 'rgba(44,26,14,0.28)' },
               ]}>{tab.label}</Text>
               {isActive && <View style={mainStyles.tabActiveDot} />}
             </TouchableOpacity>
@@ -4598,7 +4768,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_700Bold',
     fontSize: 12,
     letterSpacing: 2.5,
-    color: '#C87A52',
+    color: '#A44A34',
     textAlign: 'center',
   },
 
@@ -4801,7 +4971,7 @@ const welcomeStyles = StyleSheet.create({
   signInLink: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: '#DC8F68',
+    color: '#A44A34',
   },
 });
 
@@ -4858,7 +5028,7 @@ const peekStyles = StyleSheet.create({
   },
   howLabel: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
+    fontSize: 11,
     color: '#A44A34',
     letterSpacing: 2.5,
     marginTop: 12,
@@ -4880,7 +5050,7 @@ const peekStyles = StyleSheet.create({
   },
   stepEyebrow: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
+    fontSize: 11,
     color: '#A44A34',
     letterSpacing: 2.5,
     marginBottom: 8,
@@ -4928,7 +5098,7 @@ const peekStyles = StyleSheet.create({
   },
   recognisedLabel: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
+    fontSize: 11,
     color: '#A44A34',
     letterSpacing: 2.5,
     marginBottom: 3,
@@ -4965,14 +5135,14 @@ const peekStyles = StyleSheet.create({
   },
   tagChipText: {
     fontFamily: 'Outfit_500Medium',
-    fontSize: 9,
+    fontSize: 11,
     color: '#6B7E65',
     letterSpacing: 0.3,
   },
 
   vibeLabel: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
+    fontSize: 11,
     color: '#A44A34',
     letterSpacing: 2.5,
     marginBottom: 10,
@@ -5016,7 +5186,7 @@ const peekStyles = StyleSheet.create({
   },
   outfitVibe: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
+    fontSize: 11,
     color: '#A44A34',
     letterSpacing: 2.5,
   },
@@ -5350,7 +5520,7 @@ const authStyles = StyleSheet.create({
   errorText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: 'rgba(200,122,82,0.88)',
+    color: 'rgba(164,74,52,0.88)',
     marginBottom: 12,
     textAlign: 'left',
     width: '100%',
@@ -5366,7 +5536,7 @@ const authStyles = StyleSheet.create({
   forgotLink: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: '#C87A52',
+    color: '#A44A34',
     textDecorationLine: 'underline',
   },
 
@@ -5374,7 +5544,7 @@ const authStyles = StyleSheet.create({
   forgotBackLink: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: '#C87A52',
+    color: '#A44A34',
     textAlign: 'center',
   },
 
@@ -5387,7 +5557,7 @@ const authStyles = StyleSheet.create({
   resetSentText: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: '#C87A52',
+    color: '#A44A34',
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -5438,8 +5608,8 @@ const dnaStyles = StyleSheet.create({
   },
   cardHeading: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
-    color: '#C87A52',
+    fontSize: 11,
+    color: '#A44A34',
     letterSpacing: 2.5,
     marginBottom: 16,
   },
@@ -5542,8 +5712,8 @@ const wardrobeStyles = StyleSheet.create({
   },
   label: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
-    color: '#C87A52',
+    fontSize: 11,
+    color: '#A44A34',
     letterSpacing: 2.5,
     textTransform: 'uppercase',
   },
@@ -5619,8 +5789,8 @@ const wardrobeStyles = StyleSheet.create({
   },
   addPanelHeading: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
-    color: '#C87A52',
+    fontSize: 11,
+    color: '#A44A34',
     letterSpacing: 2.5,
     textTransform: 'uppercase',
   },
@@ -5686,8 +5856,8 @@ const wardrobeStyles = StyleSheet.create({
   },
   fieldLabel: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
-    color: '#C87A52',
+    fontSize: 11,
+    color: '#A44A34',
     letterSpacing: 2.5,
     textTransform: 'uppercase',
     marginBottom: 6,
@@ -5790,7 +5960,7 @@ const wardrobeStyles = StyleSheet.create({
   },
   categoryTagText: {
     fontFamily: 'Outfit_500Medium',
-    fontSize: 9,
+    fontSize: 11,
     color: '#6B7E65',
     letterSpacing: 0.3,
   },
@@ -5818,7 +5988,7 @@ const wardrobeStyles = StyleSheet.create({
   gridCardPairLink: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 11,
-    color: '#C87A52',
+    color: '#A44A34',
     marginTop: 6,
     marginHorizontal: 10,
     marginBottom: 12,
@@ -5977,7 +6147,7 @@ const vibeStyles = StyleSheet.create({
   },
   subheading: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 13,
+    fontSize: 13.5,
     color: '#5C4A3A',
     marginBottom: 18,
   },
@@ -6010,16 +6180,16 @@ const vibeStyles = StyleSheet.create({
   },
   cardHeading: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
-    color: '#C87A52',
+    fontSize: 11,
+    color: '#A44A34',
     letterSpacing: 2.5,
     marginBottom: 14,
     textTransform: 'uppercase',
   },
   subLabel: {
     fontFamily: 'Outfit_700Bold',
-    fontSize: 10,
-    color: '#C87A52',
+    fontSize: 11,
+    color: '#A44A34',
     letterSpacing: 2.5,
     marginBottom: 10,
     textTransform: 'uppercase',
@@ -6233,7 +6403,7 @@ const looksStyles = StyleSheet.create({
   loadingSubtext: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: '#C87A52',
+    color: '#A44A34',
   },
   outfitCard: {
     backgroundColor: '#FFFFFF',
@@ -6278,7 +6448,7 @@ const looksStyles = StyleSheet.create({
   vibeLabel: {
     fontFamily: 'Outfit_700Bold',
     fontSize: 11,
-    color: '#C87A52',
+    color: '#A44A34',
     letterSpacing: 2.5,
     marginBottom: 4,
   },
@@ -6297,7 +6467,7 @@ const looksStyles = StyleSheet.create({
   matchScore: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: '#C87A52',
+    color: '#A44A34',
     marginTop: 12,
   },
   outfitPotential: {
@@ -6309,7 +6479,7 @@ const looksStyles = StyleSheet.create({
   moodBoardLink: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: '#C87A52',
+    color: '#A44A34',
   },
   saveButton: {
     borderWidth: 1,
@@ -6353,7 +6523,7 @@ const looksStyles = StyleSheet.create({
   ratingFeedback: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 13,
-    color: '#C87A52',
+    color: '#A44A34',
     marginTop: 10,
     textAlign: 'center',
   },
@@ -6568,7 +6738,7 @@ const mainStyles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#C87A52',
+    backgroundColor: '#A44A34',
     marginTop: 4,
   },
 });
