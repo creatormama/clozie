@@ -137,9 +137,13 @@ Session counter only increments on successful API response containing 3 complete
 
 NUDGE MESSAGES — never a hard wall, always a warm invitation:
 
-At 28 items show: "2 spots left in your free wardrobe ✦ Upgrade to Pro for unlimited"
-At session 11 of 12 show: "1 session left this week — Pro members never run out ✦"
-When all 12 sessions used show: "You've used all 12 sessions this week ✦ Sessions refresh as the week rolls forward. In the meantime — explore What Goes With This in your wardrobe, or upgrade to Pro for unlimited looks."
+At 28 items show: "2 spots left in your wardrobe."
+At 30 items show: "Your wardrobe is full."
+At session 9 of 12 show: "3 styling sessions left this week."
+At session 11 of 12 show: "1 styling session left this week."
+When all 12 sessions used show: "You've used all 12 styling sessions this week. Your earliest session refreshes soon."
+
+OLD PRO NUDGES (keep in code as comments for post-Pro launch — format: // PRO LAUNCH: uncomment below, delete simple version above)
 
 ---
 
@@ -326,10 +330,10 @@ Sign Up screen:
 - Gold pill button: "Create Account →"
 - "Already have an account? Sign in"
 - Error messages — warm gold text directly below relevant field:
-  - Empty name → "Please tell us your name ✦"
-  - Invalid email → "That email doesn't look right — please check it ✦"
-  - Password too short → "Password needs at least 8 characters ✦"
-  - Email exists → "An account with this email already exists — try signing in instead ✦"
+  - Empty name → "Please tell us your name"
+  - Invalid email → "That email doesn't look right — please check it"
+  - Password too short → "Password needs at least 8 characters"
+  - Email exists → "An account with this email already exists — try signing in instead"
 
 Login screen:
 - Heading: "✦ WELCOME BACK ✦" — small gold, letter-spaced, centered
@@ -340,15 +344,15 @@ Login screen:
 - "Forgot password?" — right-aligned, gold underlined, CLEARLY VISIBLE — never tiny grey text
 - Gold pill button: "Sign In →"
 - "Don't have an account? Sign up"
-- Wrong credentials → "Email or password doesn't match — please try again ✦"
-- Empty fields → "Please enter your email and password ✦"
+- Wrong credentials → "Email or password doesn't match — please try again"
+- Empty fields → "Please enter your email and password"
 
 Forgot Password screen:
 - Heading: "✦ RESET YOUR PASSWORD ✦"
 - "Enter your email and we'll send you a reset link"
 - Email field only
 - Gold pill button: "Send Reset Link →"
-- After tapping: "✦ Check your email — We've sent a reset link to [her email]"
+- After tapping: "Check your email — We've sent a reset link to [her email]"
 - "← Back to Sign In"
 
 All error messages in warm terracotta Outfit font — below the relevant field — never aggressive red
@@ -358,7 +362,7 @@ All error messages in warm terracotta Outfit font — below the relevant field �
 - Shows once for new users only, after first sign up
 - "Welcome to Clozie" heading
 - "The more you use Clozie, the better she knows you"
-- Gold button: "Let's Start ✦"
+- Gold button: "Let's Start"
 - Goes to main app
 
 ## Main App — Four Tabs (bottom navigation)
@@ -377,8 +381,8 @@ Landing screen behaviour:
 - Card: MY COLOUR PALETTE — tag chips: Neutrals, Earth Tones, Bold Colors, Pastels, Monochrome, Black & White, Warm Tones, Cool Tones
 - Card: I NEVER WANT TO WEAR — text input
 - Chip states: Unselected: dark card + gold border / Selected: gold background + dark text / Tap animation: slight scale pulse
-- If no ratings yet: "✦ Rate your first outfit and Clozie will start learning your taste"
-- If ratings exist: "✦ CLOZIE'S NOTES ON YOU (X ratings)" — shows last 4 notes
+- If no ratings yet: "Rate your first outfit and Clozie will start learning your taste"
+- If ratings exist: "What Clozie has learned about your style (X ratings)" — shows last 4 notes
 - Gold button: "Build My Closet →"
 - Skip link below button
 
@@ -387,7 +391,7 @@ Landing screen behaviour:
 - Item count in gold top right e.g. "12/30 items"
 - Gold progress bar below header showing items used
 - Bar turns amber at 25+ items
-- Nudge at 25+: "5 spots left · Upgrade for unlimited ✦"
+- Nudge at 25+: "5 spots left in your wardrobe."
 - Empty state: closet emoji, 'Every great wardrobe starts with one piece. Add your first item and let's see what Clozie can do ✦'
 - Progressive empty state — 3 states: (1) Empty closet: warm encouragement to add first item. (2) Under 5 items: 'Add X more items for your first outfits ✦'. (3) 5+ items: Generate button activates.
 - Items shown in 2-column grid
@@ -401,7 +405,7 @@ Each item card:
 - Item name in DM Serif Display — espresso #2C1A0E, prominent
 - Color description below name in Outfit — body text #5C4A3A
 - Last worn date below color — small, muted — e.g. 'Last worn: March 15' or 'Never worn'
-- 'What goes with this? ✦' — small gold link below last worn date
+- 'What goes with this?' — small gold link below last worn date — HIDDEN for Apple review. Build TouchableOpacity + overlay in Phase 2.
 
 When 'What goes with this?' tapped: full screen overlay slides up. Shows ALL wardrobe items that pair well. Her wardrobe ONLY — never boutique suggestions. Does NOT count toward weekly generation limit. Warm message. Close × top right — gold — 44px tap target.
 
@@ -418,22 +422,22 @@ Add Item panel:
 - "Add to Closet" button — disabled while scanning
 - Cancel button
 
-"✦ Analyse My Wardrobe" button — gold outline, below the item grid. When tapped: slides up as card overlay — not a new screen. Maximum 3 warm Clozie observations. Gold button "Got it ✦" to dismiss.
+"Analyse My Wardrobe" button — gold outline, below the item grid. When tapped: slides up as card overlay — not a new screen. Maximum 3 warm Clozie observations. Gold button "Got it ✦" to dismiss. HIDDEN for Apple review. Wire to Haiku with caching in Phase 2.
 "Set Today's Vibe →" gold button at bottom of wardrobe — navigates to Today's Vibe
 
 ## Today's Vibe Tab (was 'context' in code)
 
-- "Let's dress you perfectly for today ✦" — subheading below
+- "Pick your weather and occasion — Clozie does the rest." — subheading below. Outfit font 13.5px, #5C4A3A. No sparkle.
 - Personalized greeting at top: 'Good morning, [Name] ✦' (or afternoon/evening based on device time). Falls back to 'Good morning ✦' if no name. DM Serif Display, espresso #2C1A0E. This IS the heading — not an addition above it.
-- Shows wardrobe count badge: "✦ Styling from X items in your wardrobe"
+- Shows closet count badge: "Styling from X items in your closet"
 - Card: WEATHER OUTSIDE — Two-row weather input. Row 1 — Temperature: Cold / Cool / Warm / Hot. Row 2 — Condition: Sunny / Cloudy / Rainy / Snowy. User selects one from each row. Both required before Generate button activates.
 - Card: THE OCCASION — tag chips: Casual Day, Work / Office, Going Out, Formal Event, Outdoor / Sport, Weekend Errands, Travel
 - 'I'll be indoors' toggle below occasion chips. When ON: skip heavy outerwear suggestions, relax warmth constraints. AI uses the Occasion chip and Brief to decide whether occasion layering (blazer, jacket) is still appropriate indoors.
-- Card: MUST INCLUDE ITEM — Label: 'Optional — pin one item and every outfit will include it ✦' User sees wardrobe thumbnails in horizontal scroll. Tapping highlights in gold. Tapping again deselects.
-- Card: ANYTHING ELSE? — text input for extra notes
-- Brief field — 'Tell Clozie more' text input. Placeholder: 'Tell Clozie more — office is cold, walking outside, anniversary dinner…' When the Brief describes a specific context more precise than the Occasion chip, it outranks the chip and defines the aesthetic direction.
+- Card: MUST INCLUDE ITEM — Label (2 lines): Line 1 'Something in mind? Pin it — Clozie builds around it.' Line 2 'A jacket, a dress, those new shoes.' User sees wardrobe thumbnails in horizontal scroll. Tapping highlights in gold. Tapping again deselects.
+- Brief field — 'Tell Clozie more' text input. Placeholder: 'Tell Clozie more — which jacket? office is cold, dinner out, no heels today…' When the Brief describes a specific context more precise than the Occasion chip, it outranks the chip and defines the aesthetic direction.
+- Brief field spec: Height 72px fixed (2 visible lines). Font: Outfit 14px, placeholder 13.5px. Background: #FAFAF6. Border: 1.5px rgba(44,26,14,0.12), border-radius 10px. Focus: border #BCC7B7 + box-shadow. Padding: 14px. Character limit: 150. Counter: bottom-right, 11px, #A09888, turns #C87A52 at 130+.
 - Gold pill button sticky: "✦ Generate My Outfits →" — greyed out until weather AND occasion both selected
-- Hint text shown below when greyed: "Select weather and occasion first ✦" — disappears when button activates
+- Hint text shown below when greyed: "Select weather and occasion first" — disappears when button activates
 
 WARNING: Every generated outfit MUST include the pinned item — no exceptions. Clozie cannot skip or replace it.
 
@@ -449,9 +453,9 @@ Each outfit card:
 - Photo strip at top — 2-column grid of item photos with names
 - VIBE label in gold (e.g. ROMANTIC)
 - Outfit name in Playfair (e.g. 'Evening Glow')
-- "✦ 94% match with your style profile" — small gold text below outfit name
-- "These 3 pieces create 12 outfits together" — small muted text below score
-- "✦ View mood board" gold link
+- "94% match with your style profile" — small gold text below outfit name — HIDDEN for Apple review, unhide when real calculation exists
+- "These N pieces create N×4 outfits together" — small muted text below score — HIDDEN for Apple review, unhide when real logic exists
+- "View mood board" gold link
 - Item chips showing each item with thumbnail photo
 - Italic description from Clozie
 - Outfit card button hierarchy (confirmed):
@@ -461,13 +465,13 @@ Each outfit card:
   - Row 2: rating pills (Love it / Like it / Not for me).
     - Selected pill fills, others stay outlined.
     - After rating: '✦ Thanks! Clozie is learning your taste' fades in, disappears after 2 seconds.
-  - Row 3: Share Outfit ✦ (primary sage green).
+  - Row 3: Share Outfit (primary sage green).
     - Shares outfit card with Clozie watermark via native share sheet.
     - Pre-written caption: "Styled by Clozie. Wear it or not?"
-  - Row 4: ✦ Complete The Look (terracotta outline).
+  - Row 4: Clozie's Pick (terracotta outline). HIDDEN for Apple review.
     - Goes straight to ONE boutique suggestion — photo, item name, price, store name, 'Shop Now →' button.
     - One suggestion only — never a list. Boutique stores only — never large retailers.
-    - If no boutique connection yet — shows "Boutique partners coming soon ✦".
+    - If no boutique connection yet — shows "Boutique partners coming soon" — HIDDEN for Apple review.
 
 Bottom of screen — two buttons side by side:
 - Left: 🔄 Regenerate — dark square outlined button
@@ -496,14 +500,13 @@ Hanger View tab:
 ## Saved Outfits Screen
 
 - Accessed from header "❤️ Saved (X)" button
-- "MY COLLECTION" label
 - "Saved Outfits" heading
-- "X saved looks ✦"
+- "X saved looks"
 - "Tap an outfit to see the mood board"
 - Each saved outfit shows photo strip + vibe + name + item chips + Remove button
 - Tap any outfit to open Mood Board modal
 - When Remove tapped — confirmation required: 'Remove [outfit name] from your collection? This cannot be undone.' [Gold] Remove [Outlined] Cancel
-- Empty state: [Large gold ♡] 'Your saved looks will live here ✦' 'Generate outfits and save the ones you love.' [Gold pill button] Generate My First Looks →
+- Empty state: [Large gold ♡] 'Your saved looks will live here' 'Generate outfits and save the ones you love.' [Gold pill button] Generate My First Looks →
 
 ## Clear Out Screen (PRO)
 
@@ -579,7 +582,7 @@ CHANGE PASSWORD panel:
 - 'Update Password' gold button + 'Cancel' dark button side by side
 
 ABOUT card:
-- 'Clozie' — 'Version 1.0 — Your personal AI stylist' + v1.0 on right
+- 'Clozie' — 'Version 1.0 — Your personal stylist' + v1.0 on right
 - 'Delete Account' — outlined red button
 - When tapped — warning screen listing everything permanently deleted. Input field: 'Type DELETE to confirm'. TWO confirmation steps minimum — never one tap.
 - "Sign Out" — red outlined button at very bottom of page
@@ -602,11 +605,11 @@ FREE CARD (shown first — always visible):
 - ✓ style profile
 - ✓ 📸 Clozie photo recognition
 - ✓ Share outfits with friends
-- ✓ Complete The Look (one boutique suggestion per outfit)
+- ✓ Clozie's Pick — one boutique suggestion per outfit — HIDDEN for Apple review
 - ✓ Store suggestions in Mood Board
-- ✓ Wardrobe Intelligence — Analyse My Wardrobe
-- ✓ Style Match Score + Outfit Potential on every outfit
-- ✓ What Goes With This — tap any item to see pairings
+- ✓ Wardrobe Intelligence — Analyse My Wardrobe — HIDDEN for Apple review
+- ✓ Style Match Score + Outfit Potential on every outfit — HIDDEN for Apple review
+- ✓ What Goes With This — tap any item to see pairings — HIDDEN for Apple review
 - "✓ Your Current Plan" grey outlined button (disabled — not tappable)
 
 PRO CARD — Coming Soon:
@@ -909,7 +912,7 @@ Smart filtering rules — ALL must be respected every single time:
 WARNING: THIS IS CRITICAL — CLOZIE MUST RESPECT THIS ALWAYS
 
 - User can optionally pick ONE item from their wardrobe they want to wear today
-- Lives in Today's Vibe screen — between THE OCCASION and ANYTHING ELSE sections
+- Lives in Today's Vibe screen — between THE OCCASION and the Brief field
 - When a user pins an item: EVERY SINGLE OUTFIT generated must include that item — no exceptions
 - Example: user pins yellow blouse → all 3 outfits must contain the yellow blouse
 - Clozie is not allowed to skip the pinned item or replace it
@@ -917,26 +920,26 @@ WARNING: THIS IS CRITICAL — CLOZIE MUST RESPECT THIS ALWAYS
 - User can un-pin by tapping the item again
 - Not pinning an item is fine — generation works normally without it
 
-## Complete The Look
+## Clozie's Pick (formerly Complete The Look)
 
-- Lives on every outfit card in Your Looks tab — gold outline button '✦ Complete The Look'
+- Lives on every outfit card in Your Looks tab — gold outline button 'Clozie's Pick' — HIDDEN for Apple review
 - When tapped: Clozie identifies ONE piece that would complete the outfit
 - Goes STRAIGHT to ONE boutique suggestion — no wardrobe check
 - Shows: photo, item name, price, store name, 'Shop Now →' gold button
 - Tapping 'Shop Now →' opens the boutique website in the browser
 - One suggestion only — never a list
 - Boutique stores only — never large retailers like ASOS or Zara
-- If no boutique connection set up yet — shows 'Boutique partners coming soon ✦'
+- If no boutique connection set up yet — shows 'Boutique partners coming soon' — HIDDEN for Apple review
 
 HOW BOUTIQUE CONNECTION WORKS:
-- Phase 1: Shows 'Boutique partners coming soon ✦' — no connection needed yet
+- Phase 1: Shows 'Boutique partners coming soon' — no connection needed yet — HIDDEN for Apple review
 - Phase 2: Connect Avara affiliate API — Clozie identifies the missing piece, searches Avara catalogue automatically, returns photo, price, store name, buy link
 - Grace applies for Avara affiliate account at avara.com while app is being built — this happens in parallel, not blocking
 - FREE feature — available to all users — earns commission on every purchase
 
 ## Wardrobe Intelligence — Analyse My Wardrobe
 
-- Lives in My Closet tab — '✦ Analyse My Wardrobe' button
+- Lives in My Closet tab — 'Analyse My Wardrobe' button — HIDDEN for Apple review. Wire to Haiku with caching in Phase 2.
 - FREE feature — available to all users
 - When tapped: Clozie scans entire wardrobe and identifies gaps and imbalances
 - Shows maximum 3 observations — warm encouraging tone — never makes user feel bad
@@ -944,7 +947,7 @@ HOW BOUTIQUE CONNECTION WORKS:
 
 ## What Goes With This
 
-- Lives on every item card in My Closet tab — 'What goes with this? ✦' small gold link
+- Lives on every item card in My Closet tab — 'What goes with this?' small gold link — HIDDEN for Apple review. Build TouchableOpacity + overlay in Phase 2.
 - FREE feature — available to all users
 - When tapped: Clozie scans entire wardrobe and shows all items that pair well with this piece
 - Results shown as warm grid of item thumbnails
@@ -953,8 +956,8 @@ HOW BOUTIQUE CONNECTION WORKS:
 ## Style Match Score + Outfit Potential
 
 - Both shown on every outfit card in Your Looks tab
-- Style Match Score: '✦ 94% match with your style profile' — how well outfit matches user's taste
-- Outfit Potential: 'These 3 pieces create 12 outfits together' — shows versatility of pieces
+- Style Match Score: '94% match with your style profile' — how well outfit matches user's taste — HIDDEN for Apple review, unhide when real calculation exists
+- Outfit Potential: 'These N pieces create N×4 outfits together' — shows versatility of pieces — HIDDEN for Apple review, unhide when real logic exists
 - Both are FREE — available to all users
 
 ## Seasonal Wardrobe Report
@@ -1356,11 +1359,35 @@ WARNING: DECISION PENDING — Grace is still deciding whether to keep the manneq
 
 ## 2026-05-03 — Removed from Language Rule exceptions list
 
-- "Version 1.0 — Your personal AI stylist (About)" — removed from the list of allowed AI references. Reason: tightening the language rule. Note: the same phrase still exists in the Settings ABOUT card spec and was intentionally left untouched per Grace's instruction.
+- "Version 1.0 — Your personal AI stylist (About)" — removed from the list of allowed AI references. Reason: tightening the language rule. Originally left untouched in the Settings ABOUT card spec; later updated in the Section 2 cleanup on 2026-05-03 — "AI" removed from the live spec line. Final wording: "Version 1.0 — Your personal stylist".
 
 ## 2026-05-03 — Removed from "Decisions Grace still needs to make"
 
 - Mannequin vs Flat Lay: Mannequin was replaced by Hanger View (locked April 19, 2026). Decision is closed and no longer pending — moved out of the open-decisions list to keep that list accurate.
+
+## 2026-05-03 — Old Pro nudge wording archived
+
+Archived 2026-05-03 — old Pro nudge wording, replaced with simple versions for Apple first submission.
+
+FREE PLAN LIMITS section (replaced):
+- At 28 items: "2 spots left in your free wardrobe ✦ Upgrade to Pro for unlimited"
+- At session 11 of 12: "1 session left this week — Pro members never run out ✦"
+- When all 12 sessions used: "You've used all 12 sessions this week ✦ Sessions refresh as the week rolls forward. In the meantime — explore What Goes With This in your wardrobe, or upgrade to Pro for unlimited looks."
+
+My Closet section (replaced):
+- Nudge at 25+: "5 spots left · Upgrade for unlimited ✦"
+
+## 2026-05-03 — ANYTHING ELSE card removed from Today's Vibe
+
+Archived 2026-05-03 — the standalone "ANYTHING ELSE?" extra-notes card was merged into the Brief field. Decision: 12-0 council vote on April 30. Removed line from Today's Vibe Tab spec:
+
+- Card: ANYTHING ELSE? — text input for extra notes
+
+## 2026-05-03 — MY COLLECTION eyebrow label removed from Saved Outfits
+
+Archived 2026-05-03 — the "MY COLLECTION" eyebrow label above the Saved Outfits heading was removed from the code on April 23, 2026. Aligns with the broader eyebrow-label cleanup ("Screen heading layout: no eyebrow labels above headings"). Spec line removed:
+
+- "MY COLLECTION" label
 
 ---
 
