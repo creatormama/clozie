@@ -91,8 +91,8 @@ Never rush Grace — always reassure warmly.
 
 # VIP EMAILS — NEVER REMOVE. EVER. NON-NEGOTIABLE.
 
-These 4 emails always get free Pro access.
-Must be hardcoded into the native app exactly as in the web app.
+These 4 emails get ZERO restrictions. No caps. No limits. No walls. Every feature unlocked. Forever. Store in Supabase table in Phase 2 (NOT hardcoded in client code). Get written consent from all 4 before granting access.
+VIP emails should never be hardcoded in client code. They go in a Supabase VIP table, checked on every login.
 They get Pro the moment they log in. Never delete. Never change. Never question.
 
 - insuredbyjacek@msn.com (Grace herself)
@@ -120,7 +120,6 @@ DO NOT change these — they stay as AI:
 - Claude API reads the image (code section)
 - AI COMPONENT section heading (for Claude Code)
 - AI Editorial Photos (Elite feature name)
-- Version 1.0 — Your personal AI stylist (About)
 - if AI call fails (technical fallback in code)
 
 ---
@@ -191,11 +190,13 @@ Colors:
 - Logo Clo: #2C1A0E
 - Logo zie (welcome): #DC8F68
 - Logo zie (inner): #C87A52
-- Tab bar active: #C87A52 with dot
+- Tab bar active: #A44A34 with dot
 - Tab bar inactive: #2C1A0E at 28%
-- Eyebrow labels: #C87A52, 700 weight, 10px, letter-spacing 2.5px, uppercase
-- App icon background: #D4CFA8
+- Eyebrow labels: #A44A34, 700 weight, 11px, letter-spacing 2.5px, uppercase
+- App icon background: #E8E4CE app sage
 - Back button: #2C1A0E espresso
+
+UI terracotta (eyebrows, vibe tags, active tab): #A44A34 — replaces #C87A52 for text. Logo "zie" stays #C87A52.
 
 Fonts: DM Serif Display (logo, titles, outfit names, tagline — 'zie' always italic) + Outfit (all UI, buttons, chips, labels, body text). Both from Google Fonts.
 
@@ -216,7 +217,6 @@ These are confirmed open decisions. Do NOT make any of them without Grace explic
 - Color scheme: Keep current black/gold OR switch to Option B (Deep Teal + Warm Coral) OR Option A/C/D — PENDING — current black/gold stays until Grace decides
 - Welcome screen redesign: Current design (2 emojis) OR new design with phone mockup (teal/coral) — PENDING — Grace will upload design image when ready
 - Phone mockup on welcome screen: Include 160px phone mockup with 2x2 emoji grid — PENDING — only when color decision is made
-- Mannequin vs Flat Lay: Mannequin replaced by Hanger View (locked April 19, 2026). Decision closed.
 - Large retailers for Shop For Me: Boutiques only OR add large stores like Zara/H&M later — PENDING — boutiques first, Grace decides later
 
 ---
@@ -1349,6 +1349,18 @@ WARNING: DECISION PENDING — Grace is still deciding whether to keep the manneq
 - Background color selector: Cream, White, Grey, Dark, Sage
 - Items list shown below mannequin with gold dots
 - Rebuild mannequin carefully using react-native-svg — decision pending on whether to keep or replace with flat lay
+
+---
+
+# ARCHIVED DECISIONS
+
+## 2026-05-03 — Removed from Language Rule exceptions list
+
+- "Version 1.0 — Your personal AI stylist (About)" — removed from the list of allowed AI references. Reason: tightening the language rule. Note: the same phrase still exists in the Settings ABOUT card spec and was intentionally left untouched per Grace's instruction.
+
+## 2026-05-03 — Removed from "Decisions Grace still needs to make"
+
+- Mannequin vs Flat Lay: Mannequin was replaced by Hanger View (locked April 19, 2026). Decision is closed and no longer pending — moved out of the open-decisions list to keep that list accurate.
 
 ---
 
