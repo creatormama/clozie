@@ -7,7 +7,7 @@ HOW TO USE: Drop this file into the root of your clozie-native project folder. C
 
 READ THIS ENTIRE FILE before doing anything. No exceptions.
 
-Last updated: March 27 2026 — Converted to plain text so Claude Code can read it correctly.
+Last updated: May 3 2026 — includes all decisions from April 28, 30, May 1, May 2 sessions. Sections 1-3 cleanup applied.
 Original: March 24 2026 — REBUILD RULE and testing branch rule added.
 
 ---
@@ -268,6 +268,7 @@ Welcome screen has been redesigned. Full bleed portrait photo, top and bottom gr
 - No 3 bottom icons — removed completely
 - Welcome screen ONLY gets subtle radial gold glow in center
 - All other screens — plain solid dark background, NO glow, NO pattern
+- ⚠️ Safe area debt: logoBlock top:80 and bottomBlock bottom:60 use fixed values — fix with useSafeAreaInsets when changing Welcome screen photo.
 
 Flow: Welcome → taps Next → Peek Inside → taps Start Styling → Sign Up
 Login link → Login screen directly.
@@ -298,6 +299,7 @@ Espresso #2C1A0E ← arrow. Top left, 44px tap target, every non-tab screen.
 - Italic tagline: "Everyone says I have nothing to wear. Clozie solves that in 30 seconds."
 - Gold pill button: "Next →"
 - "Already have an account? Sign in"
+- ⚠️ Safe area debt: logoBlock top:80 and bottomBlock bottom:60 use fixed values — fix with useSafeAreaInsets when changing Welcome screen photo.
 
 ## Peek Inside Screen (How It Works)
 
@@ -306,7 +308,7 @@ TABS ARE TAPPABLE — user taps Step 1 / Step 2 / Step 3 to switch content
 - Each tap shows different content card below — this is the main interaction
 - Active tab: gold border, slightly lighter background
 - Step 1: 📸 'Snap & Add Your Clothes' — shows clothing card with CLOZIE RECOGNISED ✦ label — never AI RECOGNISED
-- Step 2: 🌤 'Tell Clozie Your Day' — shows weather chips + occasion chips
+- Step 2: 🌤 'Tell Clozie Your Day' — Pick the weather and your plans. Heading to work? Going out? Weekend errands? Clozie styles you for the moment.
 - Step 3: ✨ 'Get 3 Perfect Outfits' — shows outfit card with Mood Board / Hanger View tabs
 - Bouncing gold dot on Step 1 tab before user taps anything — disappears after first tap
 - Gold pulsing pill: '👆 Tap each step to explore' — MORE VISIBLE than before. Pulses softly 3 times then stays still. Disappears after first tap.
@@ -898,10 +900,11 @@ Smart filtering rules — ALL must be respected every single time:
 - Cold/Rainy rule — outerwear is added when weather is cold or rainy
 - Warmth tags apply to ALL categories — Tops, Bottoms, Dresses, AND Outerwear. Each item may have a warmth tag: None, Light, Medium, or Heavy. Cold prefers Heavy/Medium. Hot prefers Light/None. Cool and Warm mix freely.
 - Outerwear splits into two categories: (a) THERMAL — warmth response to weather (heavy coats, puffers, parkas). Add only when Cold or Cool. Match warmth tag to temperature. (b) OCCASION LAYERING — aesthetic signaling (blazers, structured jackets, leather jackets). Responds to Occasion, not weather. Gated only by warmth tag compatibility.
+- Light outerwear (shows on all visual surfaces): Cardigan, Blazer, Vest, Down vest, Sweater, Denim jacket, Light jacket, Shacket, Cropped jacket, Bolero.
+- Heavy outerwear (dropped from visual surfaces unless pinned): Leather jacket, Bomber jacket, Trench coat, Parka, Rain jacket, Fur coat/faux fur, Windbreaker, Poncho/cape, Quilted jacket, Puffer/down coat, Winter coat/overcoat, Shearling coat, Ski jacket, Peacoat, Fleece jacket.
+- Hoodie removed from outerwear — usually categorized as Tops.
 - Indoor climate signals: if Brief mentions cold indoor conditions ('office is freezing', 'AC is cold'), add a light warmth layer even if outside is warm.
-- Before generating: Clozie reads the user's style profile
-- Before generating: Clozie reads all past ratings and learning notes
-- Before generating: Clozie reads the 'Anything Else?' free text
+- Before generating: Clozie reads the user's style profile, all past ratings and learning notes, and the Brief field
 - Clozie avoids repeating outfit combinations the user has rated poorly
 - Always returns 3 distinct and different outfit options
 - Fallback: if AI call fails, rule-based fallback generates outfits without AI naming
@@ -1394,6 +1397,7 @@ Archived 2026-05-03 — the "MY COLLECTION" eyebrow label above the Saved Outfit
 Created March 2026.
 Updated March 24 2026 — REBUILD RULE and testing branch rule added.
 Updated March 27 2026 — Converted to plain text so Claude Code can read it correctly.
+Updated May 3 2026 — includes all decisions from April 28, 30, May 1, May 2 sessions. Sections 1-3 cleanup applied.
 
 Drop this file into the root of the clozie-native project folder.
 Drop App_ORIGINAL.jsx in the same folder as reference.
