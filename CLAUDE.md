@@ -7,7 +7,7 @@ HOW TO USE: Drop this file into the root of your clozie-native project folder. C
 
 READ THIS ENTIRE FILE before doing anything. No exceptions.
 
-Last updated: May 3 2026 — includes all decisions from April 28, 30, May 1, May 2 sessions. Sections 1-3 cleanup applied.
+Last updated: May 4 2026 — Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account). May 3 2026: Sections 1-3 cleanup + Supabase auth Session 1.
 Original: March 24 2026 — REBUILD RULE and testing branch rule added.
 
 ---
@@ -1081,6 +1081,11 @@ One screen at a time. In this exact order. Grace approves each screen before the
 
 - Supabase auth used properly — no localStorage ever ✅ DONE 2026-05-03 (Session 1 — Sign Up + Sign In)
 - Pull user name from Supabase on every login ✅ DONE 2026-05-03 (Session 1 — Settings reads full_name from session)
+- Settings Sign Out wired to Supabase ✅ DONE 2026-05-04 (Session 2)
+- Settings Forgot Password wired to Supabase ✅ DONE 2026-05-04 (Session 2 — note: needs Resend SMTP for emails to actually deliver)
+- Settings Update Password wired to Supabase ✅ DONE 2026-05-04 (Session 2 — verifies current password, validates 8+ chars + new != current + match)
+- Settings Delete Account wired via delete-user Edge Function ✅ DONE 2026-05-04 (Session 2 — Apple Guideline 5.1.1v compliant)
+- Custom SMTP (Resend) for password reset email delivery — deferred to its own session
 - Clozie smarter learning — smarter note-saving + pattern detection after 5+ ratings
 - Native sharing — outfit cards + Clozie watermark — works on iPhone + Android
 - Save to camera roll — Expo MediaLibrary
@@ -1423,12 +1428,41 @@ What was deliberately NOT touched this session:
 
 Commit: 3a1f537 on testing branch. Pushed to origin/testing only — main not touched.
 
+## 2026-05-04 — Supabase auth wired (Session 2)
+
+Second authentication session. Wired the 5 remaining Settings actions to real Supabase calls. Built on testing branch only — main untouched.
+
+What was wired:
+- Sign Out — calls supabase.auth.signOut. On success, navigates to Welcome (clears AsyncStorage session — confirmed by killing app and reopening). On failure, terracotta inline error above the button: "Couldn't sign out — please try again".
+- Forgot Password — calls supabase.auth.resetPasswordForEmail with the typed email. On success, shows existing "Check your email — We've sent a reset link to [email]" confirmation. On failure, terracotta error: "Couldn't send reset link — please try again". Existing email validation untouched.
+- Update Password (Settings → Change Password panel) — chose Option B (verify current password). Order: validate non-empty current → validate new ≥ 8 chars → validate new != current → validate new == confirm → verify current via supabase.auth.signInWithPassword → call supabase.auth.updateUser({ password }). On success: terracotta "Password updated ✦" inside panel for 1.5s, then panel closes. Real password change confirmed by signing out and signing in with new password.
+- Clear Clozie's Memory — Option B (deferred). Comment-only stub. Modal still opens and "Yes, reset" closes it. Comment notes Phase 2 work: delete user's rows from ratings + learning_notes tables, clear pattern-detected style fields. Tables don't exist yet (outfit ratings not built).
+- Delete Account — true Apple-compliant deletion (Guideline 5.1.1v). App calls supabase.functions.invoke('delete-user'), then signs out locally on success. Edge Function 'delete-user' verifies the user's session token, then uses service role key to call supabase.auth.admin.deleteUser. After deletion: app navigates to Welcome; sign-in attempt with deleted email correctly fails. Verified with throwaway test accounts.
+
+Edge Function 'delete-user' — deployed via Supabase dashboard browser editor. Service role key + anon key auto-provided as env vars (no manual setup). Code backed up in repo at supabase/functions/delete-user/README.md (Markdown only — not auto-deployed; paste into Supabase to update).
+
+Edge Function bug fixed mid-session: original code used userClient.auth.getUser() with no arguments, which returned null on the server. Fixed by passing the token explicitly: userClient.auth.getUser(token). Diagnostic console.log statements added at every step for future troubleshooting.
+
+Supabase dashboard changes Grace made:
+- Project Settings → Authentication → Site URL: changed from http://localhost:3000 (leftover from web app) to https://clozie.net.
+- Edge Functions → deployed delete-user function (one-time, in browser editor).
+
+What was deliberately NOT done this session:
+- Custom SMTP setup (Resend) — deferred to its own session. Password reset emails won't deliver until done. Supabase's built-in email service is rate-limited and not for production. App code is correct; only delivery is missing.
+- Apple Sign-In wiring — separate session, requires expo-apple-authentication.
+- Google Sign-In — still hidden behind false flag.
+- VIP table — not implemented yet.
+- Deep linking for the password reset email link back into the app — Phase 2.
+
+Commit: 84447ff (App.js + Edge Function backup) on testing branch. Pushed to origin/testing only — main not touched.
+
 ---
 
 Created March 2026.
 Updated March 24 2026 — REBUILD RULE and testing branch rule added.
 Updated March 27 2026 — Converted to plain text so Claude Code can read it correctly.
 Updated May 3 2026 — includes all decisions from April 28, 30, May 1, May 2 sessions. Sections 1-3 cleanup applied. Supabase auth Session 1 wired (Sign Up, Sign In, Settings).
+Updated May 4 2026 — Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account via Edge Function). Site URL fixed.
 
 Drop this file into the root of the clozie-native project folder.
 Drop App_ORIGINAL.jsx in the same folder as reference.
