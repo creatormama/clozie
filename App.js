@@ -470,13 +470,25 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
       return;
     }
 
-    // ── Forgot Password validation ──
+    // ── Forgot Password ──
     if (isForgot) {
       if (!email.trim() || !email.includes('@') || !email.includes('.')) {
         setError("That email doesn't look right — please check it");
         return;
       }
-      setResetSent(true);
+      setLoading(true);
+      try {
+        const { error: supaErr } = await supabase.auth.resetPasswordForEmail(email.trim());
+        if (supaErr) {
+          setError("Couldn't send reset link — please try again");
+          return;
+        }
+        setResetSent(true);
+      } catch (e) {
+        setError("Couldn't send reset link — please try again");
+      } finally {
+        setLoading(false);
+      }
       return;
     }
   };
@@ -3795,6 +3807,9 @@ function SettingsScreen({ onClose, onSignOut }) {
   const [showCurrentPw, setShowCurrentPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
 
   const openChangePassword = () => {
     setCurrentPassword('');
@@ -3803,16 +3818,71 @@ function SettingsScreen({ onClose, onSignOut }) {
     setShowCurrentPw(false);
     setShowNewPw(false);
     setShowConfirmPw(false);
+    setPasswordError('');
+    setPasswordSuccess('');
+    setSavingPassword(false);
     setShowChangePassword(true);
   };
 
   const cancelChangePassword = () => {
+    setPasswordError('');
+    setPasswordSuccess('');
     setShowChangePassword(false);
   };
 
-  const handleUpdatePassword = () => {
-    // Supabase password update comes in Phase 2
-    setShowChangePassword(false);
+  const handleUpdatePassword = async () => {
+    if (savingPassword) return;
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    // Validation — in order
+    if (!currentPassword) {
+      setPasswordError('Please enter your current password');
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPasswordError('Password needs at least 8 characters');
+      return;
+    }
+    if (newPassword === currentPassword) {
+      setPasswordError('New password must be different from current password');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Passwords don't match — please try again");
+      return;
+    }
+
+    setSavingPassword(true);
+
+    // Verify current password is correct
+    const { error: verifyErr } = await supabase.auth.signInWithPassword({
+      email: userEmail,
+      password: currentPassword,
+    });
+    if (verifyErr) {
+      setSavingPassword(false);
+      setPasswordError('Current password is incorrect');
+      return;
+    }
+
+    // Update password
+    const { error: updateErr } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    setSavingPassword(false);
+
+    if (updateErr) {
+      setPasswordError("Couldn't update password — please try again");
+      return;
+    }
+
+    // Success — show terracotta confirmation, then close panel after 1.5s
+    setPasswordSuccess('Password updated ✦');
+    setTimeout(() => {
+      setPasswordSuccess('');
+      setShowChangePassword(false);
+    }, 1500);
   };
 
   const [showClearMemoryModal, setShowClearMemoryModal] = useState(false);
@@ -3822,7 +3892,12 @@ function SettingsScreen({ onClose, onSignOut }) {
   };
 
   const confirmClearMemory = () => {
-    // Supabase clearing comes in Phase 2
+    // Phase 2 — wire when ratings + learning notes tables exist in Supabase.
+    // Today: no real ratings/learning data is saved yet, so there is nothing to clear.
+    // When Clozie Learning is built, this function should:
+    //   1. Delete user's rows from the ratings table
+    //   2. Delete user's rows from the learning_notes table
+    //   3. Clear any pattern-detected style fields from user_metadata
     setShowClearMemoryModal(false);
   };
 
@@ -3830,19 +3905,42 @@ function SettingsScreen({ onClose, onSignOut }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteStep, setDeleteStep] = useState(1);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const openDeleteAccount = () => {
     setDeleteStep(1);
     setDeleteConfirmText('');
+    setDeleteError('');
+    setDeletingAccount(false);
     setShowDeleteModal(true);
   };
 
-  const handleDeleteAccount = () => {
-    // Supabase account deletion comes in Phase 2
+  const handleDeleteAccount = async () => {
+    if (deletingAccount) return;
+    setDeleteError('');
+    setDeletingAccount(true);
+
+    // Call Edge Function to delete the user from Supabase
+    const { error: invokeErr } = await supabase.functions.invoke('delete-user');
+
+    if (invokeErr) {
+      setDeletingAccount(false);
+      setDeleteError("Couldn't delete account — please try again or contact hello@clozie.net.");
+      return;
+    }
+
+    // Sign out locally to clear the now-invalid session
+    await supabase.auth.signOut();
+
     setShowDeleteModal(false);
+    setDeletingAccount(false);
     onClose();
     if (onSignOut) onSignOut();
   };
+
+  // Sign Out error state
+  const [signOutError, setSignOutError] = useState('');
 
   return (
     <View style={settingsStyles.container}>
@@ -4084,6 +4182,14 @@ function SettingsScreen({ onClose, onSignOut }) {
                 </TouchableOpacity>
               </View>
 
+              {/* Error + success messages */}
+              {passwordError !== '' && (
+                <Text style={settingsStyles.passwordErrorText}>{passwordError}</Text>
+              )}
+              {passwordSuccess !== '' && (
+                <Text style={settingsStyles.passwordSuccessText}>{passwordSuccess}</Text>
+              )}
+
               {/* Buttons */}
               <View style={settingsStyles.editButtonRow}>
                 <TouchableOpacity
@@ -4150,12 +4256,23 @@ function SettingsScreen({ onClose, onSignOut }) {
           </TouchableOpacity>
         </View>
 
+        {/* Sign Out error — terracotta inline message */}
+        {signOutError ? (
+          <Text style={settingsStyles.signOutError}>{signOutError}</Text>
+        ) : null}
+
         {/* Sign Out button */}
         <TouchableOpacity
           style={settingsStyles.signOutButton}
           activeOpacity={0.7}
           hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-          onPress={() => {
+          onPress={async () => {
+            setSignOutError('');
+            const { error: supaErr } = await supabase.auth.signOut();
+            if (supaErr) {
+              setSignOutError("Couldn't sign out — please try again");
+              return;
+            }
             onClose();
             if (onSignOut) onSignOut();
           }}
@@ -4265,18 +4382,22 @@ function SettingsScreen({ onClose, onSignOut }) {
                   autoCorrect={false}
                 />
 
+                {deleteError !== '' && (
+                  <Text style={settingsStyles.deleteErrorText}>{deleteError}</Text>
+                )}
+
                 <TouchableOpacity
                   style={[
                     settingsStyles.deleteRedButton,
-                    deleteConfirmText !== 'DELETE' && settingsStyles.deleteRedButtonDisabled,
+                    (deleteConfirmText !== 'DELETE' || deletingAccount) && settingsStyles.deleteRedButtonDisabled,
                   ]}
                   activeOpacity={0.8}
-                  disabled={deleteConfirmText !== 'DELETE'}
+                  disabled={deleteConfirmText !== 'DELETE' || deletingAccount}
                   onPress={handleDeleteAccount}
                 >
                   <Text style={[
                     settingsStyles.deleteRedButtonText,
-                    deleteConfirmText !== 'DELETE' && { opacity: 0.4 },
+                    (deleteConfirmText !== 'DELETE' || deletingAccount) && { opacity: 0.4 },
                   ]}>Delete My Account</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -4468,6 +4589,20 @@ const settingsStyles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'left',
   },
+  passwordErrorText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: 'rgba(200,122,82,0.88)',
+    marginBottom: 10,
+    textAlign: 'left',
+  },
+  passwordSuccessText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 13,
+    color: 'rgba(200,122,82,0.88)',
+    marginBottom: 10,
+    textAlign: 'left',
+  },
   editButtonRow: {
     flexDirection: 'row',
     gap: 10,
@@ -4621,6 +4756,14 @@ const settingsStyles = StyleSheet.create({
   deleteRedButtonDisabled: {
     opacity: 0.4,
   },
+  deleteErrorText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: 'rgba(200,122,82,0.88)',
+    marginBottom: 12,
+    textAlign: 'center',
+    paddingHorizontal: 8,
+  },
   deleteRedButtonText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 13,
@@ -4652,6 +4795,14 @@ const settingsStyles = StyleSheet.create({
     fontFamily: 'Outfit_500Medium',
     fontSize: 14,
     color: '#A44A34',
+  },
+  signOutError: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: 'rgba(200,122,82,0.88)',
+    textAlign: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 24,
   },
 });
 
