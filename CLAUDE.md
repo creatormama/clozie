@@ -82,7 +82,7 @@ Never rush Grace — always reassure warmly.
 
 ## Native App — Set in Expo / app.config.js
 - EXPO_PUBLIC_SUPABASE_URL
-- EXPO_PUBLIC_SUPABASE_ANON
+- EXPO_PUBLIC_SUPABASE_ANON_KEY
 - EXPO_PUBLIC_ANTHROPIC_KEY
   - NOTE: REMOVE before launch. API key moves to Supabase Edge Function in Phase 2. Never in client code.
 - EXPO_PUBLIC_PHOTOROOM_KEY (only when PhotoRoom is ready — not yet)
@@ -328,7 +328,7 @@ Sign Up screen:
 - Full name field · Email field · Password field with show/hide eye icon
 - "At least 8 characters" — tiny cream text below password
 - Password requirement: 8 characters minimum ONLY — no other rules
-- Age checkbox: "I confirm I am 13 or older." Unchecked = cannot create account.
+- Age checkbox: "I am at least 13 years old" Unchecked = cannot create account.
 - Gold pill button: "Create Account →"
 - "Already have an account? Sign in"
 - Error messages — warm gold text directly below relevant field:
@@ -700,9 +700,11 @@ These are built fresh — exactly why we switched:
 
 Login data bug — wrong user's data loaded on shared devices
 Fix in native: Use Supabase auth session properly from day one. No localStorage at all. Every piece of data is keyed to the user's Supabase session, not to the device.
+✅ FIXED 2026-05-03 (v2026-05-03-supabase-auth-session1) — real Supabase auth wired for Sign Up + Sign In. Sessions persist via AsyncStorage (Supabase's native RN pattern, not browser localStorage). Settings reads logged-in user from session — no hardcoded values.
 
 Name does not survive logout — reverts to email on next login
 Fix in native: Always pull user's name from Supabase profile table on every login. Never rely on cached local data for the user's name.
+✅ FIXED 2026-05-03 (v2026-05-03-supabase-auth-session1) — Settings reads full_name from user_metadata on every open. Edit Profile → Save persists to Supabase via auth.updateUser, so the name now survives sign-out.
 
 ---
 
@@ -1077,8 +1079,8 @@ One screen at a time. In this exact order. Grace approves each screen before the
 
 ## PHASE 2 — Make It Solid — Free Plan Complete
 
-- Supabase auth used properly — no localStorage ever
-- Pull user name from Supabase on every login
+- Supabase auth used properly — no localStorage ever ✅ DONE 2026-05-03 (Session 1 — Sign Up + Sign In)
+- Pull user name from Supabase on every login ✅ DONE 2026-05-03 (Session 1 — Settings reads full_name from session)
 - Clozie smarter learning — smarter note-saving + pattern detection after 5+ ratings
 - Native sharing — outfit cards + Clozie watermark — works on iPhone + Android
 - Save to camera roll — Expo MediaLibrary
@@ -1392,12 +1394,41 @@ Archived 2026-05-03 — the "MY COLLECTION" eyebrow label above the Saved Outfit
 
 - "MY COLLECTION" label
 
+## 2026-05-03 — Supabase auth wired (Session 1)
+
+First real authentication session. Replaced fake auth flow with real Supabase calls. Built on testing branch only — main untouched.
+
+What was wired:
+- Sign Up screen — calls supabase.auth.signUp with email + password. Saves full_name as user_metadata. Maps "User already registered" to warm terracotta: "An account with this email already exists — try signing in instead". Generic fallback: "Something went wrong — please try again".
+- Sign In screen — calls supabase.auth.signInWithPassword. Wrong email or wrong password → "Email or password doesn't match — please try again" (same message for both, matches Supabase's deliberate generic error for security).
+- Settings screen — reads logged-in user via supabase.auth.getUser on mount. Pulls email and full_name from session. If no name, shows just email.
+- Edit Profile → Save Changes — calls supabase.auth.updateUser to persist full_name. Name now survives sign-out (closes the long-standing bug).
+- Age 13+ checkbox added to Sign Up form (was missing). Wording: "I am at least 13 years old". Unchecked blocks Create Account with warm terracotta error: "Please confirm you are 13 or older".
+
+What was added:
+- @supabase/supabase-js, @react-native-async-storage/async-storage, react-native-url-polyfill installed via npx expo install.
+- New file src/lib/supabase.js — single Supabase client used everywhere. Reads keys from process.env.EXPO_PUBLIC_SUPABASE_URL + process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY.
+
+Supabase dashboard change Grace made:
+- Authentication → Providers → Email → "Confirm email" turned OFF. New users now sign up + are logged in immediately, no email-link friction. (Option A from the session plan.)
+
+What was deliberately NOT touched this session:
+- Forgot Password screen — Session 2.
+- Apple Sign-In button — separate session, requires expo-apple-authentication.
+- Google Sign-In button — still hidden behind false flag, separate session.
+- Change Password panel in Settings — still placeholder, future session.
+- Delete Account — still placeholder, future session.
+- Clear Clozie's Memory — still placeholder, future session.
+- VIP email logic — still not implemented (no Supabase VIP table yet).
+
+Commit: 3a1f537 on testing branch. Pushed to origin/testing only — main not touched.
+
 ---
 
 Created March 2026.
 Updated March 24 2026 — REBUILD RULE and testing branch rule added.
 Updated March 27 2026 — Converted to plain text so Claude Code can read it correctly.
-Updated May 3 2026 — includes all decisions from April 28, 30, May 1, May 2 sessions. Sections 1-3 cleanup applied.
+Updated May 3 2026 — includes all decisions from April 28, 30, May 1, May 2 sessions. Sections 1-3 cleanup applied. Supabase auth Session 1 wired (Sign Up, Sign In, Settings).
 
 Drop this file into the root of the clozie-native project folder.
 Drop App_ORIGINAL.jsx in the same folder as reference.
