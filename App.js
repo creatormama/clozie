@@ -24,6 +24,7 @@ import { Outfit_400Regular, Outfit_500Medium, Outfit_700Bold } from '@expo-googl
 import * as NativeSplash from 'expo-splash-screen';
 import Svg, { Path, Circle, Line } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
+import { supabase } from './src/lib/supabase';
 
 // ── Design tokens — sacred, never change ─────────────────────────────────────
 const G = '#C9A96E';       // gold accent
@@ -354,6 +355,9 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [resetSent, setResetSent] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [ageError, setAgeError] = useState('');
+  const [loading, setLoading] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const isLogin = mode === 'login';
@@ -372,8 +376,15 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
     if (error) setError('');
   }, [name, email, password]);
 
-  const handleSubmit = () => {
+  // Clear age error when user ticks the checkbox
+  useEffect(() => {
+    if (ageError && ageConfirmed) setAgeError('');
+  }, [ageConfirmed]);
+
+  const handleSubmit = async () => {
+    if (loading) return;
     setError('');
+    setAgeError('');
 
     // ── Sign Up validation ──
     if (!isLogin && !isForgot) {
@@ -389,8 +400,43 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
         setError('Password needs at least 8 characters');
         return;
       }
-      // Pass data up — Supabase integration comes in Phase 2
-      onDone({ name: name.trim(), email: email.trim(), password, mode: 'signup' });
+      if (!ageConfirmed) {
+        setAgeError('Please confirm you are 13 or older');
+        return;
+      }
+
+      // Real Supabase sign up
+      setLoading(true);
+      try {
+        const { data, error: supaErr } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: { data: { full_name: name.trim() } },
+        });
+
+        if (supaErr) {
+          const msg = (supaErr.message || '').toLowerCase();
+          const code = supaErr.code || '';
+          if (
+            code === 'user_already_exists' ||
+            msg.includes('already registered') ||
+            msg.includes('already been registered') ||
+            msg.includes('user already')
+          ) {
+            setError('An account with this email already exists — try signing in instead');
+          } else {
+            setError('Something went wrong — please try again');
+          }
+          return;
+        }
+
+        // Success — navigate to Post-Login Welcome
+        onDone({ name: name.trim(), email: email.trim(), mode: 'signup' });
+      } catch (e) {
+        setError('Something went wrong — please try again');
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -400,7 +446,27 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
         setError('Please enter your email and password');
         return;
       }
-      onDone({ email: email.trim(), password, mode: 'login' });
+
+      // Real Supabase sign in
+      setLoading(true);
+      try {
+        const { data, error: supaErr } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+
+        if (supaErr) {
+          setError("Email or password doesn't match — please try again");
+          return;
+        }
+
+        // Success — navigate to main app
+        onDone({ email: email.trim(), mode: 'login' });
+      } catch (e) {
+        setError('Something went wrong — please try again');
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
@@ -587,7 +653,27 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
                   )}
                 </View>
 
-                {/* Error message — warm gold */}
+                {/* Age 13+ checkbox — Sign Up only */}
+                {!isLogin && !isForgot && (
+                  <View style={authStyles.ageBlock}>
+                    <TouchableOpacity
+                      style={authStyles.ageRow}
+                      activeOpacity={0.7}
+                      onPress={() => setAgeConfirmed(!ageConfirmed)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <View style={[authStyles.checkbox, ageConfirmed && authStyles.checkboxChecked]}>
+                        {ageConfirmed && <Text style={authStyles.checkmark}>✓</Text>}
+                      </View>
+                      <Text style={authStyles.ageText}>I am at least 13 years old</Text>
+                    </TouchableOpacity>
+                    {ageError !== '' && (
+                      <Text style={authStyles.ageErrorText}>{ageError}</Text>
+                    )}
+                  </View>
+                )}
+
+                {/* Error message — warm terracotta */}
                 {error !== '' && (
                   <Text style={authStyles.errorText}>{error}</Text>
                 )}
@@ -616,9 +702,11 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
                     shadowOpacity: 0.08,
                     shadowRadius: 8,
                     elevation: 3,
+                    opacity: loading ? 0.6 : 1,
                   }]}
                   activeOpacity={0.8}
                   onPress={handleSubmit}
+                  disabled={loading}
                 >
                   <Text style={[styles.goldButtonText, {
                     fontFamily: 'Outfit_500Medium',
@@ -3644,9 +3732,20 @@ const subStyles = StyleSheet.create({
 
 // ── Settings Screen ─────────────────────────────────────────────────────────
 function SettingsScreen({ onClose, onSignOut }) {
-  // Placeholder user data — will come from Supabase in Phase 2
+  // Real user data — pulled from Supabase auth session on mount
   const [displayName, setDisplayName] = useState('');
-  const userEmail = 'hello@clozie.net';
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserEmail(user.email || '');
+        setDisplayName(user.user_metadata?.full_name || '');
+      }
+    };
+    loadUser();
+  }, []);
 
   // Subscription modal state
   const [showSubscription, setShowSubscription] = useState(false);
@@ -3654,17 +3753,33 @@ function SettingsScreen({ onClose, onSignOut }) {
   // Edit Profile state
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editName, setEditName] = useState('');
+  const [profileError, setProfileError] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
 
   const openEditProfile = () => {
     setEditName(displayName);
+    setProfileError('');
+    setSavingProfile(false);
     setShowEditProfile(true);
   };
 
-  const saveProfile = () => {
+  const saveProfile = async () => {
     const trimmed = editName.trim();
-    if (trimmed.length > 0) {
-      setDisplayName(trimmed);
+    if (trimmed.length === 0) {
+      setShowEditProfile(false);
+      return;
     }
+    setProfileError('');
+    setSavingProfile(true);
+    const { error: supaErr } = await supabase.auth.updateUser({
+      data: { full_name: trimmed },
+    });
+    setSavingProfile(false);
+    if (supaErr) {
+      setProfileError('Could not save — please try again');
+      return;
+    }
+    setDisplayName(trimmed);
     setShowEditProfile(false);
   };
 
@@ -3764,7 +3879,7 @@ function SettingsScreen({ onClose, onSignOut }) {
           {/* Name + email + Edit Profile */}
           <View style={settingsStyles.cardRow}>
             <View style={{ flex: 1 }}>
-              <Text style={settingsStyles.cardName}>{displayName}</Text>
+              {displayName ? <Text style={settingsStyles.cardName}>{displayName}</Text> : null}
               <Text style={settingsStyles.cardEmail}>{userEmail}</Text>
             </View>
             <TouchableOpacity
@@ -3811,13 +3926,19 @@ function SettingsScreen({ onClose, onSignOut }) {
               />
               <Text style={settingsStyles.fieldNote}>Email cannot be changed</Text>
 
+              {/* Profile save error — warm terracotta */}
+              {profileError !== '' && (
+                <Text style={settingsStyles.profileErrorText}>{profileError}</Text>
+              )}
+
               {/* Buttons */}
               <View style={settingsStyles.editButtonRow}>
                 <TouchableOpacity
-                  style={settingsStyles.saveButton}
+                  style={[settingsStyles.saveButton, savingProfile && { opacity: 0.6 }]}
                   activeOpacity={0.8}
                   hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                   onPress={saveProfile}
+                  disabled={savingProfile}
                 >
                   <Text style={settingsStyles.saveButtonText}>Save Changes</Text>
                 </TouchableOpacity>
@@ -4339,6 +4460,13 @@ const settingsStyles = StyleSheet.create({
     color: '#5C4A3A',
     marginTop: -10,
     marginBottom: 14,
+  },
+  profileErrorText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: 'rgba(164,74,52,0.88)',
+    marginBottom: 10,
+    textAlign: 'left',
   },
   editButtonRow: {
     flexDirection: 'row',
@@ -5551,6 +5679,53 @@ const authStyles = StyleSheet.create({
     marginTop: 2,
     marginBottom: 8,
     marginLeft: 4,
+  },
+
+  // Age 13+ checkbox row — Sign Up only
+  ageBlock: {
+    width: '100%',
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  ageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 44,
+    paddingVertical: 4,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.35)',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  checkboxChecked: {
+    backgroundColor: '#BCC7B7',
+    borderColor: '#BCC7B7',
+  },
+  checkmark: {
+    color: '#FFFFFF',
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 14,
+    lineHeight: 16,
+  },
+  ageText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 14,
+    color: '#2C1A0E',
+    flexShrink: 1,
+  },
+  ageErrorText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: 'rgba(164,74,52,0.88)',
+    marginTop: 6,
+    marginLeft: 34,
   },
 
   // Error message — terracotta at 88% opacity
