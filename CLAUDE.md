@@ -7,7 +7,7 @@ HOW TO USE: Drop this file into the root of your clozie-native project folder. C
 
 READ THIS ENTIRE FILE before doing anything. No exceptions.
 
-Last updated: May 4 2026 — Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account). May 3 2026: Sections 1-3 cleanup + Supabase auth Session 1.
+Last updated: May 5 2026 — VIP investigation complete (no code changes; VIP work deferred to Session 9). May 4 2026: Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account). May 3 2026: Sections 1-3 cleanup + Supabase auth Session 1.
 Original: March 24 2026 — REBUILD RULE and testing branch rule added.
 
 ---
@@ -99,6 +99,8 @@ They get Pro the moment they log in. Never delete. Never change. Never question.
 - zuzia.starz@gmail.com (friend)
 - stefka992001@gmail.com (friend)
 - jacek9901@gmail.com (friend)
+
+VIP INVESTIGATION COMPLETE (May 5, 2026): Native app confirmed clean — zero hardcoded VIP emails in App.js, src/lib/supabase.js, or Edge Function. No VIP/bypass logic exists yet. VIP table creation, VIP check on login, and VIP bypass wiring are all deferred to the session that builds limits and caps (Session 9). The 4 VIP emails remain unchanged.
 
 ---
 
@@ -1463,6 +1465,7 @@ Updated March 24 2026 — REBUILD RULE and testing branch rule added.
 Updated March 27 2026 — Converted to plain text so Claude Code can read it correctly.
 Updated May 3 2026 — includes all decisions from April 28, 30, May 1, May 2 sessions. Sections 1-3 cleanup applied. Supabase auth Session 1 wired (Sign Up, Sign In, Settings).
 Updated May 4 2026 — Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account via Edge Function). Site URL fixed.
+Updated May 5 2026 — VIP investigation complete. Native app confirmed clean — zero hardcoded VIP emails. VIP work deferred to Session 9 (limits and caps).
 
 Drop this file into the root of the clozie-native project folder.
 Drop App_ORIGINAL.jsx in the same folder as reference.
