@@ -14,6 +14,7 @@ import {
   Switch,
   Image,
   ImageBackground,
+  Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
@@ -24,6 +25,8 @@ import { Outfit_400Regular, Outfit_500Medium, Outfit_700Bold } from '@expo-googl
 import * as NativeSplash from 'expo-splash-screen';
 import Svg, { Path, Circle, Line } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from './src/lib/supabase';
 
 // ── Design tokens — sacred, never change ─────────────────────────────────────
@@ -997,6 +1000,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
   const [newItemColour, setNewItemColour] = useState('');
   const [newItemNotes, setNewItemNotes] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [photoUri, setPhotoUri] = useState(null);
   const itemCount = items.length;
   const maxItems = 30;
   const progressWidth = (itemCount / maxItems) * 100;
@@ -1010,12 +1014,14 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       colour: newItemColour.trim(),
       notes: newItemNotes.trim(),
       lastWorn: null,
+      photoUri: photoUri,
     };
     setItems((prev) => [...prev, newItem]);
     setNewItemName('');
     setNewItemCategory('');
     setNewItemColour('');
     setNewItemNotes('');
+    setPhotoUri(null);
     setShowCategoryPicker(false);
     setShowAddPanel(false);
   };
@@ -1030,6 +1036,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
     setNewItemCategory(item.category);
     setNewItemColour(item.colour);
     setNewItemNotes(item.notes);
+    setPhotoUri(item.photoUri || null);
     setShowAddPanel(true);
   };
 
@@ -1038,7 +1045,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
     setItems((prev) =>
       prev.map((item) =>
         item.id === editingItemId
-          ? { ...item, name: newItemName.trim(), category: newItemCategory || 'Tops', colour: newItemColour.trim(), notes: newItemNotes.trim() }
+          ? { ...item, name: newItemName.trim(), category: newItemCategory || 'Tops', colour: newItemColour.trim(), notes: newItemNotes.trim(), photoUri: photoUri }
           : item
       )
     );
@@ -1047,6 +1054,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
     setNewItemCategory('');
     setNewItemColour('');
     setNewItemNotes('');
+    setPhotoUri(null);
     setShowCategoryPicker(false);
     setShowAddPanel(false);
   };
@@ -1054,6 +1062,65 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
   const handleDeleteItem = (id) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
     setDeleteConfirmId(null);
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Camera access needed',
+          'Clozie needs camera access to add photos. You can enable this in iPhone Settings.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        quality: 0.85,
+      });
+      if (result.canceled) return;
+      const original = result.assets[0];
+      // Re-encode to bake EXIF orientation in — prevents sideways photos
+      const fixed = await ImageManipulator.manipulateAsync(
+        original.uri,
+        [],
+        { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      setPhotoUri(fixed.uri);
+    } catch (e) {
+      console.log('Take photo error:', e);
+      Alert.alert('Something went wrong', 'Please try again.', [{ text: 'OK' }]);
+    }
+  };
+
+  const handleUploadFile = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Photo library access needed',
+          'Clozie needs access to your photo library to add photos. You can enable this in iPhone Settings.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.85,
+      });
+      if (result.canceled) return;
+      const original = result.assets[0];
+      // Re-encode to bake EXIF orientation in — prevents sideways photos
+      const fixed = await ImageManipulator.manipulateAsync(
+        original.uri,
+        [],
+        { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      setPhotoUri(fixed.uri);
+    } catch (e) {
+      console.log('Upload file error:', e);
+      Alert.alert('Something went wrong', 'Please try again.', [{ text: 'OK' }]);
+    }
   };
 
   return (
@@ -1093,9 +1160,17 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
         <View style={wardrobeStyles.grid}>
           {items.map((item) => (
             <View key={item.id} style={wardrobeStyles.gridCard}>
-              {/* Placeholder photo */}
+              {/* Photo (real if added, placeholder emoji otherwise) */}
               <View style={wardrobeStyles.gridCardPhoto}>
-                <Text style={{ fontSize: 28 }}>👗</Text>
+                {item.photoUri ? (
+                  <Image
+                    source={{ uri: item.photoUri }}
+                    style={wardrobeStyles.gridCardPhotoImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text style={{ fontSize: 28 }}>👗</Text>
+                )}
               </View>
               {/* Edit icon — positioned over photo */}
               <TouchableOpacity
@@ -1186,7 +1261,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
             <Text style={wardrobeStyles.addPanelHeading}>{editingItemId ? 'EDIT ITEM' : 'ADD NEW ITEM'}</Text>
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => { setShowAddPanel(false); setEditingItemId(null); setNewItemName(''); setNewItemCategory(''); setNewItemColour(''); setNewItemNotes(''); setShowCategoryPicker(false); }}
+              onPress={() => { setShowAddPanel(false); setEditingItemId(null); setNewItemName(''); setNewItemCategory(''); setNewItemColour(''); setNewItemNotes(''); setPhotoUri(null); setShowCategoryPicker(false); }}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               style={{ minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'flex-end' }}
             >
@@ -1196,15 +1271,25 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
 
           {/* Photo section */}
           <View style={wardrobeStyles.photoArea}>
-            <Text style={wardrobeStyles.photoPlaceholder}>📷</Text>
-            <Text style={wardrobeStyles.photoTitle}>Add a Photo</Text>
-            <Text style={wardrobeStyles.photoSubtitle}>✦ Clozie fills in all details automatically</Text>
+            {photoUri ? (
+              <Image
+                source={{ uri: photoUri }}
+                style={wardrobeStyles.photoPreview}
+                resizeMode="cover"
+              />
+            ) : (
+              <>
+                <Text style={wardrobeStyles.photoPlaceholder}>📷</Text>
+                <Text style={wardrobeStyles.photoTitle}>Add a Photo</Text>
+                <Text style={wardrobeStyles.photoSubtitle}>✦ Clozie fills in all details automatically</Text>
+              </>
+            )}
             <View style={wardrobeStyles.photoButtons}>
-              <TouchableOpacity style={wardrobeStyles.photoButton} activeOpacity={0.7}>
-                <Text style={wardrobeStyles.photoButtonText}>📸 Take Photo</Text>
+              <TouchableOpacity style={wardrobeStyles.photoButton} activeOpacity={0.7} onPress={handleTakePhoto}>
+                <Text style={wardrobeStyles.photoButtonText}>{photoUri ? '📸 Retake' : '📸 Take Photo'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={wardrobeStyles.photoButton} activeOpacity={0.7}>
-                <Text style={wardrobeStyles.photoButtonText}>🖼 Upload File</Text>
+              <TouchableOpacity style={wardrobeStyles.photoButton} activeOpacity={0.7} onPress={handleUploadFile}>
+                <Text style={wardrobeStyles.photoButtonText}>{photoUri ? '🖼 Replace' : '🖼 Upload File'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1313,6 +1398,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
               setNewItemCategory('');
               setNewItemColour('');
               setNewItemNotes('');
+              setPhotoUri(null);
               setShowCategoryPicker(false);
             }}
           >
@@ -6174,6 +6260,13 @@ const wardrobeStyles = StyleSheet.create({
     fontSize: 36,
     marginBottom: 10,
   },
+  photoPreview: {
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+    marginBottom: 16,
+    backgroundColor: 'rgba(44,26,14,0.04)',
+  },
   photoTitle: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 18,
@@ -6318,6 +6411,10 @@ const wardrobeStyles = StyleSheet.create({
     borderTopLeftRadius: 11,
     borderTopRightRadius: 11,
     overflow: 'hidden',
+  },
+  gridCardPhotoImage: {
+    width: '100%',
+    height: '100%',
   },
   categoryTag: {
     alignSelf: 'flex-start',

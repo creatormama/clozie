@@ -6,6 +6,12 @@ export default {
     slug: 'clozie',
     version: '1.0.0',
     orientation: 'portrait',
+    ios: {
+      infoPlist: {
+        NSCameraUsageDescription: "Clozie uses your camera to photograph wardrobe items.",
+        NSPhotoLibraryUsageDescription: "Clozie needs access to your photo library so you can add wardrobe items.",
+      },
+    },
     plugins: [
       "expo-font",
     ],
