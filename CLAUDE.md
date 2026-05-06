@@ -7,7 +7,7 @@ HOW TO USE: Drop this file into the root of your clozie-native project folder. C
 
 READ THIS ENTIRE FILE before doing anything. No exceptions.
 
-Last updated: May 5 2026 — VIP investigation complete (no code changes; VIP work deferred to Session 9). May 4 2026: Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account). May 3 2026: Sections 1-3 cleanup + Supabase auth Session 1.
+Last updated: May 6 2026 — Photo Upload Session 5 wired (camera + gallery in Add Item panel via expo-image-picker; EXIF orientation fix via expo-image-manipulator; photos save with closet items in local state; edit flow preserves photos). May 5 2026: VIP investigation complete (no code changes; VIP work deferred to Session 9). May 4 2026: Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account). May 3 2026: Sections 1-3 cleanup + Supabase auth Session 1.
 Original: March 24 2026 — REBUILD RULE and testing branch rule added.
 
 ---
@@ -1458,6 +1458,38 @@ What was deliberately NOT done this session:
 
 Commit: 84447ff (App.js + Edge Function backup) on testing branch. Pushed to origin/testing only — main not touched.
 
+## 2026-05-06 — Photo Upload wired (Session 5)
+
+First session on the My Closet photo flow. Camera + gallery now working in the Add Item panel; photos persist on items in component state. Built on testing branch only — main untouched.
+
+What was wired:
+- Take Photo button — calls ImagePicker.requestCameraPermissionsAsync, then launchCameraAsync. Permission requested only when button is tapped, not on app launch. After capture, image runs through ImageManipulator.manipulateAsync (re-encoded as JPEG, quality 0.85) so EXIF orientation is baked in — photos never display sideways.
+- Upload File button — same pattern using requestMediaLibraryPermissionsAsync + launchImageLibraryAsync with mediaTypes ['images'] (videos filtered out per spec). Same EXIF fix.
+- Photo preview — when a photo is selected in the Add Item panel, it appears as a 200x200 preview replacing the 📷 emoji placeholder. Buttons relabel to "📸 Retake" and "🖼 Replace" while a photo is set.
+- Permission denied UX — Alert.alert with warm Clozie wording: "Clozie needs camera access to add photos. You can enable this in iPhone Settings." Two existing custom modals replaced Alert.alert (Remove item, Clear memory) but those are confirmation dialogs for destructive actions. Permission denial is a one-shot iOS-system interaction — Alert.alert is the standard pattern there. Easy to swap to a custom Clozie-styled message later if preferred.
+- Photo persistence on items — handleAddItem saves photoUri onto the new item; grid card displays the real photo if present (replaces 👗 emoji). Edit flow: handleEditItem loads existing item.photoUri into state when the panel opens; handleSaveEdit persists photoUri on the merged item.
+- State lifecycle hygiene — photoUri state is reset on Add to Closet, Save Changes, Cancel, and ✕ Close. No ghost photos on next panel open.
+
+What was added:
+- Two npm packages: expo-image-picker (~17.0.11), expo-image-manipulator (~14.0.8). Installed via npx expo install for SDK 54 compatibility.
+- iOS permission strings in app.config.js: NSCameraUsageDescription = "Clozie uses your camera to photograph wardrobe items." / NSPhotoLibraryUsageDescription = "Clozie needs access to your photo library so you can add wardrobe items." These are baked into standalone builds (EAS Build, Phase 3) — Expo Go ignores them and shows its own generic prompts during testing.
+- New styles: gridCardPhotoImage (width/height 100% — fills the existing 120px gridCardPhoto slot) and photoPreview (200x200, border-radius 10) for the Add Item panel.
+- Imports added to App.js: Alert from react-native, plus * as ImagePicker and * as ImageManipulator.
+
+What was deliberately NOT done this session:
+- Supabase Storage upload — Session 6. Photos currently live as local file:// URIs in component state and are lost when the app reloads. Expected and intentional for Session 5.
+- Claude photo recognition (auto-fill name/category/colour/notes) — Session 6.
+- Gold shimmer scanning animation — Session 6.
+- Green confirmation bar after recognition — Session 6.
+- "CLOZIE RECOGNISED ✦" label — Session 6.
+
+Known limitation:
+- Items disappear on app reload because there is no persistence yet. Session 6 wires Supabase Storage so photos survive reload.
+
+Apple Sign-In, Google Sign-In, VIP table, deep linking — still not wired (Sessions 7+).
+
+Commit: aa920df on testing branch (local only — not yet pushed to remote).
+
 ---
 
 Created March 2026.
@@ -1466,6 +1498,7 @@ Updated March 27 2026 — Converted to plain text so Claude Code can read it cor
 Updated May 3 2026 — includes all decisions from April 28, 30, May 1, May 2 sessions. Sections 1-3 cleanup applied. Supabase auth Session 1 wired (Sign Up, Sign In, Settings).
 Updated May 4 2026 — Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account via Edge Function). Site URL fixed.
 Updated May 5 2026 — VIP investigation complete. Native app confirmed clean — zero hardcoded VIP emails. VIP work deferred to Session 9 (limits and caps).
+Updated May 6 2026 — Photo Upload Session 5 wired. Camera + gallery via expo-image-picker, EXIF orientation fix via expo-image-manipulator. Photos save with items in local state (Supabase Storage upload = Session 6). Add Item panel: Take Photo + Upload File buttons fully functional, 200x200 photo preview, edit flow preserves existing photos. iOS permission strings added to app.config.js.
 
 Drop this file into the root of the clozie-native project folder.
 Drop App_ORIGINAL.jsx in the same folder as reference.
