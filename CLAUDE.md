@@ -208,7 +208,7 @@ Fonts: DM Serif Display (logo, titles, outfit names, tagline — 'zie' always it
 
 Rejected fonts — never use: Cormorant Garamond, Playfair Display, DM Mono.
 
-Category tag pill: background rgba(188,199,183,0.30), text #6B7E65. Unified — all 6 categories use the same sage green pill. No per-category color mapping. Font: Outfit, 9px, weight 500, letter-spacing 0.3px, border-radius 100px, padding 2px 10px.
+Category tag pill: background rgba(188,199,183,0.30), text #5C4A3A. Unified — all 6 categories use the same sage green pill. No per-category color mapping. Font: Outfit, 11px, weight 500, letter-spacing 0.3px, border-radius 100px, padding 2px 10px.
 
 Warmth tag (None/Light/Medium/Heavy) is NOT displayed on the closet grid card. It is stored on the item data and used by the AI for outfit generation. The user sets warmth when adding/editing an item — it is not visible in the closet browse view.
 
@@ -405,7 +405,7 @@ Each item card:
 - ✎ pencil icon (edit) top right corner of photo — 44px minimum tap target
 - × delete icon top right corner of photo (next to pencil) — 44px minimum tap target
 - When × delete tapped — confirmation required: 'Remove [item name]? This cannot be undone.' [Gold button] Remove · [Outlined button] Cancel
-- Unified sage green category tag pill below photo — same color for all 6 categories (Tops, Bottoms, Dresses, Outerwear, Shoes, Accessories). Background: rgba(188,199,183,0.30), text color: #6B7E65. One pill style for all categories — no per-category color mapping.
+- Unified sage green category tag pill below photo — same color for all 6 categories (Tops, Bottoms, Dresses, Outerwear, Shoes, Accessories). Background: rgba(188,199,183,0.30), text color: #5C4A3A. One pill style for all categories — no per-category color mapping.
 - Item name in DM Serif Display — espresso #2C1A0E, prominent
 - Color description below name in Outfit — body text #5C4A3A
 - Last worn date below color — small, muted — e.g. 'Last worn: March 15' or 'Never worn'
@@ -667,7 +667,7 @@ Every single one of these must be in the native app:
 - Subscription page with teaser cards
 - Edit Profile panel in Settings
 - Change Password panel in Settings
-- Unified sage green category tag pills — same color for all categories. Background: rgba(188,199,183,0.30), text: #6B7E65.
+- Unified sage green category tag pills — same color for all categories. Background: rgba(188,199,183,0.30), text: #5C4A3A.
 - Edit button (✎) for each wardrobe item — 44px tap target
 - Empty wardrobe encouragement
 - Outfit generation works with as few as 5 items
