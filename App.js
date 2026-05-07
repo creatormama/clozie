@@ -1124,10 +1124,15 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
   };
 
   return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
     <ScrollView
       style={{ flex: 1, backgroundColor: '#E8E4CE' }}
       contentContainerStyle={wardrobeStyles.scrollContent}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       {/* Heading */}
       <Text style={wardrobeStyles.heading}>Your Closet</Text>
@@ -1177,7 +1182,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
                 style={wardrobeStyles.editIcon}
                 activeOpacity={0.7}
                 onPress={() => handleEditItem(item)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
               >
                 <Text style={wardrobeStyles.editIconText}>✎</Text>
               </TouchableOpacity>
@@ -1186,7 +1191,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
                 style={wardrobeStyles.deleteIcon}
                 activeOpacity={0.7}
                 onPress={() => setDeleteConfirmId(item.id)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
               >
                 <Text style={wardrobeStyles.deleteIconText}>✕</Text>
               </TouchableOpacity>
@@ -1306,7 +1311,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           <TextInput
             style={wardrobeStyles.fieldInput}
             placeholder="e.g. Navy Blue Wrap Dress"
-            placeholderTextColor="rgba(44,26,14,0.40)"
+            placeholderTextColor="rgba(44,26,14,0.65)"
             value={newItemName}
             onChangeText={setNewItemName}
             returnKeyType="next"
@@ -1320,7 +1325,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             onPress={() => setShowCategoryPicker(!showCategoryPicker)}
           >
-            <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: newItemCategory ? '#2C1A0E' : 'rgba(44,26,14,0.40)' }}>
+            <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: newItemCategory ? '#2C1A0E' : 'rgba(44,26,14,0.65)' }}>
               {newItemCategory || 'Select category'}
             </Text>
           </TouchableOpacity>
@@ -1355,7 +1360,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           <TextInput
             style={wardrobeStyles.fieldInput}
             placeholder="e.g. Navy blue, striped"
-            placeholderTextColor="rgba(44,26,14,0.40)"
+            placeholderTextColor="rgba(44,26,14,0.65)"
             value={newItemColour}
             onChangeText={setNewItemColour}
             returnKeyType="next"
@@ -1366,7 +1371,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           <TextInput
             style={[wardrobeStyles.fieldInput, { minHeight: 60 }]}
             placeholder="e.g. From Zara, size M, great for date night"
-            placeholderTextColor="rgba(44,26,14,0.40)"
+            placeholderTextColor="rgba(44,26,14,0.65)"
             value={newItemNotes}
             onChangeText={setNewItemNotes}
             multiline={true}
@@ -1446,6 +1451,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
         </TouchableOpacity>
       )}
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -6428,7 +6434,7 @@ const wardrobeStyles = StyleSheet.create({
   categoryTagText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 11,
-    color: '#6B7E65',
+    color: '#5C4A3A',
     letterSpacing: 0.3,
   },
   gridCardName: {
@@ -6581,7 +6587,7 @@ const wardrobeStyles = StyleSheet.create({
     backgroundColor: '#BCC7B7',
     borderWidth: 3,
     borderColor: '#FFFFFF',
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 100,
     alignItems: 'center',
     shadowColor: '#000',
@@ -6599,7 +6605,7 @@ const wardrobeStyles = StyleSheet.create({
     flex: 1,
     borderWidth: 1.5,
     borderColor: 'rgba(44,26,14,0.12)',
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 100,
     alignItems: 'center',
   },
