@@ -7,7 +7,7 @@ HOW TO USE: Drop this file into the root of your clozie-native project folder. C
 
 READ THIS ENTIRE FILE before doing anything. No exceptions.
 
-Last updated: May 8 2026 — Photo Recognition Session 6B wired (camera + gallery photos auto-recognized via Claude Sonnet 4.6, fields auto-fill while preserving user-typed content, terracotta CLOZIE RECOGNISED eyebrow inside the sage success bar, terracotta auto-fill border on Clozie-filled fields that clears on user edit, retake refreshes scan via React functional setters). May 7 2026 — Supabase Wardrobe Session 6A wired (wardrobe_items table + private wardrobe-photos Storage bucket + RLS policies; full Add/Edit/Delete CRUD persists to Supabase; photos upload via arrayBuffer; signed URLs for display; cross-user isolation verified). May 6 2026 — Photo Upload Session 5 wired (camera + gallery in Add Item panel via expo-image-picker; EXIF orientation fix via expo-image-manipulator; photos save with closet items in local state; edit flow preserves photos). May 5 2026: VIP investigation complete (no code changes; VIP work deferred to Session 9). May 4 2026: Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account). May 3 2026: Sections 1-3 cleanup + Supabase auth Session 1.
+Last updated: May 8 2026 — Outfit Edge Function Session 7a wired (photo recognition migrated to Supabase Edge Function `recognize-photo`; Anthropic API key removed from client `.env` and `app.config.js`; key now lives ONLY in Supabase Edge Function secrets as ANTHROPIC_API_KEY; auth-gated; closes the API-key-in-client vulnerability described in Legal Tracker §14.10). May 8 2026 — Photo Recognition Session 6B wired (camera + gallery photos auto-recognized via Claude Sonnet 4.6, fields auto-fill while preserving user-typed content, terracotta CLOZIE RECOGNISED eyebrow inside the sage success bar, terracotta auto-fill border on Clozie-filled fields that clears on user edit, retake refreshes scan via React functional setters). May 7 2026 — Supabase Wardrobe Session 6A wired (wardrobe_items table + private wardrobe-photos Storage bucket + RLS policies; full Add/Edit/Delete CRUD persists to Supabase; photos upload via arrayBuffer; signed URLs for display; cross-user isolation verified). May 6 2026 — Photo Upload Session 5 wired (camera + gallery in Add Item panel via expo-image-picker; EXIF orientation fix via expo-image-manipulator; photos save with closet items in local state; edit flow preserves photos). May 5 2026: VIP investigation complete (no code changes; VIP work deferred to Session 9). May 4 2026: Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account). May 3 2026: Sections 1-3 cleanup + Supabase auth Session 1.
 Original: March 24 2026 — REBUILD RULE and testing branch rule added.
 
 ---
@@ -83,9 +83,16 @@ Never rush Grace — always reassure warmly.
 ## Native App — Set in Expo / app.config.js
 - EXPO_PUBLIC_SUPABASE_URL
 - EXPO_PUBLIC_SUPABASE_ANON_KEY
-- EXPO_PUBLIC_ANTHROPIC_KEY
-  - NOTE: REMOVE before launch. API key moves to Supabase Edge Function in Phase 2. Never in client code.
 - EXPO_PUBLIC_PHOTOROOM_KEY (only when PhotoRoom is ready — not yet)
+
+## Supabase Edge Function secrets (Project → Edge Functions → Secrets)
+- ANTHROPIC_API_KEY — server-side Anthropic key. Added 2026-05-08 (Session 7a). Never lives in client.
+- SUPABASE_URL and SUPABASE_ANON_KEY are auto-provided to functions by Supabase — no manual setup.
+
+## Anthropic dashboard (console.anthropic.com → Settings → Spend limits)
+- Monthly spend cap: $50 (development). Raise to $200 at launch. Set 2026-05-08 (Session 7a).
+
+ARCHIVED 2026-05-08 (Session 7a): EXPO_PUBLIC_ANTHROPIC_KEY removed from client. Was previously listed here as: "EXPO_PUBLIC_ANTHROPIC_KEY — NOTE: REMOVE before launch. API key moves to Supabase Edge Function in Phase 2. Never in client code." Done. Key now only lives in Supabase Edge Function secrets as ANTHROPIC_API_KEY.
 
 ---
 
@@ -1090,6 +1097,7 @@ One screen at a time. In this exact order. Grace approves each screen before the
 - Settings Delete Account wired via delete-user Edge Function ✅ DONE 2026-05-04 (Session 2 — Apple Guideline 5.1.1v compliant)
 - Wardrobe items persist in Supabase (wardrobe_items table + private wardrobe-photos Storage bucket + RLS) ✅ DONE 2026-05-07 (Session 6A — full Add/Edit/Delete CRUD)
 - Photo recognition wired — Claude Sonnet 4.6 auto-fills name/category/colour/notes from a wardrobe photo, terracotta CLOZIE RECOGNISED eyebrow inside sage success bar, terracotta auto-fill border on Clozie-filled fields that clears on user edit, no-key + network-error fallbacks ✅ DONE 2026-05-08 (Session 6B)
+- Photo recognition Edge Function migration — `recognize-photo` Supabase Edge Function holds Anthropic key server-side, JWT-verify ON, internal auth check + image size sanity check; client `src/lib/clozieRecognition.js` now calls `supabase.functions.invoke('recognize-photo', ...)` instead of api.anthropic.com directly; EXPO_PUBLIC_ANTHROPIC_KEY removed from `.env` and `app.config.js`; closes Legal Tracker §14.10 vulnerability ✅ DONE 2026-05-08 (Session 7a)
 - Custom SMTP (Resend) for password reset email delivery — deferred to its own session
 - Clozie smarter learning — smarter note-saving + pattern detection after 5+ ratings
 - Native sharing — outfit cards + Clozie watermark — works on iPhone + Android
@@ -1538,6 +1546,45 @@ Known limitations:
 
 Committed on testing branch (local). Version label: v2026-05-07-supabase-wardrobe-session6a. Push to remote — Grace's call.
 
+## 2026-05-08 — Outfit Edge Function wired (Session 7a — photo recognition only)
+
+First Edge Function session for the AI surfaces. Migrated photo recognition off the client to close the Anthropic-key-in-client vulnerability. Built on testing branch only — main untouched. Outfit generation deferred to Session 7b.
+
+What was wired:
+- New Supabase Edge Function `recognize-photo` (deployed in Supabase dashboard, JWT-verify ON). Verifies user's auth token, then calls Anthropic with model claude-sonnet-4-6, max_tokens 500. Same prompt and category-correction logic as Session 6B's client code, just moved server-side. Returns clean { name, category, color, description } JSON.
+- Edge Function source-of-truth backup at supabase/functions/recognize-photo/README.md (markdown only — paste into Supabase dashboard editor to deploy/update). Same pattern as delete-user (Session 2).
+- Defense-in-depth in the function: Supabase JWT verification gate (outer layer) + internal `auth.getUser(token)` check + image size sanity check (rejects base64 > 2MB) + ANTHROPIC_API_KEY presence check (returns 500 if missing in secrets).
+- src/lib/clozieRecognition.js rewritten — went from 113 lines to 41 lines. Removed: direct fetch to api.anthropic.com, `anthropic-dangerous-direct-browser-access` header, EXPO_PUBLIC_ANTHROPIC_KEY read, ALLOWED_CATEGORIES list, correctCategoryFromName helper (all moved server-side). Added: import of supabase client, single `supabase.functions.invoke('recognize-photo', { body: { imageBase64 } })` call. Public function signature unchanged — App.js needed zero edits.
+- EXPO_PUBLIC_ANTHROPIC_KEY removed from `.env` and from `app.config.js` extra block. Verified by repo-wide grep — zero references remain in active client code.
+- Anthropic key still has the same value (Grace decided not to rotate, since she's the only person with builds). Now lives ONLY in Supabase Edge Function secrets as ANTHROPIC_API_KEY.
+- Anthropic monthly spend cap set to $50 in console.anthropic.com (safety belt — function calls would be rejected by Anthropic if the cap is hit).
+
+Phase-by-phase summary (each phase tested and approved before next):
+- Phase A — Manual dashboard setup: Anthropic key copied from `.env` to Supabase Edge Function secrets via pbcopy (kept out of chat transcript); $50/month spend cap set in Anthropic dashboard.
+- Phase B — Edge Function build: README.md backup written, code pasted into Supabase dashboard, deployed; smoke test via curl confirmed 401 rejection on unauthenticated calls (Supabase outer JWT layer doing its job).
+- Phase C — Client switched to Edge Function: clozieRecognition.js rewritten; tested on iPhone (camera + gallery + save) — both work end-to-end.
+- Phase D — Client key removed: app.config.js + `.env` cleaned; iPhone retested with `--clear` cache reload — recognition still works, proving the Edge Function is doing all the work.
+
+What was deliberately NOT done this session (Session 7b owns these):
+- Outfit generation Edge Function — not built. The 10-step v4 prompt, JS intelligence layer (minimum essentials gate, dynamic outfit count, safety filters, compressed pool format, category imbalance check, learnings/history/circuit-breaker placeholders, etc.), prompt caching (with system prompt padded to ≥1024 tokens to actually trigger Sonnet ephemeral cache), JSON validation — all deferred.
+- Outfit display on Your Looks tab — Session 8.
+- Rate limiting / session counter / VIP bypass — Session 16.
+- AI consent modal (Apple Guideline 5.1.2(i)) — Session 8.
+- Outfit history storage — Session 9.
+- Smart rule-based fallback when Anthropic API fails — future session.
+- Haiku evaluation for photo recognition (~3× cheaper than Sonnet) — deferred until Session 7b ships, then evaluate quality on production data.
+
+Known limitations / dead code:
+- `recognitionStatus === 'no-key'` UI branch in App.js (the grey "No Clozie key — fill in details manually" bar) is now dead code. It can no longer trigger because the client doesn't read the key any more. Left in place this session for minimum diff / easier revert. Can be removed in a polish pass.
+- `process.env.EXPO_PUBLIC_ANTHROPIC_KEY` reads anywhere in client code now return undefined — no impact since the only file that read it was rewritten.
+- Cold-start latency: Supabase Edge Function cold start (~200-500ms) + Anthropic call (~2-5s) on first photo after idle. Subsequent photos in the same session are warm and faster. Existing scanning bar handles this — no UX change needed.
+- Edge Function code is not version-controlled — only the README.md is in the repo. Same dashboard-paste workflow as delete-user. Acceptable for solo founder; just be disciplined about updating the README every time you edit the dashboard code.
+
+Pre-existing leftover (out of scope):
+- `.claude/worktrees/elastic-solomon-b2c77d/` is an untracked worktree from an earlier session containing stale copies of `app.config.js` and `App_ORIGINAL.jsx`. Not active. Separate cleanup decision — left alone this session.
+
+Commit: TBD on testing branch. Version label: v2026-05-08-photo-edge-function-session7a. Push to remote — Grace's call.
+
 ## 2026-05-08 — Photo Recognition wired (Session 6B)
 
 First session wiring Clozie photo recognition into the Add Item panel. Camera + gallery photos auto-fill Name/Category/Colour/Notes via Claude Sonnet 4.6. Built on testing branch only — main untouched.
@@ -1603,6 +1650,7 @@ Updated May 5 2026 — VIP investigation complete. Native app confirmed clean �
 Updated May 6 2026 — Photo Upload Session 5 wired. Camera + gallery via expo-image-picker, EXIF orientation fix via expo-image-manipulator. Photos save with items in local state (Supabase Storage upload = Session 6). Add Item panel: Take Photo + Upload File buttons fully functional, 200x200 photo preview, edit flow preserves existing photos. iOS permission strings added to app.config.js.
 Updated May 7 2026 — Supabase Wardrobe Session 6A wired. wardrobe_items table + private wardrobe-photos Storage bucket + RLS policies. Full Add/Edit/Delete CRUD persists to Supabase. Photos upload via arrayBuffer (the RN footgun-safe path). Signed URLs (1hr TTL) for display. Cross-user isolation verified. Helper module src/lib/wardrobeItems.js. App.js: load items on mount, async handlers, Saving/Removing button states, warm Alert on errors.
 Updated May 8 2026 — Photo Recognition Session 6B wired. Camera + gallery photos auto-recognized via Claude Sonnet 4.6 (helper at src/lib/clozieRecognition.js, max_tokens 500, category validation + name/category-mismatch correction). Add Item panel: scanning bar, sage success bar with terracotta CLOZIE RECOGNISED eyebrow (#A44A34, no sparkle), terracotta #A44A34 border on Clozie-filled fields that clears on user edit, no-key + network-error fallbacks. Auto-fill never overwrites user-typed content; retake refreshes via React functional setters (closure-staleness fix). API key still in client (.env EXPO_PUBLIC_ANTHROPIC_KEY) — moves to Edge Function in Session 7.
+Updated May 8 2026 — Outfit Edge Function Session 7a wired. Photo recognition migrated to Supabase Edge Function `recognize-photo` (source-of-truth backup at supabase/functions/recognize-photo/README.md). EXPO_PUBLIC_ANTHROPIC_KEY removed from `.env` and `app.config.js` — Anthropic key now lives ONLY in Supabase Edge Function secrets as ANTHROPIC_API_KEY. Anthropic $50/month spend cap set as safety belt. src/lib/clozieRecognition.js rewritten (113 → 41 lines): now calls `supabase.functions.invoke('recognize-photo', ...)` instead of api.anthropic.com directly. Public function signature unchanged — App.js untouched. Closes Legal Tracker §14.10 (API-key-in-client vulnerability). Outfit generation deferred to Session 7b.
 
 Drop this file into the root of the clozie-native project folder.
 Drop App_ORIGINAL.jsx in the same folder as reference.

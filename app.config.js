@@ -18,7 +18,6 @@ export default {
     extra: {
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-      anthropicKey: process.env.EXPO_PUBLIC_ANTHROPIC_KEY,
     },
   },
 };
