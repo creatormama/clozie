@@ -28,6 +28,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from './src/lib/supabase';
+import { fetchWardrobeItems, getSignedPhotoUrl, uploadWardrobePhoto, insertWardrobeItem, updateWardrobeItem, deleteWardrobePhoto, deleteWardrobeItem } from './src/lib/wardrobeItems';
 
 // ── Design tokens — sacred, never change ─────────────────────────────────────
 const G = '#C9A96E';       // gold accent
@@ -1001,29 +1002,57 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
   const [newItemNotes, setNewItemNotes] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [photoUri, setPhotoUri] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   const itemCount = items.length;
   const maxItems = 30;
   const progressWidth = (itemCount / maxItems) * 100;
 
-  const handleAddItem = () => {
-    if (!newItemName.trim()) return;
-    const newItem = {
-      id: Date.now().toString(),
-      name: newItemName.trim(),
-      category: newItemCategory || 'Tops',
-      colour: newItemColour.trim(),
-      notes: newItemNotes.trim(),
-      lastWorn: null,
-      photoUri: photoUri,
-    };
-    setItems((prev) => [...prev, newItem]);
-    setNewItemName('');
-    setNewItemCategory('');
-    setNewItemColour('');
-    setNewItemNotes('');
-    setPhotoUri(null);
-    setShowCategoryPicker(false);
-    setShowAddPanel(false);
+  const handleAddItem = async () => {
+    if (!newItemName.trim() || isSaving) return;
+    setIsSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Please sign in again to add items.');
+
+      let photoPath = null;
+      if (photoUri) {
+        photoPath = await uploadWardrobePhoto(photoUri, user.id);
+      }
+
+      const newItem = await insertWardrobeItem({
+        name: newItemName.trim(),
+        category: newItemCategory || 'Tops',
+        colour: newItemColour.trim(),
+        notes: newItemNotes.trim(),
+        photoPath,
+      });
+
+      let signedUrl = null;
+      if (newItem.photoPath) {
+        try {
+          signedUrl = await getSignedPhotoUrl(newItem.photoPath);
+        } catch {
+          // Fall back to emoji placeholder if signing fails — item still saved.
+        }
+      }
+
+      setItems((prev) => [{ ...newItem, photoUri: signedUrl }, ...prev]);
+      setNewItemName('');
+      setNewItemCategory('');
+      setNewItemColour('');
+      setNewItemNotes('');
+      setPhotoUri(null);
+      setShowCategoryPicker(false);
+      setShowAddPanel(false);
+    } catch (err) {
+      Alert.alert(
+        "Couldn't save your item",
+        err?.message || 'Something went wrong — please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
@@ -1040,28 +1069,84 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
     setShowAddPanel(true);
   };
 
-  const handleSaveEdit = () => {
-    if (!newItemName.trim()) return;
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === editingItemId
-          ? { ...item, name: newItemName.trim(), category: newItemCategory || 'Tops', colour: newItemColour.trim(), notes: newItemNotes.trim(), photoUri: photoUri }
-          : item
-      )
-    );
-    setEditingItemId(null);
-    setNewItemName('');
-    setNewItemCategory('');
-    setNewItemColour('');
-    setNewItemNotes('');
-    setPhotoUri(null);
-    setShowCategoryPicker(false);
-    setShowAddPanel(false);
+  const handleSaveEdit = async () => {
+    if (!newItemName.trim() || isSaving) return;
+    setIsSaving(true);
+    try {
+      const originalItem = items.find((i) => i.id === editingItemId);
+      const originalPhotoPath = originalItem?.photoPath || null;
+
+      let newPhotoPath = originalPhotoPath;
+      let newSignedUrl = photoUri;
+
+      if (photoUri && photoUri.startsWith('file://')) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Please sign in again to save changes.');
+        newPhotoPath = await uploadWardrobePhoto(photoUri, user.id);
+        try {
+          newSignedUrl = await getSignedPhotoUrl(newPhotoPath);
+        } catch {
+          newSignedUrl = null;
+        }
+      }
+
+      const updatedItem = await updateWardrobeItem(editingItemId, {
+        name: newItemName.trim(),
+        category: newItemCategory || 'Tops',
+        colour: newItemColour.trim(),
+        notes: newItemNotes.trim(),
+        photoPath: newPhotoPath,
+      });
+
+      if (originalPhotoPath && originalPhotoPath !== newPhotoPath) {
+        try {
+          await deleteWardrobePhoto(originalPhotoPath);
+        } catch {
+          // Old photo cleanup is best-effort — orphan can be cleaned up later.
+        }
+      }
+
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === editingItemId ? { ...updatedItem, photoUri: newSignedUrl } : item
+        )
+      );
+      setEditingItemId(null);
+      setNewItemName('');
+      setNewItemCategory('');
+      setNewItemColour('');
+      setNewItemNotes('');
+      setPhotoUri(null);
+      setShowCategoryPicker(false);
+      setShowAddPanel(false);
+    } catch (err) {
+      Alert.alert(
+        "Couldn't save your changes",
+        err?.message || 'Something went wrong — please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDeleteItem = (id) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-    setDeleteConfirmId(null);
+  const handleDeleteItem = async (id) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const item = items.find((i) => i.id === id);
+      await deleteWardrobeItem(id, item?.photoPath || null);
+      setItems((prev) => prev.filter((i) => i.id !== id));
+      setDeleteConfirmId(null);
+    } catch (err) {
+      Alert.alert(
+        "Couldn't remove your item",
+        err?.message || 'Something went wrong — please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleTakePhoto = async () => {
@@ -1207,14 +1292,16 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
                       style={wardrobeStyles.deleteConfirmRemove}
                       activeOpacity={0.8}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      disabled={isSaving}
                       onPress={() => handleDeleteItem(item.id)}
                     >
-                      <Text style={wardrobeStyles.deleteConfirmRemoveText}>Remove</Text>
+                      <Text style={wardrobeStyles.deleteConfirmRemoveText}>{isSaving ? 'Removing…' : 'Remove'}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={wardrobeStyles.deleteConfirmCancel}
                       activeOpacity={0.7}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      disabled={isSaving}
                       onPress={() => setDeleteConfirmId(null)}
                     >
                       <Text style={wardrobeStyles.deleteConfirmCancelText}>Cancel</Text>
@@ -1382,13 +1469,15 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           <TouchableOpacity
             style={[
               wardrobeStyles.addToClosetButton,
-              !newItemName.trim() && wardrobeStyles.addToClosetButtonDisabled,
+              (!newItemName.trim() || isSaving) && wardrobeStyles.addToClosetButtonDisabled,
             ]}
-            activeOpacity={newItemName.trim() ? 0.8 : 1}
-            disabled={!newItemName.trim()}
+            activeOpacity={newItemName.trim() && !isSaving ? 0.8 : 1}
+            disabled={!newItemName.trim() || isSaving}
             onPress={editingItemId ? handleSaveEdit : handleAddItem}
           >
-            <Text style={wardrobeStyles.addToClosetButtonText}>{editingItemId ? 'Save Changes' : 'Add to Closet'}</Text>
+            <Text style={wardrobeStyles.addToClosetButtonText}>
+              {isSaving ? 'Saving…' : editingItemId ? 'Save Changes' : 'Add to Closet'}
+            </Text>
           </TouchableOpacity>
 
           {/* Cancel button */}
@@ -4971,6 +5060,43 @@ function MainAppScreen({ onSignOut }) {
       duration: 400,
       useNativeDriver: true,
     }).start();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadItems = async () => {
+      try {
+        const items = await fetchWardrobeItems();
+        const itemsWithUrls = await Promise.all(
+          items.map(async (item) => {
+            if (!item.photoPath) return { ...item, photoUri: null };
+            try {
+              const photoUri = await getSignedPhotoUrl(item.photoPath);
+              return { ...item, photoUri };
+            } catch {
+              return { ...item, photoUri: null };
+            }
+          })
+        );
+        if (!cancelled) setWardrobeItems(itemsWithUrls);
+      } catch (err) {
+        console.warn('Failed to load wardrobe items:', err?.message);
+      }
+    };
+
+    loadItems();
+
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT' && !cancelled) {
+        setWardrobeItems([]);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      data.subscription.unsubscribe();
+    };
   }, []);
 
   const tabs = [

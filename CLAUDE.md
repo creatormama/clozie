@@ -7,7 +7,7 @@ HOW TO USE: Drop this file into the root of your clozie-native project folder. C
 
 READ THIS ENTIRE FILE before doing anything. No exceptions.
 
-Last updated: May 6 2026 — Photo Upload Session 5 wired (camera + gallery in Add Item panel via expo-image-picker; EXIF orientation fix via expo-image-manipulator; photos save with closet items in local state; edit flow preserves photos). May 5 2026: VIP investigation complete (no code changes; VIP work deferred to Session 9). May 4 2026: Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account). May 3 2026: Sections 1-3 cleanup + Supabase auth Session 1.
+Last updated: May 7 2026 — Supabase Wardrobe Session 6A wired (wardrobe_items table + private wardrobe-photos Storage bucket + RLS policies; full Add/Edit/Delete CRUD persists to Supabase; photos upload via arrayBuffer; signed URLs for display; cross-user isolation verified). May 6 2026 — Photo Upload Session 5 wired (camera + gallery in Add Item panel via expo-image-picker; EXIF orientation fix via expo-image-manipulator; photos save with closet items in local state; edit flow preserves photos). May 5 2026: VIP investigation complete (no code changes; VIP work deferred to Session 9). May 4 2026: Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account). May 3 2026: Sections 1-3 cleanup + Supabase auth Session 1.
 Original: March 24 2026 — REBUILD RULE and testing branch rule added.
 
 ---
@@ -703,6 +703,7 @@ These are built fresh — exactly why we switched:
 Login data bug — wrong user's data loaded on shared devices
 Fix in native: Use Supabase auth session properly from day one. No localStorage at all. Every piece of data is keyed to the user's Supabase session, not to the device.
 ✅ FIXED 2026-05-03 (v2026-05-03-supabase-auth-session1) — real Supabase auth wired for Sign Up + Sign In. Sessions persist via AsyncStorage (Supabase's native RN pattern, not browser localStorage). Settings reads logged-in user from session — no hardcoded values.
+✅ EXTENDED 2026-05-07 (v2026-05-07-supabase-wardrobe-session6a) — wardrobe items now persist in Supabase wardrobe_items table with user_id RLS. Photos live in private wardrobe-photos Storage bucket scoped per-user via storage.foldername RLS. No localStorage anywhere in the wardrobe flow.
 
 Name does not survive logout — reverts to email on next login
 Fix in native: Always pull user's name from Supabase profile table on every login. Never rely on cached local data for the user's name.
@@ -1087,6 +1088,7 @@ One screen at a time. In this exact order. Grace approves each screen before the
 - Settings Forgot Password wired to Supabase ✅ DONE 2026-05-04 (Session 2 — note: needs Resend SMTP for emails to actually deliver)
 - Settings Update Password wired to Supabase ✅ DONE 2026-05-04 (Session 2 — verifies current password, validates 8+ chars + new != current + match)
 - Settings Delete Account wired via delete-user Edge Function ✅ DONE 2026-05-04 (Session 2 — Apple Guideline 5.1.1v compliant)
+- Wardrobe items persist in Supabase (wardrobe_items table + private wardrobe-photos Storage bucket + RLS) ✅ DONE 2026-05-07 (Session 6A — full Add/Edit/Delete CRUD)
 - Custom SMTP (Resend) for password reset email delivery — deferred to its own session
 - Clozie smarter learning — smarter note-saving + pattern detection after 5+ ratings
 - Native sharing — outfit cards + Clozie watermark — works on iPhone + Android
@@ -1490,6 +1492,51 @@ Apple Sign-In, Google Sign-In, VIP table, deep linking — still not wired (Sess
 
 Commit: aa920df on testing branch (local only — not yet pushed to remote).
 
+## 2026-05-07 — Supabase Wardrobe wired (Session 6A)
+
+First session on wardrobe persistence. Closet items now save to Supabase across reload, sign-out/in, and device changes. Built on testing branch only — main untouched.
+
+What was wired:
+- Wardrobe items load from Supabase on app open + after sign-in. Each item with a photo gets a 1-hour signed URL for display; URLs regenerate on next load.
+- Add to Closet — uploads photo to Storage at {user_id}/{filename}.jpg, inserts row in wardrobe_items, returns the saved item with signed URL. Button shows "Saving…" during upload.
+- Edit (Save Changes) — detects photo replacement by URI scheme (file:// = new local pick, https:// = unchanged signed URL). Uploads new + updates row + best-effort deletes old photo from Storage.
+- Delete — removes the row + the photo from Storage (best-effort, so a missing photo file never blocks row deletion). Modal disabled during delete with "Removing…" label.
+- Sign-out clears wardrobeItems via onAuthStateChange listener; cross-user isolation verified.
+- Errors throughout: warm Clozie Alert ("Couldn't save your item" / "Couldn't save your changes" / "Couldn't remove your item") with err.message detail. No silent failures.
+
+Supabase setup (one-time, in dashboard):
+- Table wardrobe_items created with full schema: core fields (id uuid PK, user_id uuid FK to auth.users ON DELETE CASCADE, name, category, colour, notes, warmth, photo_path, last_worn, created_at) + AI tracking fields with defaults (exclude_from_styling, times_generated, times_in_loved_outfit, times_in_disliked_outfit, times_worn, times_pinned). Index on user_id.
+- RLS enabled with 4 policies (SELECT/INSERT/UPDATE/DELETE) — each scoped to auth.uid() = user_id.
+- Private Storage bucket wardrobe-photos created. 4 storage.objects RLS policies — each restricts read/upload/update/delete to (storage.foldername(name))[1] = auth.uid()::text.
+- Verification dry-run (test row + test photo upload) confirmed schema + bucket + folder structure work end-to-end.
+
+What was added in code:
+- New file src/lib/wardrobeItems.js — pure helper module exporting fetchWardrobeItems, uploadWardrobePhoto (using fetch + arrayBuffer), getSignedPhotoUrl (1-hour TTL), insertWardrobeItem, updateWardrobeItem, deleteWardrobePhoto, deleteWardrobeItem.
+- App.js — imports from the new helper; new useEffect in MainAppScreen to load items on mount + listen for SIGNED_OUT; isSaving state in WardrobeTab; handleAddItem, handleSaveEdit, handleDeleteItem all rewritten as async with full Supabase wiring; Add/Edit button shows "Saving…" disabled; Remove/Cancel modal buttons disabled with "Removing…" during delete.
+
+Photo upload technique (the footgun):
+The naive fetch(uri).then(r => r.blob()) approach uploads 0-byte files in some RN versions. The reliable path used here is fetch(uri).then(r => r.arrayBuffer()) → upload as ArrayBuffer with contentType 'image/jpeg'. Verified on iPhone in Step 2.3 with file size > 0 bytes confirmation.
+
+Pre-existing tables left alone:
+The Supabase project also contains closet, favorites, profiles tables (default skeletons with only id + created_at, 0 records). Web app uses localStorage, not these tables. They are unused. Not in scope to clean up this session — separate decision.
+
+What was deliberately NOT done this session:
+- AI photo recognition (auto-fill name/category/colour/notes) — Session 6B.
+- Gold shimmer scanning animation — Session 6B.
+- Green confirmation bar after recognition — Session 6B.
+- "CLOZIE RECOGNISED ✦" label — Session 6B.
+- Warmth tag UI in Add Item panel — separate session (warmth column exists in DB, just no input).
+- VIP table / VIP bypass logic — Session 9.
+- Outfit ratings, favorites table wiring — later session.
+- Clean up of unused closet/favorites/profiles tables — separate decision.
+- Custom SMTP for password reset emails — its own session.
+
+Known limitations:
+- Brief flash of empty closet on app open (network roundtrip ~200–500ms) before items load. Acceptable; could add a loading state in a polish pass.
+- Signed URLs expire after 1 hour. They regenerate on next closet load. If user keeps app open longer than 1 hour, photos remain cached in memory; only re-fetched URLs (e.g. after sign-out/in) are fresh.
+
+Committed on testing branch (local). Version label: v2026-05-07-supabase-wardrobe-session6a. Push to remote — Grace's call.
+
 ---
 
 Created March 2026.
@@ -1499,6 +1546,7 @@ Updated May 3 2026 — includes all decisions from April 28, 30, May 1, May 2 se
 Updated May 4 2026 — Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account via Edge Function). Site URL fixed.
 Updated May 5 2026 — VIP investigation complete. Native app confirmed clean — zero hardcoded VIP emails. VIP work deferred to Session 9 (limits and caps).
 Updated May 6 2026 — Photo Upload Session 5 wired. Camera + gallery via expo-image-picker, EXIF orientation fix via expo-image-manipulator. Photos save with items in local state (Supabase Storage upload = Session 6). Add Item panel: Take Photo + Upload File buttons fully functional, 200x200 photo preview, edit flow preserves existing photos. iOS permission strings added to app.config.js.
+Updated May 7 2026 — Supabase Wardrobe Session 6A wired. wardrobe_items table + private wardrobe-photos Storage bucket + RLS policies. Full Add/Edit/Delete CRUD persists to Supabase. Photos upload via arrayBuffer (the RN footgun-safe path). Signed URLs (1hr TTL) for display. Cross-user isolation verified. Helper module src/lib/wardrobeItems.js. App.js: load items on mount, async handlers, Saving/Removing button states, warm Alert on errors.
 
 Drop this file into the root of the clozie-native project folder.
 Drop App_ORIGINAL.jsx in the same folder as reference.
