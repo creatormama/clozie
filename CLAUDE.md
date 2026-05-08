@@ -7,7 +7,7 @@ HOW TO USE: Drop this file into the root of your clozie-native project folder. C
 
 READ THIS ENTIRE FILE before doing anything. No exceptions.
 
-Last updated: May 7 2026 — Supabase Wardrobe Session 6A wired (wardrobe_items table + private wardrobe-photos Storage bucket + RLS policies; full Add/Edit/Delete CRUD persists to Supabase; photos upload via arrayBuffer; signed URLs for display; cross-user isolation verified). May 6 2026 — Photo Upload Session 5 wired (camera + gallery in Add Item panel via expo-image-picker; EXIF orientation fix via expo-image-manipulator; photos save with closet items in local state; edit flow preserves photos). May 5 2026: VIP investigation complete (no code changes; VIP work deferred to Session 9). May 4 2026: Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account). May 3 2026: Sections 1-3 cleanup + Supabase auth Session 1.
+Last updated: May 8 2026 — Photo Recognition Session 6B wired (camera + gallery photos auto-recognized via Claude Sonnet 4.6, fields auto-fill while preserving user-typed content, terracotta CLOZIE RECOGNISED eyebrow inside the sage success bar, terracotta auto-fill border on Clozie-filled fields that clears on user edit, retake refreshes scan via React functional setters). May 7 2026 — Supabase Wardrobe Session 6A wired (wardrobe_items table + private wardrobe-photos Storage bucket + RLS policies; full Add/Edit/Delete CRUD persists to Supabase; photos upload via arrayBuffer; signed URLs for display; cross-user isolation verified). May 6 2026 — Photo Upload Session 5 wired (camera + gallery in Add Item panel via expo-image-picker; EXIF orientation fix via expo-image-manipulator; photos save with closet items in local state; edit flow preserves photos). May 5 2026: VIP investigation complete (no code changes; VIP work deferred to Session 9). May 4 2026: Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account). May 3 2026: Sections 1-3 cleanup + Supabase auth Session 1.
 Original: March 24 2026 — REBUILD RULE and testing branch rule added.
 
 ---
@@ -1089,6 +1089,7 @@ One screen at a time. In this exact order. Grace approves each screen before the
 - Settings Update Password wired to Supabase ✅ DONE 2026-05-04 (Session 2 — verifies current password, validates 8+ chars + new != current + match)
 - Settings Delete Account wired via delete-user Edge Function ✅ DONE 2026-05-04 (Session 2 — Apple Guideline 5.1.1v compliant)
 - Wardrobe items persist in Supabase (wardrobe_items table + private wardrobe-photos Storage bucket + RLS) ✅ DONE 2026-05-07 (Session 6A — full Add/Edit/Delete CRUD)
+- Photo recognition wired — Claude Sonnet 4.6 auto-fills name/category/colour/notes from a wardrobe photo, terracotta CLOZIE RECOGNISED eyebrow inside sage success bar, terracotta auto-fill border on Clozie-filled fields that clears on user edit, no-key + network-error fallbacks ✅ DONE 2026-05-08 (Session 6B)
 - Custom SMTP (Resend) for password reset email delivery — deferred to its own session
 - Clozie smarter learning — smarter note-saving + pattern detection after 5+ ratings
 - Native sharing — outfit cards + Clozie watermark — works on iPhone + Android
@@ -1537,6 +1538,60 @@ Known limitations:
 
 Committed on testing branch (local). Version label: v2026-05-07-supabase-wardrobe-session6a. Push to remote — Grace's call.
 
+## 2026-05-08 — Photo Recognition wired (Session 6B)
+
+First session wiring Clozie photo recognition into the Add Item panel. Camera + gallery photos auto-fill Name/Category/Colour/Notes via Claude Sonnet 4.6. Built on testing branch only — main untouched.
+
+What was wired:
+- Photo compression (already in place from earlier): expo-image-manipulator resizes to 512px width / 0.75 JPEG quality in both handleTakePhoto and handleUploadFile. Faster API roundtrip, smaller Supabase Storage footprint, EXIF orientation baked in.
+- src/lib/clozieRecognition.js — recognition helper. Uses claude-sonnet-4-6, max_tokens 500. Reads API key from process.env.EXPO_PUBLIC_ANTHROPIC_KEY (consistent with src/lib/supabase.js). Validates category against the 6 allowed values, falls back to 'Tops' if invalid, plus a correctCategoryFromName heuristic that catches the ~5% case where the model names "Linen Blazer" but picks the wrong category.
+- Add Item panel scaffolding: three new useState hooks (isScanning, recognitionStatus, autoFilledFields). Conditional status bar between the photo buttons and the tip box. isScanning wired into the Add to Closet button's disable triggers (button greys out during scan).
+- runRecognition + clearStaleClozieFills helpers in WardrobeTab. Four onChangeText/onPress handlers wrapped to drop a field from autoFilledFields the moment the user edits (so retake-clearing knows which fields are still "Clozie's", which are user-typed).
+- Two `await runRecognition(fixed.uri)` calls — one in each photo handler. Recognition becomes live.
+- Retake-bug fix: runRecognition's auto-fill checks switched from closure reads (`!newItemName.trim()`) to functional setters (`setNewItemName((current) => current.trim() ? current : recognized.name)`). Closure values were stale by the time the network call resolved on retake — functional setters always read live state.
+- Terracotta CLOZIE RECOGNISED eyebrow (#A44A34, Outfit Bold, 11px, letter-spacing 2.5, NO sparkle) inside the sage success bar only. Other states (scanning / no-key / error) render without the eyebrow.
+- Terracotta #A44A34 border on auto-filled fields. Same 1.5px width as default — no layout shift. Clears the instant the user types or picks a different category, via the Step 4a onChange wrappers.
+
+Status bar — 4 states, all using locked palette colors only:
+- scanning — bg rgba(200,122,82,0.10), text #C87A52, message "✦ Clozie is reading your item…"
+- success — bg rgba(188,199,183,0.30) (sage pill bg), text #5C4A3A, terracotta eyebrow CLOZIE RECOGNISED in #A44A34, message "Clozie filled in your details — check and edit below!"
+- no-key — bg rgba(44,26,14,0.06), text #5C4A3A, message "No Clozie key — fill in details manually"
+- error — bg rgba(200,122,82,0.10), text #5C4A3A, message "Couldn't read your item — fill in details manually"
+
+Critical design correction caught mid-session:
+The session brief specified #C87A52 for the eyebrow label. I proposed it. Grace caught the error: per the locked design system and the Apple WCAG AA contrast audit (April 28 2026), all UI eyebrow labels use #A44A34; #C87A52 fails contrast on tinted backgrounds. Saved as feedback memory (feedback_eyebrow_label_color.md) to prevent repeats. Final eyebrow color: #A44A34.
+
+Auto-fill behavior on retake (Option A — confirmed with Grace before coding):
+- User-typed fields are never overwritten (functional setter checks current value).
+- Clozie-filled fields are tracked in autoFilledFields. On retake, those fields are cleared so the new scan can refill them.
+- The moment a user edits a field, that field is removed from autoFilledFields — so a subsequent retake won't clobber the user's edit.
+
+What was added in code (App.js + new helper):
+- Import of recognizeWardrobePhoto from src/lib/clozieRecognition.
+- Three new useState hooks in WardrobeTab (isScanning, recognitionStatus, autoFilledFields).
+- Two new helpers in WardrobeTab: clearStaleClozieFills, runRecognition.
+- Six reset spots updated to clear the new state (handleAddItem success, handleSaveEdit success, handleEditItem entry, X-close button, Cancel button, helper-internal).
+- Four onChangeText/onPress handlers wrapped to drop their field from autoFilledFields on user edit.
+- New status-bar JSX between photo buttons and tip box in the Add Item panel.
+- Eight new wardrobeStyles entries: recognitionBar, recognitionBarScanning, recognitionBarSuccess, recognitionBarNoKey, recognitionBarError, recognitionBarText, recognitionBarTextScanning, recognitionBarBadge, fieldInputAutoFilled.
+
+What was deliberately NOT done this session:
+- API key migration to Supabase Edge Function — Session 7 (alongside outfit generation). REMOVE EXPO_PUBLIC_ANTHROPIC_KEY from client before Phase 3 (App Store submission).
+- Outfit generation — Session 7+.
+- Warmth tag UI in Add Item panel — separate session (warmth column already exists in DB).
+- VIP table / VIP bypass logic — Session 9.
+- Custom SMTP for password reset — its own session.
+
+Known limitations / future-session notes captured during this session (spawned as task chips):
+- Some grid card photos look poorly cropped for large photos (Image resizeMode investigation needed).
+- One existing item silently shows the 👗 emoji placeholder — likely a photo that failed to upload during Session 6A.
+- Offline save shows "Please sign in again to add items" instead of a network-aware message. Pre-existing from Session 6A — not in 6B's scope.
+
+Other known limitation:
+- Race condition: if a user retakes a photo before the previous scan completes, the second scan's results win after the first. Not user-noticeable in practice (would require a sub-second retake) but worth a cancel-token in a future polish pass.
+
+Committed on testing branch (local). Version label: v2026-05-08-photo-recognition-session6b. Push to remote — Grace's call.
+
 ---
 
 Created March 2026.
@@ -1547,6 +1602,7 @@ Updated May 4 2026 — Supabase auth Session 2 wired (Settings Sign Out, Forgot 
 Updated May 5 2026 — VIP investigation complete. Native app confirmed clean — zero hardcoded VIP emails. VIP work deferred to Session 9 (limits and caps).
 Updated May 6 2026 — Photo Upload Session 5 wired. Camera + gallery via expo-image-picker, EXIF orientation fix via expo-image-manipulator. Photos save with items in local state (Supabase Storage upload = Session 6). Add Item panel: Take Photo + Upload File buttons fully functional, 200x200 photo preview, edit flow preserves existing photos. iOS permission strings added to app.config.js.
 Updated May 7 2026 — Supabase Wardrobe Session 6A wired. wardrobe_items table + private wardrobe-photos Storage bucket + RLS policies. Full Add/Edit/Delete CRUD persists to Supabase. Photos upload via arrayBuffer (the RN footgun-safe path). Signed URLs (1hr TTL) for display. Cross-user isolation verified. Helper module src/lib/wardrobeItems.js. App.js: load items on mount, async handlers, Saving/Removing button states, warm Alert on errors.
+Updated May 8 2026 — Photo Recognition Session 6B wired. Camera + gallery photos auto-recognized via Claude Sonnet 4.6 (helper at src/lib/clozieRecognition.js, max_tokens 500, category validation + name/category-mismatch correction). Add Item panel: scanning bar, sage success bar with terracotta CLOZIE RECOGNISED eyebrow (#A44A34, no sparkle), terracotta #A44A34 border on Clozie-filled fields that clears on user edit, no-key + network-error fallbacks. Auto-fill never overwrites user-typed content; retake refreshes via React functional setters (closure-staleness fix). API key still in client (.env EXPO_PUBLIC_ANTHROPIC_KEY) — moves to Edge Function in Session 7.
 
 Drop this file into the root of the clozie-native project folder.
 Drop App_ORIGINAL.jsx in the same folder as reference.

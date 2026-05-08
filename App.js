@@ -29,6 +29,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from './src/lib/supabase';
 import { fetchWardrobeItems, getSignedPhotoUrl, uploadWardrobePhoto, insertWardrobeItem, updateWardrobeItem, deleteWardrobePhoto, deleteWardrobeItem } from './src/lib/wardrobeItems';
+import { recognizeWardrobePhoto } from './src/lib/clozieRecognition';
 
 // ── Design tokens — sacred, never change ─────────────────────────────────────
 const G = '#C9A96E';       // gold accent
@@ -1003,6 +1004,9 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [photoUri, setPhotoUri] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [recognitionStatus, setRecognitionStatus] = useState(null);
+  const [autoFilledFields, setAutoFilledFields] = useState({});
   const itemCount = items.length;
   const maxItems = 30;
   const progressWidth = (itemCount / maxItems) * 100;
@@ -1042,6 +1046,9 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       setNewItemColour('');
       setNewItemNotes('');
       setPhotoUri(null);
+      setIsScanning(false);
+      setRecognitionStatus(null);
+      setAutoFilledFields({});
       setShowCategoryPicker(false);
       setShowAddPanel(false);
     } catch (err) {
@@ -1066,6 +1073,9 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
     setNewItemColour(item.colour);
     setNewItemNotes(item.notes);
     setPhotoUri(item.photoUri || null);
+    setIsScanning(false);
+    setRecognitionStatus(null);
+    setAutoFilledFields({});
     setShowAddPanel(true);
   };
 
@@ -1117,6 +1127,9 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       setNewItemColour('');
       setNewItemNotes('');
       setPhotoUri(null);
+      setIsScanning(false);
+      setRecognitionStatus(null);
+      setAutoFilledFields({});
       setShowCategoryPicker(false);
       setShowAddPanel(false);
     } catch (err) {
@@ -1149,6 +1162,72 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
     }
   };
 
+  // Clears any field that was previously auto-filled by Clozie, so a retake
+  // starts fresh. User-typed content is preserved (those fields aren't tracked
+  // in autoFilledFields once the user edits them).
+  const clearStaleClozieFills = () => {
+    setAutoFilledFields((prev) => {
+      if (prev.name) setNewItemName('');
+      if (prev.category) setNewItemCategory('');
+      if (prev.colour) setNewItemColour('');
+      if (prev.notes) setNewItemNotes('');
+      return {};
+    });
+  };
+
+  // Runs the photo through Clozie recognition and auto-fills empty fields.
+  // Only fills a field if it's currently empty — preserves user-typed data.
+  const runRecognition = async (uri) => {
+    setIsScanning(true);
+    setRecognitionStatus('scanning');
+    try {
+      const recognized = await recognizeWardrobePhoto(uri);
+      // Functional setters read the LIVE state value, not the stale closure.
+      // Crucial on retake: clearStaleClozieFills() has just queued empty values
+      // that won't appear in the closure, but `current` here is post-clear.
+      const filled = {};
+      if (recognized.name) {
+        setNewItemName((current) => {
+          if (current.trim()) return current;
+          filled.name = true;
+          return recognized.name;
+        });
+      }
+      if (recognized.category) {
+        setNewItemCategory((current) => {
+          if (current) return current;
+          filled.category = true;
+          return recognized.category;
+        });
+      }
+      if (recognized.color) {
+        setNewItemColour((current) => {
+          if (current.trim()) return current;
+          filled.colour = true;
+          return recognized.color;
+        });
+      }
+      if (recognized.description) {
+        setNewItemNotes((current) => {
+          if (current.trim()) return current;
+          filled.notes = true;
+          return recognized.description;
+        });
+      }
+      setAutoFilledFields(filled);
+      setRecognitionStatus('success');
+    } catch (recogErr) {
+      console.log('Recognition error:', recogErr);
+      if (recogErr?.code === 'NO_KEY') {
+        setRecognitionStatus('no-key');
+      } else {
+        setRecognitionStatus('error');
+      }
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   const handleTakePhoto = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -1165,13 +1244,15 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       });
       if (result.canceled) return;
       const original = result.assets[0];
-      // Re-encode to bake EXIF orientation in — prevents sideways photos
+      // Re-encode + resize: bakes EXIF orientation in, shrinks to 512px max for faster API + smaller storage
       const fixed = await ImageManipulator.manipulateAsync(
         original.uri,
-        [],
-        { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
+        [{ resize: { width: 512 } }],
+        { compress: 0.75, format: ImageManipulator.SaveFormat.JPEG }
       );
+      clearStaleClozieFills();
       setPhotoUri(fixed.uri);
+      await runRecognition(fixed.uri);
     } catch (e) {
       console.log('Take photo error:', e);
       Alert.alert('Something went wrong', 'Please try again.', [{ text: 'OK' }]);
@@ -1195,13 +1276,15 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       });
       if (result.canceled) return;
       const original = result.assets[0];
-      // Re-encode to bake EXIF orientation in — prevents sideways photos
+      // Re-encode + resize: bakes EXIF orientation in, shrinks to 512px max for faster API + smaller storage
       const fixed = await ImageManipulator.manipulateAsync(
         original.uri,
-        [],
-        { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
+        [{ resize: { width: 512 } }],
+        { compress: 0.75, format: ImageManipulator.SaveFormat.JPEG }
       );
+      clearStaleClozieFills();
       setPhotoUri(fixed.uri);
+      await runRecognition(fixed.uri);
     } catch (e) {
       console.log('Upload file error:', e);
       Alert.alert('Something went wrong', 'Please try again.', [{ text: 'OK' }]);
@@ -1353,7 +1436,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
             <Text style={wardrobeStyles.addPanelHeading}>{editingItemId ? 'EDIT ITEM' : 'ADD NEW ITEM'}</Text>
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => { setShowAddPanel(false); setEditingItemId(null); setNewItemName(''); setNewItemCategory(''); setNewItemColour(''); setNewItemNotes(''); setPhotoUri(null); setShowCategoryPicker(false); }}
+              onPress={() => { setShowAddPanel(false); setEditingItemId(null); setNewItemName(''); setNewItemCategory(''); setNewItemColour(''); setNewItemNotes(''); setPhotoUri(null); setIsScanning(false); setRecognitionStatus(null); setAutoFilledFields({}); setShowCategoryPicker(false); }}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               style={{ minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'flex-end' }}
             >
@@ -1386,6 +1469,30 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
             </View>
           </View>
 
+          {/* Recognition status bar — only renders when a scan is in progress / done / failed */}
+          {recognitionStatus && (
+            <View style={[
+              wardrobeStyles.recognitionBar,
+              recognitionStatus === 'scanning' && wardrobeStyles.recognitionBarScanning,
+              recognitionStatus === 'success' && wardrobeStyles.recognitionBarSuccess,
+              recognitionStatus === 'no-key' && wardrobeStyles.recognitionBarNoKey,
+              recognitionStatus === 'error' && wardrobeStyles.recognitionBarError,
+            ]}>
+              {recognitionStatus === 'success' && (
+                <Text style={wardrobeStyles.recognitionBarBadge}>CLOZIE RECOGNISED</Text>
+              )}
+              <Text style={[
+                wardrobeStyles.recognitionBarText,
+                recognitionStatus === 'scanning' && wardrobeStyles.recognitionBarTextScanning,
+              ]}>
+                {recognitionStatus === 'scanning' && '✦ Clozie is reading your item…'}
+                {recognitionStatus === 'success' && 'Clozie filled in your details — check and edit below!'}
+                {recognitionStatus === 'no-key' && 'No Clozie key — fill in details manually'}
+                {recognitionStatus === 'error' && "Couldn't read your item — fill in details manually"}
+              </Text>
+            </View>
+          )}
+
           {/* Tip box */}
           <View style={wardrobeStyles.tipBox}>
             <Text style={wardrobeStyles.tipText}>
@@ -1396,18 +1503,21 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           {/* Name field (required) */}
           <Text style={wardrobeStyles.fieldLabel}>Name *</Text>
           <TextInput
-            style={wardrobeStyles.fieldInput}
+            style={[wardrobeStyles.fieldInput, autoFilledFields.name && wardrobeStyles.fieldInputAutoFilled]}
             placeholder="e.g. Navy Blue Wrap Dress"
             placeholderTextColor="rgba(44,26,14,0.65)"
             value={newItemName}
-            onChangeText={setNewItemName}
+            onChangeText={(text) => {
+              setNewItemName(text);
+              if (autoFilledFields.name) setAutoFilledFields((prev) => ({ ...prev, name: false }));
+            }}
             returnKeyType="next"
           />
 
           {/* Category dropdown */}
           <Text style={wardrobeStyles.fieldLabel}>Category</Text>
           <TouchableOpacity
-            style={wardrobeStyles.fieldInput}
+            style={[wardrobeStyles.fieldInput, autoFilledFields.category && wardrobeStyles.fieldInputAutoFilled]}
             activeOpacity={0.7}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             onPress={() => setShowCategoryPicker(!showCategoryPicker)}
@@ -1430,6 +1540,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
                   activeOpacity={0.7}
                   onPress={() => {
                     setNewItemCategory(cat);
+                    if (autoFilledFields.category) setAutoFilledFields((prev) => ({ ...prev, category: false }));
                     setShowCategoryPicker(false);
                   }}
                 >
@@ -1445,22 +1556,28 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           {/* Colour/pattern field */}
           <Text style={wardrobeStyles.fieldLabel}>Colour / Pattern</Text>
           <TextInput
-            style={wardrobeStyles.fieldInput}
+            style={[wardrobeStyles.fieldInput, autoFilledFields.colour && wardrobeStyles.fieldInputAutoFilled]}
             placeholder="e.g. Navy blue, striped"
             placeholderTextColor="rgba(44,26,14,0.65)"
             value={newItemColour}
-            onChangeText={setNewItemColour}
+            onChangeText={(text) => {
+              setNewItemColour(text);
+              if (autoFilledFields.colour) setAutoFilledFields((prev) => ({ ...prev, colour: false }));
+            }}
             returnKeyType="next"
           />
 
           {/* Notes field */}
           <Text style={wardrobeStyles.fieldLabel}>Notes</Text>
           <TextInput
-            style={[wardrobeStyles.fieldInput, { minHeight: 60 }]}
+            style={[wardrobeStyles.fieldInput, { minHeight: 60 }, autoFilledFields.notes && wardrobeStyles.fieldInputAutoFilled]}
             placeholder="e.g. From Zara, size M, great for date night"
             placeholderTextColor="rgba(44,26,14,0.65)"
             value={newItemNotes}
-            onChangeText={setNewItemNotes}
+            onChangeText={(text) => {
+              setNewItemNotes(text);
+              if (autoFilledFields.notes) setAutoFilledFields((prev) => ({ ...prev, notes: false }));
+            }}
             multiline={true}
             textAlignVertical="top"
           />
@@ -1469,10 +1586,10 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           <TouchableOpacity
             style={[
               wardrobeStyles.addToClosetButton,
-              (!newItemName.trim() || isSaving) && wardrobeStyles.addToClosetButtonDisabled,
+              (!newItemName.trim() || isSaving || isScanning) && wardrobeStyles.addToClosetButtonDisabled,
             ]}
-            activeOpacity={newItemName.trim() && !isSaving ? 0.8 : 1}
-            disabled={!newItemName.trim() || isSaving}
+            activeOpacity={newItemName.trim() && !isSaving && !isScanning ? 0.8 : 1}
+            disabled={!newItemName.trim() || isSaving || isScanning}
             onPress={editingItemId ? handleSaveEdit : handleAddItem}
           >
             <Text style={wardrobeStyles.addToClosetButtonText}>
@@ -1493,6 +1610,9 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
               setNewItemColour('');
               setNewItemNotes('');
               setPhotoUri(null);
+              setIsScanning(false);
+              setRecognitionStatus(null);
+              setAutoFilledFields({});
               setShowCategoryPicker(false);
             }}
           >
@@ -6442,6 +6562,41 @@ const wardrobeStyles = StyleSheet.create({
     color: '#5C4A3A',
     lineHeight: 18,
   },
+  recognitionBar: {
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  recognitionBarScanning: {
+    backgroundColor: 'rgba(200,122,82,0.10)',
+  },
+  recognitionBarSuccess: {
+    backgroundColor: 'rgba(188,199,183,0.30)',
+  },
+  recognitionBarNoKey: {
+    backgroundColor: 'rgba(44,26,14,0.06)',
+  },
+  recognitionBarError: {
+    backgroundColor: 'rgba(200,122,82,0.10)',
+  },
+  recognitionBarText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: '#5C4A3A',
+  },
+  recognitionBarTextScanning: {
+    color: '#C87A52',
+  },
+  recognitionBarBadge: {
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 11,
+    letterSpacing: 2.5,
+    color: '#A44A34',
+    marginBottom: 4,
+  },
   fieldLabel: {
     fontFamily: 'Outfit_700Bold',
     fontSize: 11,
@@ -6461,6 +6616,9 @@ const wardrobeStyles = StyleSheet.create({
     fontFamily: 'Outfit_400Regular',
     fontSize: 13,
     color: '#2C1A0E',
+  },
+  fieldInputAutoFilled: {
+    borderColor: '#A44A34',
   },
   categoryPicker: {
     backgroundColor: '#FFFFFF',
