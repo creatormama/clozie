@@ -30,6 +30,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from './src/lib/supabase';
 import { fetchWardrobeItems, getSignedPhotoUrl, uploadWardrobePhoto, insertWardrobeItem, updateWardrobeItem, deleteWardrobePhoto, deleteWardrobeItem } from './src/lib/wardrobeItems';
 import { recognizeWardrobePhoto } from './src/lib/clozieRecognition';
+import { generateOutfits } from './src/lib/outfitGeneration';
 
 // ── Design tokens — sacred, never change ─────────────────────────────────────
 const G = '#C9A96E';       // gold accent
@@ -1905,7 +1906,14 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
         ]}
         activeOpacity={selectedTemperature && selectedCondition && selectedOccasion ? 0.8 : 1}
         disabled={!(selectedTemperature && selectedCondition && selectedOccasion)}
-        onPress={onGenerate}
+        onPress={() => onGenerate({
+          temperature: selectedTemperature,
+          condition: selectedCondition,
+          occasion: selectedOccasion,
+          indoors,
+          pinnedItemId,
+          brief: extraNotes.trim() || null,
+        })}
       >
         <Text style={[
           vibeStyles.generateButtonText,
@@ -2188,7 +2196,7 @@ const polaroidStyles = StyleSheet.create({
 });
 
 // ── Your Looks Tab ──────────────────────────────────────────────────────────
-function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
+function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, wardrobeItems }) {
   // ── DEMO_MODE: flip to `true` for visual testing (HIG audit, Mood Board / Hanger View / Saved Outfits review). Production: always `false`. ──
   const DEMO_MODE = false;
 
@@ -2316,8 +2324,9 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
 
   // Outfit shape: { id: string, vibe: string (uppercase), name: string,
   //                 description: string (quoted), items: WardrobeItem[] }
-  // Production: empty. DEMO_MODE: 3 fixture outfits covering main layouts (top+bottom+shoes+acc, dress, outerwear).
-  const outfits = DEMO_MODE ? [
+  // Production: outfits come from MainAppScreen via outfitsProp (Edge Function response,
+  // resolved against wardrobeItems). DEMO_MODE: 3 fixture outfits for visual testing.
+  const DEMO_OUTFITS = [
     {
       id: 'demo-1',
       vibe: 'ROMANTIC',
@@ -2353,11 +2362,19 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
         { id: 'd3-4', name: 'Chelsea Boots',     category: 'Shoes' },
       ],
     },
-  ] : [];
+  ];
+  const outfits = DEMO_MODE ? DEMO_OUTFITS : (outfitsProp || []);
 
+  // Drive local loading/hasGenerated flags from the lifted generationStatus.
+  // 'idle'    → leave alone (preserves DEMO_MODE initial state)
+  // 'loading' → show spinner, hide stale outfits
+  // 'success' → show outfits
+  // 'error'   → show warm Clozie message inside the empty-state slot
   useEffect(() => {
-    if (isGenerating && !hasGenerated) {
+    if (generationStatus === 'loading') {
       setLoading(true);
+      setHasGenerated(false);
+      spinAnim.setValue(0);
       Animated.loop(
         Animated.timing(spinAnim, {
           toValue: 1,
@@ -2365,15 +2382,14 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
           useNativeDriver: true,
         })
       ).start();
-
-      const timer = setTimeout(() => {
-        setLoading(false);
-        setHasGenerated(true);
-      }, 2000);
-
-      return () => clearTimeout(timer);
+    } else if (generationStatus === 'success') {
+      setLoading(false);
+      setHasGenerated(true);
+    } else if (generationStatus === 'error') {
+      setLoading(false);
+      setHasGenerated(false);
     }
-  }, [isGenerating]);
+  }, [generationStatus]);
 
   const spin = spinAnim.interpolate({
     inputRange: [0, 1],
@@ -2412,20 +2428,36 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
         )}
       </View>
 
-      {/* Empty state — shown when no outfits generated yet */}
+      {/* Empty state — shown when no outfits generated yet, OR a warm Clozie error */}
       {(!hasGenerated || outfits.length === 0) && (
         <View style={looksStyles.emptyState}>
-          <Text style={looksStyles.emptyTitle}>No outfits yet</Text>
-          <Text style={looksStyles.emptyText}>
-            Head to Today's Vibe, tell Clozie about your day, and she'll create your perfect looks.
-          </Text>
-          <TouchableOpacity
-            style={looksStyles.emptyButton}
-            activeOpacity={0.8}
-            onPress={onGoToVibe}
-          >
-            <Text style={looksStyles.emptyButtonText}>Go to Today's Vibe →</Text>
-          </TouchableOpacity>
+          {generationStatus === 'error' && generationError ? (
+            <>
+              <Text style={looksStyles.emptyTitle}>Hmm</Text>
+              <Text style={looksStyles.emptyText}>{generationError}</Text>
+              <TouchableOpacity
+                style={looksStyles.emptyButton}
+                activeOpacity={0.8}
+                onPress={onGoToVibe}
+              >
+                <Text style={looksStyles.emptyButtonText}>Adjust your vibe →</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <Text style={looksStyles.emptyTitle}>No outfits yet</Text>
+              <Text style={looksStyles.emptyText}>
+                Head to Today's Vibe, tell Clozie about your day, and she'll create your perfect looks.
+              </Text>
+              <TouchableOpacity
+                style={looksStyles.emptyButton}
+                activeOpacity={0.8}
+                onPress={onGoToVibe}
+              >
+                <Text style={looksStyles.emptyButtonText}>Go to Today's Vibe →</Text>
+              </TouchableOpacity>
+            </>
+          )}
 
           {/* DEBUG — Mood Board layout switcher button. Gated behind DEMO_MODE (May 2026). */}
           {DEMO_MODE && (
@@ -2465,7 +2497,11 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
             {outfit.items.length > 0 ? outfit.items.map((item) => (
               <View key={item.id} style={looksStyles.photoStripItem}>
                 <View style={looksStyles.photoStripThumb}>
-                  <Text style={{ fontSize: 22 }}>{getCategoryEmoji(item.category)}</Text>
+                  {item.photoUri ? (
+                    <Image source={{ uri: item.photoUri }} style={looksStyles.photoStripThumbImage} />
+                  ) : (
+                    <Text style={{ fontSize: 22 }}>{getCategoryEmoji(item.category)}</Text>
+                  )}
                 </View>
                 <Text style={looksStyles.photoStripName} numberOfLines={1}>{item.name}</Text>
               </View>
@@ -3013,7 +3049,11 @@ function YourLooksTab({ onGoToVibe, isGenerating, wardrobeItems }) {
                         {outfit.items.map((item) => (
                           <View key={item.id} style={savedStyles.photoStripItem}>
                             <View style={savedStyles.photoStripThumb}>
-                              <Text style={{ fontSize: 20 }}>{getCategoryEmoji(item.category)}</Text>
+                              {item.photoUri ? (
+                                <Image source={{ uri: item.photoUri }} style={savedStyles.photoStripThumbImage} />
+                              ) : (
+                                <Text style={{ fontSize: 20 }}>{getCategoryEmoji(item.category)}</Text>
+                              )}
                             </View>
                           </View>
                         ))}
@@ -3217,6 +3257,11 @@ const savedStyles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  photoStripThumbImage: {
+    width: '100%',
+    height: '100%',
   },
   vibeLabel: {
     fontFamily: 'Outfit_700Bold',
@@ -5218,7 +5263,10 @@ function TabMirrorIcon({ active }) {
 function MainAppScreen({ onSignOut }) {
   const [activeTab, setActiveTab] = useState(0);
   const [wardrobeItems, setWardrobeItems] = useState([]);
-  const [hasTriggeredGenerate, setHasTriggeredGenerate] = useState(false);
+  // Generation status drives Your Looks: 'idle' | 'loading' | 'success' | 'error'
+  const [generationStatus, setGenerationStatus] = useState('idle');
+  const [generatedOutfits, setGeneratedOutfits] = useState([]);
+  const [generationError, setGenerationError] = useState('');
   const [showSettingsScreen, setShowSettingsScreen] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -5267,6 +5315,57 @@ function MainAppScreen({ onSignOut }) {
     };
   }, []);
 
+  // Called from Today's Vibe → switches to Your Looks → calls Edge Function →
+  // resolves item IDs to full WardrobeItem objects → drives YourLooksTab via lifted state.
+  const handleGenerate = async (payload) => {
+    if (generationStatus === 'loading') return; // spam-tap guard
+    setGenerationStatus('loading');
+    setGenerationError('');
+    setGeneratedOutfits([]);
+    setActiveTab(3);
+
+    // Read style profile from auth.user_metadata (same shape as StyleDNATab saves it)
+    let styleProfile = null;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const meta = user?.user_metadata || {};
+      styleProfile = {
+        styles: Array.isArray(meta.styles) ? meta.styles : [],
+        colours: Array.isArray(meta.colours) ? meta.colours : [],
+        neverWear: typeof meta.never_wear === 'string' ? meta.never_wear : '',
+      };
+    } catch {
+      // Continue without style profile.
+    }
+
+    try {
+      const response = await generateOutfits({ ...payload, styleProfile });
+      const itemsById = new Map(wardrobeItems.map((i) => [i.id, i]));
+      const resolved = (response.outfits || []).map((o) => ({
+        ...o,
+        items: (Array.isArray(o.items) ? o.items : [])
+          .map((id) => itemsById.get(id))
+          .filter(Boolean),
+      }));
+      setGeneratedOutfits(resolved);
+      setGenerationStatus('success');
+    } catch (err) {
+      const code = err?.code;
+      let warm;
+      if (code === 'not_enough_items') {
+        warm = 'Add at least 5 items to your wardrobe for Clozie to style you.';
+      } else if (code === 'missing_essentials') {
+        warm = 'Add at least one top and one bottom (or a dress) so Clozie can style you.';
+      } else if (code === 'invalid_pin') {
+        warm = "That pinned item isn't available to style — pick another.";
+      } else {
+        warm = "Couldn't generate outfits — please try again";
+      }
+      setGenerationError(warm);
+      setGenerationStatus('error');
+    }
+  };
+
   const tabs = [
     { label: 'My Style', icon: '✦', IconComponent: TabStarIcon },
     { label: `My Closet (${wardrobeItems.length})`, icon: '👗', IconComponent: TabHangerIcon },
@@ -5293,8 +5392,8 @@ function MainAppScreen({ onSignOut }) {
       {/* Tab content area */}
       {activeTab === 0 && <StyleDNATab onBuildCloset={() => setActiveTab(1)} />}
       {activeTab === 1 && <WardrobeTab items={wardrobeItems} setItems={setWardrobeItems} onGoToVibe={() => setActiveTab(2)} />}
-      {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} onGenerate={() => { setHasTriggeredGenerate(true); setActiveTab(3); }} />}
-      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} isGenerating={hasTriggeredGenerate} wardrobeItems={wardrobeItems} />}
+      {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} onGenerate={handleGenerate} />}
+      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} wardrobeItems={wardrobeItems} />}
 
       {/* Bottom tab bar */}
       <View style={mainStyles.tabBar}>
@@ -7266,6 +7365,11 @@ const looksStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
+    overflow: 'hidden',
+  },
+  photoStripThumbImage: {
+    width: '100%',
+    height: '100%',
   },
   photoStripName: {
     fontFamily: 'Outfit_400Regular',
