@@ -7,7 +7,7 @@ HOW TO USE: Drop this file into the root of your clozie-native project folder. C
 
 READ THIS ENTIRE FILE before doing anything. No exceptions.
 
-Last updated: May 9 2026 — My Style Persistence Session 7b-0 wired (style profile — selected styles, colour palettes, and never-wear text — now persists in Supabase via auth.user_metadata; loads on My Style tab mount; saves when user taps Build My Closet; Skip does not save; gentle terracotta inline error if save fails). May 8 2026 — Outfit Edge Function Session 7a wired (photo recognition migrated to Supabase Edge Function `recognize-photo`; Anthropic API key removed from client `.env` and `app.config.js`; key now lives ONLY in Supabase Edge Function secrets as ANTHROPIC_API_KEY; auth-gated; closes the API-key-in-client vulnerability described in Legal Tracker §14.10). May 8 2026 — Photo Recognition Session 6B wired (camera + gallery photos auto-recognized via Claude Sonnet 4.6, fields auto-fill while preserving user-typed content, terracotta CLOZIE RECOGNISED eyebrow inside the sage success bar, terracotta auto-fill border on Clozie-filled fields that clears on user edit, retake refreshes scan via React functional setters). May 7 2026 — Supabase Wardrobe Session 6A wired (wardrobe_items table + private wardrobe-photos Storage bucket + RLS policies; full Add/Edit/Delete CRUD persists to Supabase; photos upload via arrayBuffer; signed URLs for display; cross-user isolation verified). May 6 2026 — Photo Upload Session 5 wired (camera + gallery in Add Item panel via expo-image-picker; EXIF orientation fix via expo-image-manipulator; photos save with closet items in local state; edit flow preserves photos). May 5 2026: VIP investigation complete (no code changes; VIP work deferred to Session 9). May 4 2026: Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account). May 3 2026: Sections 1-3 cleanup + Supabase auth Session 1.
+Last updated: May 9 2026 — generate-outfits Edge Function Session 7b-1 wired (skeleton + stub response — no Anthropic call yet; auth-gated, JWT verify ON; accepts temperature/condition/occasion/indoors/pinnedItemId/brief/styleProfile; three gates — minimum 5 styleable items + (Tops AND Bottoms) OR Dresses + valid pin; returns 3 stub outfits with real wardrobe item UUIDs and source: "stub"; tested via curl; client wiring deferred to Session 7b-2). May 9 2026 — My Style Persistence Session 7b-0 wired (style profile — selected styles, colour palettes, and never-wear text — now persists in Supabase via auth.user_metadata; loads on My Style tab mount; saves when user taps Build My Closet; Skip does not save; gentle terracotta inline error if save fails). May 8 2026 — Outfit Edge Function Session 7a wired (photo recognition migrated to Supabase Edge Function `recognize-photo`; Anthropic API key removed from client `.env` and `app.config.js`; key now lives ONLY in Supabase Edge Function secrets as ANTHROPIC_API_KEY; auth-gated; closes the API-key-in-client vulnerability described in Legal Tracker §14.10). May 8 2026 — Photo Recognition Session 6B wired (camera + gallery photos auto-recognized via Claude Sonnet 4.6, fields auto-fill while preserving user-typed content, terracotta CLOZIE RECOGNISED eyebrow inside the sage success bar, terracotta auto-fill border on Clozie-filled fields that clears on user edit, retake refreshes scan via React functional setters). May 7 2026 — Supabase Wardrobe Session 6A wired (wardrobe_items table + private wardrobe-photos Storage bucket + RLS policies; full Add/Edit/Delete CRUD persists to Supabase; photos upload via arrayBuffer; signed URLs for display; cross-user isolation verified). May 6 2026 — Photo Upload Session 5 wired (camera + gallery in Add Item panel via expo-image-picker; EXIF orientation fix via expo-image-manipulator; photos save with closet items in local state; edit flow preserves photos). May 5 2026: VIP investigation complete (no code changes; VIP work deferred to Session 9). May 4 2026: Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account). May 3 2026: Sections 1-3 cleanup + Supabase auth Session 1.
 Original: March 24 2026 — REBUILD RULE and testing branch rule added.
 
 ---
@@ -1107,6 +1107,7 @@ One screen at a time. In this exact order. Grace approves each screen before the
 - Photo recognition wired — Claude Sonnet 4.6 auto-fills name/category/colour/notes from a wardrobe photo, terracotta CLOZIE RECOGNISED eyebrow inside sage success bar, terracotta auto-fill border on Clozie-filled fields that clears on user edit, no-key + network-error fallbacks ✅ DONE 2026-05-08 (Session 6B)
 - Photo recognition Edge Function migration — `recognize-photo` Supabase Edge Function holds Anthropic key server-side, JWT-verify ON, internal auth check + image size sanity check; client `src/lib/clozieRecognition.js` now calls `supabase.functions.invoke('recognize-photo', ...)` instead of api.anthropic.com directly; EXPO_PUBLIC_ANTHROPIC_KEY removed from `.env` and `app.config.js`; closes Legal Tracker §14.10 vulnerability ✅ DONE 2026-05-08 (Session 7a)
 - My Style profile persists in Supabase (selected styles + colour palettes + never-wear text saved to auth.user_metadata; loads on tab mount; saves on Build My Closet tap; Skip does not save) ✅ DONE 2026-05-09 (Session 7b-0)
+- generate-outfits Edge Function deployed in stub mode — auth-gated (JWT verify ON), reads wardrobe from Supabase (excluding exclude_from_styling=true), enforces three gates (5 styleable items minimum, (Tops AND Bottoms) OR Dresses essentials, valid pin), returns 3 stub outfits with real wardrobe item UUIDs and source: "stub" debug marker; tested via curl from terminal; client wiring + Anthropic call + JS smart fallback all in later 7b sessions ✅ DONE 2026-05-09 (Session 7b-1)
 - Custom SMTP (Resend) for password reset email delivery — deferred to its own session
 - Clozie smarter learning — smarter note-saving + pattern detection after 5+ ratings
 - Native sharing — outfit cards + Clozie watermark — works on iPhone + Android
@@ -1676,6 +1677,59 @@ What was deliberately NOT done this session:
 
 Commit: TBD on testing branch. Version label: v2026-05-09-mystyle-persistence-session7b0. Push to remote — Grace's call.
 
+## 2026-05-09 — generate-outfits Edge Function wired in stub mode (Session 7b-1)
+
+First session of the outfit generation system. New Supabase Edge Function deployed — STUB ONLY, no Anthropic call. Built on testing branch only — main untouched.
+
+What was wired:
+- New Edge Function `generate-outfits` deployed via Supabase dashboard (paste-via-editor — same pattern as recognize-photo and delete-user). JWT verify ON. Source-of-truth backup at supabase/functions/generate-outfits/README.md (markdown only — paste into dashboard to update).
+- CORS preflight handler + `[generate-outfits]` log prefix mirrors recognize-photo's structure.
+- Auth flow: extracts Bearer token → `auth.getUser(token)` → 401 if invalid. User's JWT also passed via global.headers.Authorization so RLS sees the logged-in user on subsequent DB queries.
+- Request body: temperature, condition, occasion (all required strings); indoors (boolean), pinnedItemId (string|null), brief (string|null), styleProfile ({styles, colours, neverWear}|null) all optional. Type-validated, logged, but NOT used in stub composition (stays for future sessions).
+- DB query: `wardrobe_items` filtered to `exclude_from_styling !== true` (NULL treated as not-excluded for legacy rows).
+
+Three gates (in order):
+- Minimum count: < 5 styleable items → 400 `{ error: "not_enough_items", message: "Add at least 5 items to your wardrobe for Clozie to style you." }`. Counted POST-filter so excluded items don't pad the total.
+- Minimum essentials: must have (Tops AND Bottoms) OR Dresses → 400 `{ error: "missing_essentials", message: "Add at least one top and one bottom (or a dress) so Clozie can style you." }`.
+- Valid pin: if pinnedItemId provided, must exist in styleable set → 400 `{ error: "invalid_pin", message: "That pinned item isn't available to style — pick another." }`.
+
+Stub composition (anatomy-aware — picks real items from user's wardrobe):
+- Outfit 1 (vibe EFFORTLESS, name "Morning Coffee Run"): Tops + Bottoms + Shoes layout.
+- Outfit 2 (vibe CHIC, name "Studio to Street"): Dresses + Shoes layout (falls back to Outfit-1 layout if no dress).
+- Outfit 3 (vibe FRESH, name "Quiet Confidence"): Tops + Bottoms + Light Outerwear layout (falls back to Shoes if no light outerwear).
+- Light outerwear regex matches CLAUDE.md spec — cardigans, blazers, vests, sweaters, denim/light jackets, shackets, cropped jackets, boleros. Heavy outerwear (puffers, parkas, trench coats) intentionally excluded from stub.
+- Pinned item appears in every outfit. If its category matches a layout slot, the pin fills it instead of a random pick. Same contract Sonnet generation will follow in 7b-3.
+- Stub may reuse items across outfits if a category has only 1 item (e.g. Grace's account has 1 Shoe → it appears in all 3 outfits). Documented as intentional. Sonnet generation will avoid reuse naturally.
+- `crypto.randomUUID()` for outfit IDs.
+- Hardcoded `styleMatchScore: 87` on every outfit.
+
+Response shape: `{ outfits: [...3...], source: "stub" }`. Each outfit: `{ id, vibe (UPPERCASE), name, description, items: [item_id_string, ...], styleMatchScore }`. The items array is item_id strings (NOT full WardrobeItem objects) — Session 7b-2 will resolve IDs against the client's wardrobeItems state to populate the display objects expected by the Your Looks tab. Slim payload, decouples server model from client display.
+
+Source field: "stub" → changes to "sonnet" in 7b-3 once the real Anthropic call is wired.
+
+Testing approach:
+- Server-side curl test from terminal — no iPhone testing needed for 7b-1.
+- Temporary one-line console.log added to App.js to print the user's JWT to Metro logs, then reverted before commit. App.js diff for 7b-1 = zero net lines (added then removed in same session).
+- Verified end-to-end with Grace's account (insuredbyjacek@msn.com): 3 outfits returned with real wardrobe item UUIDs from her closet, all gates passed, source: "stub" confirmed.
+
+What was deliberately NOT done this session (later 7b sessions own these):
+- No Anthropic API call (7b-3). The function does not read ANTHROPIC_API_KEY in 7b-1.
+- No client-side wiring — App.js untouched (zero net diff). Generate button still flips a flag and switches tabs. Wiring lands in 7b-2.
+- No iPhone testing — server-side curl only.
+- No real outfit intelligence — input fields validated and logged but ignored by composition. Comes in 7b-3 (Anthropic) + 7b-4 (intelligence layer).
+- No prompt caching, no system prompt, no JSON validation logic (7b-3+).
+- No JS smart rule-based fallback when Anthropic fails (Session 7c).
+- No session counter / weekly limits / VIP table / VIP bypass (Session 9 / 16).
+- No AI consent modal (Session 8 territory before App Store).
+- No outfit history storage (Session 9).
+
+Known limitations:
+- Edge Function code lives in Supabase dashboard, not in version control. Only the README.md is in repo. Same paste-deploy discipline as recognize-photo and delete-user — must update the README.md every time the dashboard code changes.
+- Stub may produce 1-item or 2-item outfits if user is missing layout categories (e.g. has tops + dress but no bottoms or shoes). Acceptable for a skeleton — Sonnet generation will produce richer outfits.
+- Cross-outfit item reuse when a category has only 1 item — by design; Sonnet handles this differently.
+
+Commit: TBD on testing branch. Version label: v2026-05-09-generate-outfits-stub-session7b1. Push to remote — Grace's call.
+
 ---
 
 Created March 2026.
@@ -1689,6 +1743,7 @@ Updated May 7 2026 — Supabase Wardrobe Session 6A wired. wardrobe_items table 
 Updated May 8 2026 — Photo Recognition Session 6B wired. Camera + gallery photos auto-recognized via Claude Sonnet 4.6 (helper at src/lib/clozieRecognition.js, max_tokens 500, category validation + name/category-mismatch correction). Add Item panel: scanning bar, sage success bar with terracotta CLOZIE RECOGNISED eyebrow (#A44A34, no sparkle), terracotta #A44A34 border on Clozie-filled fields that clears on user edit, no-key + network-error fallbacks. Auto-fill never overwrites user-typed content; retake refreshes via React functional setters (closure-staleness fix). API key still in client (.env EXPO_PUBLIC_ANTHROPIC_KEY) — moves to Edge Function in Session 7.
 Updated May 8 2026 — Outfit Edge Function Session 7a wired. Photo recognition migrated to Supabase Edge Function `recognize-photo` (source-of-truth backup at supabase/functions/recognize-photo/README.md). EXPO_PUBLIC_ANTHROPIC_KEY removed from `.env` and `app.config.js` — Anthropic key now lives ONLY in Supabase Edge Function secrets as ANTHROPIC_API_KEY. Anthropic $50/month spend cap set as safety belt. src/lib/clozieRecognition.js rewritten (113 → 41 lines): now calls `supabase.functions.invoke('recognize-photo', ...)` instead of api.anthropic.com directly. Public function signature unchanged — App.js untouched. Closes Legal Tracker §14.10 (API-key-in-client vulnerability). Outfit generation deferred to Session 7b.
 Updated May 9 2026 — My Style Persistence Session 7b-0 wired. Style profile (selected styles, colour palettes, never-wear text) now persists in Supabase via auth.user_metadata. StyleDNATab loads from user_metadata on mount; Build My Closet saves before navigating; Skip navigates without saving; gentle terracotta inline error on save failure. No new table — uses same pattern as Settings → Edit Profile. Hard blocker for outfit generation cleared. Sessions 7b-1 through 7b-4 will build the outfit Edge Function on top of this.
+Updated May 9 2026 — generate-outfits Edge Function Session 7b-1 wired. Skeleton + stub response only — no Anthropic call yet (lands in 7b-3). Auth-gated (JWT verify ON), reads wardrobe from Supabase, three gates (5 styleable items, (Tops AND Bottoms) OR Dresses, valid pin). Returns 3 stub outfits with real wardrobe item UUIDs from user's closet — anatomy-aware layouts (Top+Bottom+Shoes / Dress+Shoes / Top+Bottom+LightOuterwear), pinned item appears in every outfit. Source field "stub" → "sonnet" in 7b-3. Source-of-truth backup at supabase/functions/generate-outfits/README.md. Tested via curl. Client wiring deferred to Session 7b-2.
 
 Drop this file into the root of the clozie-native project folder.
 Drop App_ORIGINAL.jsx in the same folder as reference.
