@@ -829,6 +829,29 @@ function StyleDNATab({ onBuildCloset }) {
   const [selectedStyles, setSelectedStyles] = useState([]);
   const [selectedColours, setSelectedColours] = useState([]);
   const [neverWear, setNeverWear] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
+  // Load saved style profile from Supabase user_metadata on mount.
+  // Silent fallback — if no session or network fails, start blank (same as before).
+  useEffect(() => {
+    let cancelled = false;
+    const loadStyle = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || cancelled) return;
+        const meta = user.user_metadata || {};
+        if (Array.isArray(meta.styles)) setSelectedStyles(meta.styles);
+        if (Array.isArray(meta.colours)) setSelectedColours(meta.colours);
+        if (typeof meta.never_wear === 'string') setNeverWear(meta.never_wear);
+      } catch {
+        // Silent fallback — start blank.
+      }
+    };
+    loadStyle();
+    return () => { cancelled = true; };
+  }, []);
+
   const scaleAnims = useRef(
     ['Minimalist', 'Streetwear', 'Classic', 'Bohemian', 'Sporty', 'Romantic', 'Edgy', 'Business']
       .map(() => new Animated.Value(1))
@@ -861,6 +884,25 @@ function StyleDNATab({ onBuildCloset }) {
     setSelectedColours((prev) =>
       prev.includes(colour) ? prev.filter((c) => c !== colour) : [...prev, colour]
     );
+  };
+
+  const handleBuildCloset = async () => {
+    if (isSaving) return;
+    setSaveError('');
+    setIsSaving(true);
+    const { error } = await supabase.auth.updateUser({
+      data: {
+        styles: selectedStyles,
+        colours: selectedColours,
+        never_wear: neverWear.trim(),
+      },
+    });
+    setIsSaving(false);
+    if (error) {
+      setSaveError("Couldn't save your style — please try again");
+      return;
+    }
+    onBuildCloset();
   };
 
   return (
@@ -950,12 +992,18 @@ function StyleDNATab({ onBuildCloset }) {
 
       {/* Build My Closet button */}
       <TouchableOpacity
-        style={dnaStyles.buildButton}
+        style={[dnaStyles.buildButton, isSaving && { opacity: 0.6 }]}
         activeOpacity={0.8}
-        onPress={onBuildCloset}
+        onPress={handleBuildCloset}
+        disabled={isSaving}
       >
-        <Text style={dnaStyles.buildButtonText}>Build My Closet →</Text>
+        <Text style={dnaStyles.buildButtonText}>{isSaving ? 'Saving…' : 'Build My Closet →'}</Text>
       </TouchableOpacity>
+
+      {/* Save error — gentle inline message, no block */}
+      {saveError ? (
+        <Text style={dnaStyles.saveError}>{saveError}</Text>
+      ) : null}
 
       {/* Skip link */}
       <TouchableOpacity
@@ -6386,6 +6434,14 @@ const dnaStyles = StyleSheet.create({
     color: '#5C4A3A',
     textAlign: 'center',
     marginBottom: 20,
+  },
+  saveError: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: 'rgba(164,74,52,0.88)',
+    textAlign: 'center',
+    marginBottom: 12,
+    marginTop: 4,
   },
 });
 

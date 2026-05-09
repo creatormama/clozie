@@ -7,7 +7,7 @@ HOW TO USE: Drop this file into the root of your clozie-native project folder. C
 
 READ THIS ENTIRE FILE before doing anything. No exceptions.
 
-Last updated: May 8 2026 — Outfit Edge Function Session 7a wired (photo recognition migrated to Supabase Edge Function `recognize-photo`; Anthropic API key removed from client `.env` and `app.config.js`; key now lives ONLY in Supabase Edge Function secrets as ANTHROPIC_API_KEY; auth-gated; closes the API-key-in-client vulnerability described in Legal Tracker §14.10). May 8 2026 — Photo Recognition Session 6B wired (camera + gallery photos auto-recognized via Claude Sonnet 4.6, fields auto-fill while preserving user-typed content, terracotta CLOZIE RECOGNISED eyebrow inside the sage success bar, terracotta auto-fill border on Clozie-filled fields that clears on user edit, retake refreshes scan via React functional setters). May 7 2026 — Supabase Wardrobe Session 6A wired (wardrobe_items table + private wardrobe-photos Storage bucket + RLS policies; full Add/Edit/Delete CRUD persists to Supabase; photos upload via arrayBuffer; signed URLs for display; cross-user isolation verified). May 6 2026 — Photo Upload Session 5 wired (camera + gallery in Add Item panel via expo-image-picker; EXIF orientation fix via expo-image-manipulator; photos save with closet items in local state; edit flow preserves photos). May 5 2026: VIP investigation complete (no code changes; VIP work deferred to Session 9). May 4 2026: Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account). May 3 2026: Sections 1-3 cleanup + Supabase auth Session 1.
+Last updated: May 9 2026 — My Style Persistence Session 7b-0 wired (style profile — selected styles, colour palettes, and never-wear text — now persists in Supabase via auth.user_metadata; loads on My Style tab mount; saves when user taps Build My Closet; Skip does not save; gentle terracotta inline error if save fails). May 8 2026 — Outfit Edge Function Session 7a wired (photo recognition migrated to Supabase Edge Function `recognize-photo`; Anthropic API key removed from client `.env` and `app.config.js`; key now lives ONLY in Supabase Edge Function secrets as ANTHROPIC_API_KEY; auth-gated; closes the API-key-in-client vulnerability described in Legal Tracker §14.10). May 8 2026 — Photo Recognition Session 6B wired (camera + gallery photos auto-recognized via Claude Sonnet 4.6, fields auto-fill while preserving user-typed content, terracotta CLOZIE RECOGNISED eyebrow inside the sage success bar, terracotta auto-fill border on Clozie-filled fields that clears on user edit, retake refreshes scan via React functional setters). May 7 2026 — Supabase Wardrobe Session 6A wired (wardrobe_items table + private wardrobe-photos Storage bucket + RLS policies; full Add/Edit/Delete CRUD persists to Supabase; photos upload via arrayBuffer; signed URLs for display; cross-user isolation verified). May 6 2026 — Photo Upload Session 5 wired (camera + gallery in Add Item panel via expo-image-picker; EXIF orientation fix via expo-image-manipulator; photos save with closet items in local state; edit flow preserves photos). May 5 2026: VIP investigation complete (no code changes; VIP work deferred to Session 9). May 4 2026: Supabase auth Session 2 wired (Settings Sign Out, Forgot Password, Update Password, Clear Memory stub, Delete Account). May 3 2026: Sections 1-3 cleanup + Supabase auth Session 1.
 Original: March 24 2026 — REBUILD RULE and testing branch rule added.
 
 ---
@@ -718,6 +718,14 @@ Fix in native: Always pull user's name from Supabase profile table on every logi
 
 ---
 
+# KNOWN ISSUES — ADDRESS IN FUTURE POLISH SESSIONS
+
+Rough edges that don't block current work but should be cleaned up before Phase 3 (App Store submission). Add new entries here when bugs are discovered but deferred.
+
+- Wardrobe items loading delay — on first login, My Closet sometimes appears empty until the user navigates or interacts with the app, then items reappear. Timing/loading issue, not data loss. Items are persisted correctly in Supabase. Address in a future polish session.
+
+---
+
 # THINGS TRIED THAT DID NOT WORK — NEVER RETRY
 
 - Background removal via Remove.bg — looked horrible, never use again
@@ -1098,6 +1106,7 @@ One screen at a time. In this exact order. Grace approves each screen before the
 - Wardrobe items persist in Supabase (wardrobe_items table + private wardrobe-photos Storage bucket + RLS) ✅ DONE 2026-05-07 (Session 6A — full Add/Edit/Delete CRUD)
 - Photo recognition wired — Claude Sonnet 4.6 auto-fills name/category/colour/notes from a wardrobe photo, terracotta CLOZIE RECOGNISED eyebrow inside sage success bar, terracotta auto-fill border on Clozie-filled fields that clears on user edit, no-key + network-error fallbacks ✅ DONE 2026-05-08 (Session 6B)
 - Photo recognition Edge Function migration — `recognize-photo` Supabase Edge Function holds Anthropic key server-side, JWT-verify ON, internal auth check + image size sanity check; client `src/lib/clozieRecognition.js` now calls `supabase.functions.invoke('recognize-photo', ...)` instead of api.anthropic.com directly; EXPO_PUBLIC_ANTHROPIC_KEY removed from `.env` and `app.config.js`; closes Legal Tracker §14.10 vulnerability ✅ DONE 2026-05-08 (Session 7a)
+- My Style profile persists in Supabase (selected styles + colour palettes + never-wear text saved to auth.user_metadata; loads on tab mount; saves on Build My Closet tap; Skip does not save) ✅ DONE 2026-05-09 (Session 7b-0)
 - Custom SMTP (Resend) for password reset email delivery — deferred to its own session
 - Clozie smarter learning — smarter note-saving + pattern detection after 5+ ratings
 - Native sharing — outfit cards + Clozie watermark — works on iPhone + Android
@@ -1639,6 +1648,34 @@ Other known limitation:
 
 Committed on testing branch (local). Version label: v2026-05-08-photo-recognition-session6b. Push to remote — Grace's call.
 
+## 2026-05-09 — My Style Persistence wired (Session 7b-0)
+
+Hard blocker for outfit generation cleared. Style profile (selected styles, colour palettes, never-wear text) now persists across app restart, sign-out/in, and device changes. Built on testing branch only — main untouched.
+
+What was wired:
+- StyleDNATab loads style profile from Supabase user_metadata on mount via supabase.auth.getUser(). Pre-fills selectedStyles + selectedColours + neverWear if values exist; falls back silently to blank if no session or network error. New users still start blank.
+- Build My Closet button now saves style profile to user_metadata via supabase.auth.updateUser({ data: { styles, colours, never_wear } }) BEFORE navigating to My Closet tab. Button shows "Saving…" disabled state during save (opacity 0.6, follows existing Edit Profile pattern).
+- Save error → gentle terracotta inline message ("Couldn't save your style — please try again") below button. Stays on screen so user can retry. Navigation blocked until save succeeds — no data loss.
+- Skip link unchanged — does NOT save, just navigates. Skip means "I don't want to do this," so silent skip is the right behaviour.
+
+Persistence model — auth.user_metadata (not a separate profiles table):
+- Identical pattern to Settings → Edit Profile (full_name persistence wired in Session 1).
+- Zero Supabase dashboard work — no new table, no new columns, no new RLS policies.
+- The Edge Function in Session 7b-1+ reads user_metadata for free during its required getUser(token) auth call — no extra DB query.
+- The skeleton "profiles" table in Supabase remains unused (id + created_at only). Will be introduced in a later session only if real cross-user queryable profile data is ever needed.
+
+What was added in code:
+- App.js — StyleDNATab only. Two new useState hooks (isSaving, saveError). One useEffect for load on mount (with cancelled-flag cleanup to avoid setState-after-unmount). One handleBuildCloset async helper. Build My Closet button JSX updated to use handleBuildCloset + show "Saving…" + disabled prop. Inline saveError Text element below button. New dnaStyles.saveError style (rgba(164,74,52,0.88) Outfit 13pt — matches existing terracotta inline error pattern).
+- No new files. No new imports (supabase + useEffect already imported). No new dependencies.
+
+What was deliberately NOT done this session:
+- No new "profiles" table — using auth.user_metadata is simpler and sufficient.
+- No state lifted to MainAppScreen — Edge Function reads user_metadata server-side directly via auth.getUser(token). Client doesn't need My Style state outside StyleDNATab.
+- No clearing of style profile on Clear Clozie's Memory — that handler is still a Phase 2 stub. Will be wired when ratings/learning_notes tables exist.
+- No outfit generation — Sessions 7b-1 through 7b-4 own that.
+
+Commit: TBD on testing branch. Version label: v2026-05-09-mystyle-persistence-session7b0. Push to remote — Grace's call.
+
 ---
 
 Created March 2026.
@@ -1651,6 +1688,7 @@ Updated May 6 2026 — Photo Upload Session 5 wired. Camera + gallery via expo-i
 Updated May 7 2026 — Supabase Wardrobe Session 6A wired. wardrobe_items table + private wardrobe-photos Storage bucket + RLS policies. Full Add/Edit/Delete CRUD persists to Supabase. Photos upload via arrayBuffer (the RN footgun-safe path). Signed URLs (1hr TTL) for display. Cross-user isolation verified. Helper module src/lib/wardrobeItems.js. App.js: load items on mount, async handlers, Saving/Removing button states, warm Alert on errors.
 Updated May 8 2026 — Photo Recognition Session 6B wired. Camera + gallery photos auto-recognized via Claude Sonnet 4.6 (helper at src/lib/clozieRecognition.js, max_tokens 500, category validation + name/category-mismatch correction). Add Item panel: scanning bar, sage success bar with terracotta CLOZIE RECOGNISED eyebrow (#A44A34, no sparkle), terracotta #A44A34 border on Clozie-filled fields that clears on user edit, no-key + network-error fallbacks. Auto-fill never overwrites user-typed content; retake refreshes via React functional setters (closure-staleness fix). API key still in client (.env EXPO_PUBLIC_ANTHROPIC_KEY) — moves to Edge Function in Session 7.
 Updated May 8 2026 — Outfit Edge Function Session 7a wired. Photo recognition migrated to Supabase Edge Function `recognize-photo` (source-of-truth backup at supabase/functions/recognize-photo/README.md). EXPO_PUBLIC_ANTHROPIC_KEY removed from `.env` and `app.config.js` — Anthropic key now lives ONLY in Supabase Edge Function secrets as ANTHROPIC_API_KEY. Anthropic $50/month spend cap set as safety belt. src/lib/clozieRecognition.js rewritten (113 → 41 lines): now calls `supabase.functions.invoke('recognize-photo', ...)` instead of api.anthropic.com directly. Public function signature unchanged — App.js untouched. Closes Legal Tracker §14.10 (API-key-in-client vulnerability). Outfit generation deferred to Session 7b.
+Updated May 9 2026 — My Style Persistence Session 7b-0 wired. Style profile (selected styles, colour palettes, never-wear text) now persists in Supabase via auth.user_metadata. StyleDNATab loads from user_metadata on mount; Build My Closet saves before navigating; Skip navigates without saving; gentle terracotta inline error on save failure. No new table — uses same pattern as Settings → Edit Profile. Hard blocker for outfit generation cleared. Sessions 7b-1 through 7b-4 will build the outfit Edge Function on top of this.
 
 Drop this file into the root of the clozie-native project folder.
 Drop App_ORIGINAL.jsx in the same folder as reference.
