@@ -8,6 +8,8 @@ To deploy or update: open Supabase dashboard → Edge Functions → `generate-ou
 
 First wired: 2026-05-09 (Session 7b-1 — skeleton + stub response, no Anthropic call yet).
 Updated: 2026-05-09 (Session 7b-3 — real Anthropic Sonnet 4.6 call with v5 stylist prompt + ephemeral prompt caching. Stub composition kept as silent fallback for any AI/validation failure).
+Updated: 2026-05-10 (Session 7b-4 — prompt caching fix: deployed v5 padded system prompt at 2,267 tokens, comfortably above Sonnet 4.6's 2,048-token cache threshold. Verified cache_creation 2,267 → cache_read 2,267 round-trip).
+Updated: 2026-05-10 (Session 7b-5 — JS safety filters: heels-free C1–C5 weather/indoor filter set with pinned-item exemption + soft-fail safety net, category imbalance flag in user message, inert `computeOutfitPotential` helper for Session 9. App.js untouched).
 
 ## How it works (plain English)
 
@@ -18,13 +20,23 @@ Updated: 2026-05-09 (Session 7b-3 — real Anthropic Sonnet 4.6 call with v5 sty
    - **Minimum count** — fewer than 5 styleable items → returns `not_enough_items`.
    - **Minimum essentials** — must have (Tops AND Bottoms) OR Dresses → returns `missing_essentials` if not.
    - **Pinned item validity** — if `pinnedItemId` is set, it must exist in the styleable set → returns `invalid_pin` if not.
-5. Calls Anthropic Sonnet 4.6 with the v5 stylist prompt (system) + a freshly-assembled user message (style profile, weather, occasion, indoor flag, brief, pinned item name, compressed wardrobe pool, category absence flags, small-wardrobe framing).
+5. **Safety filters** (`applySafetyFilters`) — reshape the wardrobe pool before Sonnet sees it. Pinned item always exempt. If filters drop the pool below the essentials check, the soft-fail net reverts to the unfiltered pool (gate 4 already proved it viable).
+   - **C1 Cold** — drop Light/None warmth from Tops and Dresses.
+   - **C2 Hot** — drop Heavy warmth from all categories.
+   - **C3 Rainy** — drop names containing `suede`, `sandal`, `open-toe`, `mule`.
+   - **C4 Snowy** — drop names containing `suede`, `espadrille`, `sandal`, `open-toe`, `flip-flop`, `stiletto`; word-boundary regex for `heel(s)` and `pump(s)` to avoid `wheel` / `pumpkin` false positives. Snow is the one weather where heels are filtered — safety, not taste.
+   - **C5 Indoor** — when "I'll be indoors" toggle is ON, drop Heavy Outerwear (Light/Medium outerwear stays).
+   - Warmth-dependent filters (C1, C2, C5) are dormant today — the `warmth` column is NULL on every item until the warmth UI session lands. They activate the moment warmth gets populated; no code change needed then.
+6. Calls Anthropic Sonnet 4.6 with the v5 stylist prompt (system) + a freshly-assembled user message (style profile, weather, occasion, indoor flag, brief, pinned item name, compressed wardrobe pool, category absence flags, category imbalance flag, small-wardrobe framing).
    - System prompt is sent with `cache_control: { type: 'ephemeral' }` — first call writes the cache, subsequent calls (within ~5 min) read it at 10% cost.
    - Compressed pool format: `Name | Category | Colour [| fabric] [| Warmth]` — fabric only when not in name, warmth only on Outerwear. Items uploaded today are prefixed `* `. Pool sorted newest-first.
-   - Model: `claude-sonnet-4-6`. Temperature `0.75`. `max_tokens: 500`. 15-second timeout via `AbortController`.
-6. Validates the AI's JSON response: must have ≥3 outfits; each outfit must have name + description + items array; every item name must map to a real wardrobe UUID (lowercase + trimmed lookup); pinned item must appear in every outfit.
-7. **Silent fallback to stub composition** on any AI/validation failure (network error, timeout, non-2xx, JSON parse failure, schema validation failure, name → UUID mapping failure, missing pinned item). The user always gets 3 outfits.
-8. Returns `{ outfits: [...3...], source: "sonnet" | "stub" }`. Each outfit has `{ id, vibe, name, description, items: [item_id, ...], styleMatchScore }`. The `source` field is a debug marker — `"sonnet"` for real AI, `"stub"` for fallback.
+   - Category imbalance flag fires only when `bottoms ≤ 2 AND tops > 8` — tells Sonnet to vary the styling across outfits rather than reusing the same combination.
+   - Model: `claude-sonnet-4-6`. Temperature `0.75`. `max_tokens: 1500` (bumped from 500 in Session 7b-3 to stop Sonnet truncating mid-JSON). 15-second timeout via `AbortController`.
+7. Validates the AI's JSON response: must have ≥3 outfits; each outfit must have name + description + items array; every item name must map to a real wardrobe UUID (lowercase + trimmed lookup, with `split('|')[0]` to strip pool-format decorations); pinned item must appear in every outfit.
+8. **Silent fallback to stub composition** on any AI/validation failure (network error, timeout, non-2xx, JSON parse failure, schema validation failure, name → UUID mapping failure, missing pinned item). The user always gets 3 outfits. The stub uses the unfiltered pool — same safety logic as the soft-fail net.
+9. Returns `{ outfits: [...3...], source: "sonnet" | "stub" }`. Each outfit has `{ id, vibe, name, description, items: [item_id, ...], styleMatchScore }`. The `source` field is a debug marker — `"sonnet"` for real AI, `"stub"` for fallback.
+
+An inert `computeOutfitPotential` helper is defined for Session 9 (outfit-potential calculation against ratings/learning_notes tables). No callers today — pure scaffolding.
 
 After every Anthropic call, the function logs `cache_creation_input_tokens`, `cache_read_input_tokens`, `input_tokens`, and `output_tokens` from the response usage block. Use these to verify caching is working (cache_creation > 0 on first call after deploy; cache_read > 0 on subsequent calls within the 5-minute window).
 
@@ -397,6 +409,14 @@ function buildFreshContent(args: {
     flags.push('No outerwear uploaded.')
   }
 
+  // Category imbalance — many tops but very few bottoms.
+  // Tells Sonnet to vary the styling across outfits rather than reusing the same combination.
+  const topsCount = items.filter(i => i.category === 'Tops').length
+  const bottomsCount = items.filter(i => i.category === 'Bottoms').length
+  if (bottomsCount <= 2 && topsCount > 8) {
+    flags.push(`Only ${bottomsCount} bottom${bottomsCount === 1 ? '' : 's'} in pool — vary the styling across outfits.`)
+  }
+
   // Small wardrobe framing — flips AI from "browsing a closet" to "solving a styling challenge".
   const small = items.length < 15
     ? 'She chose these pieces intentionally. Find the strongest combinations.'
@@ -666,6 +686,124 @@ function buildStubOutfits(items: Item[], pinned: Item | null) {
   ]
 }
 
+// Stub for Session 9 — outfit potential calculation. Currently inert (no callers).
+// Real formula lands in Session 9 alongside ratings/learning_notes tables.
+function computeOutfitPotential(_outfitItems: Item[], _fullWardrobe: Item[]): number {
+  return 12
+}
+
+// Apply weather and indoor safety filters to the wardrobe pool before Sonnet sees it.
+// Pinned item is always exempt. If filters reduce the pool below the essentials gate,
+// revert to the unfiltered pool (gates 4/5/6 already passed it — it's known viable).
+// Filters are additive; this function expands as Session 7b-5 lands C1→C5.
+function applySafetyFilters(args: {
+  items: Item[]
+  temperature: string
+  condition: string
+  indoors: boolean
+  pinnedItemId: string | null
+}): Item[] {
+  const { items, temperature, condition, indoors, pinnedItemId } = args
+  let filtered = [...items]
+
+  // C1 — Cold: drop Light/None warmth from Tops and Dresses (unless pinned).
+  if (temperature === 'Cold') {
+    const before = filtered.length
+    filtered = filtered.filter(i => {
+      if (i.id === pinnedItemId) return true
+      if (i.category !== 'Tops' && i.category !== 'Dresses') return true
+      if (i.warmth === 'Light' || i.warmth === 'None') return false
+      return true
+    })
+    if (filtered.length !== before) {
+      console.log(`[generate-outfits] C1 Cold filter dropped ${before - filtered.length} Light/None Tops or Dresses`)
+    }
+  }
+
+  // C2 — Hot: drop Heavy warmth from all categories (unless pinned).
+  if (temperature === 'Hot') {
+    const before = filtered.length
+    filtered = filtered.filter(i => {
+      if (i.id === pinnedItemId) return true
+      if (i.warmth === 'Heavy') return false
+      return true
+    })
+    if (filtered.length !== before) {
+      console.log(`[generate-outfits] C2 Hot filter dropped ${before - filtered.length} Heavy items`)
+    }
+  }
+
+  // C3 — Rainy: drop suede items and open-toe shoes (unless pinned).
+  // Detection by name pattern (case-insensitive). Suede applies across all categories
+  // because suede bags/jackets/skirts also get ruined in rain.
+  if (condition === 'Rainy') {
+    const before = filtered.length
+    filtered = filtered.filter(i => {
+      if (i.id === pinnedItemId) return true
+      const n = (i.name || '').toLowerCase()
+      if (n.includes('suede')) return false
+      if (n.includes('sandal') || n.includes('open-toe') || n.includes('mule')) return false
+      return true
+    })
+    if (filtered.length !== before) {
+      console.log(`[generate-outfits] C3 Rainy filter dropped ${before - filtered.length} suede or open-toe items`)
+    }
+  }
+
+  // C4 — Snowy: drop suede, espadrille, exposed-foot shoes, and heels (unless pinned).
+  // Snow is the one weather where heels are filtered — slip risk + salt damage are
+  // safety/destruction concerns, not taste. Word-boundary regex on heel/pump avoids
+  // false positives like "wheel" or "pumpkin".
+  if (condition === 'Snowy') {
+    const before = filtered.length
+    filtered = filtered.filter(i => {
+      if (i.id === pinnedItemId) return true
+      const n = (i.name || '').toLowerCase()
+      // Destruction risk
+      if (n.includes('suede')) return false
+      if (n.includes('espadrille')) return false
+      // Exposed-foot shoes
+      if (n.includes('sandal')) return false
+      if (n.includes('open-toe')) return false
+      if (n.includes('flip-flop')) return false
+      // Heels — slippery on ice, salt damage
+      if (/\bheels?\b/.test(n)) return false
+      if (/\bpumps?\b/.test(n)) return false
+      if (n.includes('stiletto')) return false
+      return true
+    })
+    if (filtered.length !== before) {
+      console.log(`[generate-outfits] C4 Snowy filter dropped ${before - filtered.length} unsafe-for-snow items`)
+    }
+  }
+
+  // C5 — Indoor: drop Heavy Outerwear when user toggles "I'll be indoors" (unless pinned).
+  // Light/Medium outerwear (blazers, cardigans) stays — they're aesthetic layers, not thermal.
+  // Currently dormant — warmth is NULL on all items until the warmth UI session lands.
+  if (indoors === true) {
+    const before = filtered.length
+    filtered = filtered.filter(i => {
+      if (i.id === pinnedItemId) return true
+      if (i.category === 'Outerwear' && i.warmth === 'Heavy') return false
+      return true
+    })
+    if (filtered.length !== before) {
+      console.log(`[generate-outfits] C5 Indoor filter dropped ${before - filtered.length} Heavy Outerwear items`)
+    }
+  }
+
+  // Soft-fail safety net — if filters break the essentials gate, revert to unfiltered.
+  const hasTops    = filtered.some(i => i.category === 'Tops')
+  const hasBottoms = filtered.some(i => i.category === 'Bottoms')
+  const hasDress   = filtered.some(i => i.category === 'Dresses')
+  if (!((hasTops && hasBottoms) || hasDress)) {
+    console.log('[generate-outfits] Filters broke essentials gate — reverting to unfiltered pool')
+    return items
+  }
+
+  return filtered
+}
+
 Deno.serve(async (req) => {
   console.log('[generate-outfits] request received, method:', req.method)
 
@@ -777,10 +915,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 6.5. Apply weather/indoor safety filters before Sonnet sees the pool.
+    // Pinned item is exempt. Soft-fail reverts to unfiltered if filters break essentials.
+    const filteredItems = applySafetyFilters({ items, temperature, condition, indoors, pinnedItemId })
+    console.log('[generate-outfits] pool size after filters:', filteredItems.length, 'of', items.length)
+
     // 7. Try Anthropic. On any failure, fall back to stub silently.
     if (anthropicKey) {
       const userContent = buildFreshContent({
-        styleProfile, temperature, condition, occasion, indoors, brief, pinned, items,
+        styleProfile, temperature, condition, occasion, indoors, brief, pinned, items: filteredItems,
       })
 
       const aiResult = await callAnthropic({
