@@ -1,55 +1,3 @@
-# generate-outfits Edge Function
-
-Backup of the working Supabase Edge Function code.
-
-**This file is documentation only — editing it does NOT update the live function.**
-
-The canonical source for deploys is `index.ts` in this same directory (created 2026-05-12 in Session 7b-6). All deploys go via the Supabase CLI: `supabase functions deploy generate-outfits --project-ref sbiwuqjnwjgjazxlyfhb --use-api --yes`. **NEVER paste into the Supabase dashboard editor** — clipboard pipelines silently corrupt em-dashes/middots and chat-paste truncates >40KB files. See "EDGE FUNCTION DEPLOY POLICY" in CLAUDE.md for full rationale and Keychain auth pattern.
-
-First wired: 2026-05-09 (Session 7b-1 — skeleton + stub response, no Anthropic call yet).
-Updated: 2026-05-09 (Session 7b-3 — real Anthropic Sonnet 4.6 call with v5 stylist prompt + ephemeral prompt caching. Stub composition kept as silent fallback for any AI/validation failure).
-Updated: 2026-05-10 (Session 7b-4 — prompt caching fix: deployed v5 padded system prompt above Sonnet 4.6's 2,048-token cache threshold. Cache verified working — see Session 7b-6 entry below for canonical token-count correction).
-Updated: 2026-05-10 (Session 7b-5 — JS safety filters: heels-free C1–C5 weather/indoor filter set with pinned-item exemption + soft-fail safety net, category imbalance flag in user message, inert `computeOutfitPotential` helper for Session 9. App.js untouched).
-Updated: 2026-05-12 (Session 7b-6 — CLI deploy via `supabase functions deploy --use-api`; canonical v5 SYSTEM_PROMPT corrected from 2,267 to **2,132 tokens** — every prior 2,267 measurement was reading mojibake-inflated content from awk+pbcopy MacRoman corruption; cache still active at 2,132 with 84-token headroom above 2,048 threshold; FANCY_DRESS_PATTERN filter added for Outdoor · Sport; created `index.ts` as canonical deploy source; all 3 diagnostic logs from this session removed in same deploy. App.js NOT touched).
-
-## How it works (plain English)
-
-1. The app sends weather + occasion + pin + brief + style profile with the user's session token in the Authorization header.
-2. Function verifies the session is valid — if not, returns 401 (no work done).
-3. Function fetches the user's wardrobe from the `wardrobe_items` table (`id, name, category, colour, warmth, notes, created_at, exclude_from_styling`), dropping items flagged `exclude_from_styling = true`.
-4. Three gates:
-   - **Minimum count** — fewer than 5 styleable items → returns `not_enough_items`.
-   - **Minimum essentials** — must have (Tops AND Bottoms) OR Dresses → returns `missing_essentials` if not.
-   - **Pinned item validity** — if `pinnedItemId` is set, it must exist in the styleable set → returns `invalid_pin` if not.
-5. **Safety filters** (`applySafetyFilters`) — reshape the wardrobe pool before Sonnet sees it. Pinned item always exempt. If filters drop the pool below the essentials check, the soft-fail net reverts to the unfiltered pool (gate 4 already proved it viable).
-   - **C1 Cold** — drop Light/None warmth from Tops and Dresses.
-   - **C2 Hot** — drop Heavy warmth from all categories.
-   - **C3 Rainy** — drop names containing `suede`, `sandal`, `open-toe`, `mule`.
-   - **C4 Snowy** — drop names containing `suede`, `espadrille`, `sandal`, `open-toe`, `flip-flop`, `stiletto`; word-boundary regex for `heel(s)` and `pump(s)` to avoid `wheel` / `pumpkin` false positives. Snow is the one weather where heels are filtered — safety, not taste.
-   - **C5 Indoor** — when "I'll be indoors" toggle is ON, drop Heavy Outerwear (Light/Medium outerwear stays).
-   - Warmth-dependent filters (C1, C2, C5) are dormant today — the `warmth` column is NULL on every item until the warmth UI session lands. They activate the moment warmth gets populated; no code change needed then.
-6. Calls Anthropic Sonnet 4.6 with the v5 stylist prompt (system) + a freshly-assembled user message (style profile, weather, occasion, indoor flag, brief, pinned item name, compressed wardrobe pool, category absence flags, category imbalance flag, small-wardrobe framing).
-   - System prompt is sent with `cache_control: { type: 'ephemeral' }` — first call writes the cache, subsequent calls (within ~5 min) read it at 10% cost.
-   - Compressed pool format: `Name | Category | Colour [| fabric] [| Warmth]` — fabric only when not in name, warmth only on Outerwear. Items uploaded today are prefixed `* `. Pool sorted newest-first.
-   - Category imbalance flag fires only when `bottoms ≤ 2 AND tops > 8` — tells Sonnet to vary the styling across outfits rather than reusing the same combination.
-   - Model: `claude-sonnet-4-6`. Temperature `0.75`. `max_tokens: 1500` (bumped from 500 in Session 7b-3 to stop Sonnet truncating mid-JSON). 15-second timeout via `AbortController`.
-7. Validates the AI's JSON response: must have ≥3 outfits; each outfit must have name + description + items array; every item name must map to a real wardrobe UUID (lowercase + trimmed lookup, with `split('|')[0]` to strip pool-format decorations); pinned item must appear in every outfit.
-8. **Silent fallback to stub composition** on any AI/validation failure (network error, timeout, non-2xx, JSON parse failure, schema validation failure, name → UUID mapping failure, missing pinned item). The user always gets 3 outfits. The stub uses the unfiltered pool — same safety logic as the soft-fail net.
-9. Returns `{ outfits: [...3...], source: "sonnet" | "stub" }`. Each outfit has `{ id, vibe, name, description, items: [item_id, ...], styleMatchScore }`. The `source` field is a debug marker — `"sonnet"` for real AI, `"stub"` for fallback.
-
-An inert `computeOutfitPotential` helper is defined for Session 9 (outfit-potential calculation against ratings/learning_notes tables). No callers today — pure scaffolding.
-
-After every Anthropic call, the function logs `cache_creation_input_tokens`, `cache_read_input_tokens`, `input_tokens`, and `output_tokens` from the response usage block. Use these to verify caching is working (cache_creation > 0 on first call after deploy; cache_read > 0 on subsequent calls within the 5-minute window).
-
-## Required secrets (Supabase → Edge Functions → Secrets)
-
-- `ANTHROPIC_API_KEY` — added 2026-05-08 in Session 7a (shared with `recognize-photo`). If missing, the function logs and falls back to stub silently.
-
-`SUPABASE_URL` and `SUPABASE_ANON_KEY` are auto-provided by Supabase.
-
-## Code
-
-```typescript
 // Supabase Edge Function: generate-outfits
 // Verifies the user's session, fetches their wardrobe, runs Anthropic Sonnet 4.6
 // with the v5 stylist prompt + ephemeral prompt caching, and returns 3 outfits.
@@ -1092,4 +1040,3 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: (e as Error).message }, 500)
   }
 })
-```
