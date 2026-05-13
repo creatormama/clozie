@@ -50,6 +50,10 @@ const SNEAKER_PATTERN = /sneaker|trainer|running shoe|athletic shoe|tennis shoe/
 // Delicate fabrics + formal-wear cues. Cotton/linen casual dresses unaffected.
 const FANCY_DRESS_PATTERN = /chiffon|silk|satin|velvet|lace|organza|tulle|sequin|beaded|gown|evening|cocktail/i
 
+// Skirt name-pattern regex — used by the Occasion filter for Outdoor · Sport.
+// Substring match catches "skirt", "mini skirt", "miniskirt", "maxi skirt", "pencil skirt".
+const SKIRT_PATTERN = /skirt/i
+
 // Stub vibes/names — used when AI fails or returns invalid data.
 const STUB_LOOKS = [
   { vibe: 'EFFORTLESS', name: 'Morning Coffee Run', description: 'A relaxed combination pulled from your wardrobe.' },
@@ -253,7 +257,33 @@ Use this to create distinct moods across outfits.
 
 When she only has one pair of shoes, they become the
 constant — style everything else around them
-differently across the outfits instead.`
+differently across the outfits instead.
+
+--- PADDING SECTION 7: FINISHING TOUCHES ---
+
+Accessories follow the energy of the occasion:
+Outdoor / Sport — no accessories. Zero.
+Casual / Weekend / Travel — understated. Accessories
+should disappear into the outfit, not lead it.
+Work / Office — polished and intentional. Clean lines,
+quiet confidence. Nothing distracting.
+Going Out / Date Night — one statement piece allowed.
+Personality shows here. Bold earrings OR a necklace,
+never both at once.
+Formal — elevated and cohesive. One focal point.
+
+Never include bags in outfit selections. Even if bags
+exist in the wardrobe pool, skip them. She chooses
+her own bag.
+
+One focal point per outfit. If the top is bold,
+accessories stay quiet. If the outfit is simple,
+one accessory becomes the star. Never stack scarf
+plus necklace plus earrings — pick one lane.
+
+At least one of the three outfits should include
+accessories when they exist in the wardrobe.
+Never force accessories into all three.`
 // === END V5 SYSTEM PROMPT ===
 
 function jsonResponse(body: unknown, status = 200) {
@@ -335,13 +365,37 @@ function buildCompressedPool(items: Item[]): string {
       if (noteFabric) parts.push(noteFabric)
     }
 
-    // Warmth: only on Outerwear, only if set and not 'None'.
-    if (item.category === 'Outerwear' && item.warmth && item.warmth !== 'None') {
-      parts.push(item.warmth)
+    // Warmth tag — Outerwear only.
+    // Column wins when populated and not 'None'. Otherwise, fall back to name pattern:
+    // HEAVY_OUTERWEAR regex first (safer bias — heavy mistagged as light is more dangerous),
+    // then LIGHT_OUTERWEAR. If neither matches, no tag (avoids guessing on unknown outerwear).
+    if (item.category === 'Outerwear') {
+      if (item.warmth && item.warmth !== 'None') {
+        parts.push(item.warmth)
+      } else if (HEAVY_OUTERWEAR.test(item.name || '')) {
+        parts.push('Heavy')
+      } else if (LIGHT_OUTERWEAR.test(item.name || '')) {
+        parts.push('Light')
+      }
+      // else: no tag — let Sonnet infer from name + category
     }
 
     return `${todayMark}${parts.join(' | ')}`
   }).join('\n')
+}
+
+// Build a concise per-call weather hint that echoes the system prompt's weather rules.
+// Returns null for Cool/Warm + Sunny/Cloudy combinations where no specific rule applies.
+// Goes into the user message only — does not affect the cached system prompt.
+function buildWeatherHint(temperature: string, condition: string): string | null {
+  const hints: string[] = []
+  if (temperature === 'Cold') hints.push('prefer Heavy/Medium warmth')
+  if (temperature === 'Hot') hints.push('prefer Light/None warmth, avoid heavy wool')
+  if (condition === 'Rainy') hints.push('avoid delicate fabrics, prefer closed-toe shoes')
+  if (condition === 'Snowy') hints.push('prefer closed-toe boots')
+
+  if (hints.length === 0) return null
+  return `For ${temperature} + ${condition}: ${hints.join('; ')}.`
 }
 
 // Build the fresh user-message content. Style profile + weather/occasion + pool.
@@ -392,8 +446,11 @@ function buildFreshContent(args: {
     ? 'She chose these pieces intentionally. Find the strongest combinations.'
     : ''
 
+  const weatherHint = buildWeatherHint(temperature, condition)
+
   const stylingLines = [
     `* Her identity is ${identity} — every outfit should feel like her, even at ${occasion}.`,
+    ...(weatherHint ? [`* ${weatherHint}`] : []),
     ...flags.map(f => `* ${f}`),
     ...(small ? [`* ${small}`] : []),
   ].join('\n')
@@ -876,6 +933,23 @@ function applySafetyFilters(args: {
     })
     if (filtered.length !== before) {
       console.log(`[generate-outfits] Outdoor · Sport fancy-dress filter dropped ${before - filtered.length} dresses`)
+    }
+  }
+
+  // Occasion — drop skirts for Outdoor · Sport (unless pinned).
+  // Parallel to FANCY_DRESS_PATTERN: practical-safety filter for the
+  // "moving on foot, rough conditions" occasion. Substring match catches
+  // "skirt", "mini skirt", "miniskirt", "maxi skirt", "pencil skirt".
+  if (occasion === 'Outdoor · Sport') {
+    const before = filtered.length
+    filtered = filtered.filter(i => {
+      if (i.id === pinnedItemId) return true
+      if (i.category !== 'Bottoms') return true
+      if (SKIRT_PATTERN.test(i.name || '')) return false
+      return true
+    })
+    if (filtered.length !== before) {
+      console.log(`[generate-outfits] Outdoor · Sport skirt filter dropped ${before - filtered.length} bottoms`)
     }
   }
 
