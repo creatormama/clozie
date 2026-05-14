@@ -66,6 +66,43 @@ const ALLOWED_VIBES = new Set([
   'POWERFUL','FRESH','LUXE','RELAXED','TIMELESS','SOFT','SHARP','DREAMY',
 ])
 
+// === Session 7C — Smart Fallback constants ===
+// Color-family regexes. Matched against (item.name + ' ' + (item.colour || '')) lowercased.
+// Word-boundary anchored to avoid false positives (e.g. "tan" inside "tank").
+const COLOR_NEUTRAL = /\b(black|white|cream|ivory|beige|camel|grey|gray|charcoal|nude|stone|off-white|bone)\b/i
+const COLOR_EARTH   = /\b(brown|tan|rust|terracotta|olive|khaki|chocolate|cognac|caramel|sand|taupe)\b/i
+const COLOR_NAVY    = /\b(navy|midnight)\b/i
+
+// Editorial name pools by occasion. Picked at random, no repeats within one generation.
+// Keys match the exact middot strings the client sends (App.js:221, App.js:1726).
+// Unrecognized occasions fall back to the 'Casual Day' pool.
+const FALLBACK_NAMES_BY_OCCASION: Record<string, string[]> = {
+  'Casual Day':       ['Easy Sunday', 'Weekend Edit', 'Off-Duty Ease', 'Sunday Morning', 'Relaxed & Ready'],
+  'Work · Office':    ['Morning Confidence', 'Desk Ready', 'Clean Lines', 'Office Elevated', 'Power Soft'],
+  'Going Out':        ['Night Mode', 'After Hours', 'Evening Edge', 'Out Tonight', 'Weekend Night'],
+  'Formal Event':     ['Event Ready', 'Occasion Dressing', 'The Statement', 'Formal Grace'],
+  'Outdoor · Sport':  ['Fresh Air', 'Active Day', 'Move Easy', 'Outdoor Ready'],
+  'Weekend Errands':  ['Errand Chic', 'Sunday Errands', 'Quick & Easy', 'Casual Out'],
+  'Travel':           ['Travel Light', 'In Transit', 'Journey Edit', 'Away Look'],
+}
+
+// Vibe pools by occasion. All entries are members of ALLOWED_VIBES so they pass validation.
+const FALLBACK_VIBES_BY_OCCASION: Record<string, string[]> = {
+  'Casual Day':       ['EFFORTLESS', 'RELAXED', 'FRESH', 'SOFT'],
+  'Work · Office':    ['POLISHED', 'CHIC', 'ELEVATED', 'SHARP'],
+  'Going Out':        ['BOLD', 'SHARP', 'LUXE', 'POWERFUL'],
+  'Formal Event':     ['ELEVATED', 'TIMELESS', 'LUXE', 'POLISHED'],
+  'Outdoor · Sport':  ['FRESH', 'RELAXED', 'EFFORTLESS', 'PLAYFUL'],
+  'Weekend Errands':  ['EFFORTLESS', 'RELAXED', 'SOFT', 'FRESH'],
+  'Travel':           ['EFFORTLESS', 'CHIC', 'TIMELESS', 'POLISHED'],
+}
+
+// One-word mood tags used in description templates.
+const DESCRIPTION_MOODS = [
+  'effortless', 'easy', 'considered', 'soft', 'sharp', 'polished',
+  'just enough edge', 'quietly confident', 'fresh', 'pulled together',
+]
+
 // === V5 SYSTEM PROMPT — kept verbatim from CLAUDE.md spec ===
 // Padded so total length comfortably exceeds Sonnet 4.6's 1,024-token cache minimum.
 // First call after a deploy: cache write (cache_creation_input_tokens > 0).
@@ -715,6 +752,159 @@ function buildStubOutfits(items: Item[], pinned: Item | null) {
   ]
 }
 
+// Smart fallback (Session 7C) — used when Anthropic fails (timeout / 5xx / 429 / malformed JSON).
+// Returns 3 outfits with editorial-occasion names and color-aware composition.
+// Reuses existing pickRandom, LIGHT_OUTERWEAR regex, and Item type.
+// If this function itself throws, the handler reverts to buildStubOutfits as last resort.
+function buildSmartFallback(
+  items: Item[],
+  pinned: Item | null,
+  occasion: string,
+): Array<{ id: string; vibe: string; name: string; description: string; items: string[]; styleMatchScore: number }> {
+  // Color-family classifier — matches against name + colour fields.
+  function colorFamily(item: Item): 'neutral' | 'earth' | 'navy' | 'other' {
+    const haystack = (item.name + ' ' + (item.colour || '')).toLowerCase()
+    if (COLOR_NEUTRAL.test(haystack)) return 'neutral'
+    if (COLOR_EARTH.test(haystack))   return 'earth'
+    if (COLOR_NAVY.test(haystack))    return 'navy'
+    return 'other'
+  }
+
+  // Two items pair well if: either is unknown ('other'), either is neutral,
+  // same family, OR mixed-family combo isn't a known clash (navy+earth).
+  function colorsCompatible(a: Item, b: Item): boolean {
+    const fa = colorFamily(a)
+    const fb = colorFamily(b)
+    if (fa === 'other' || fb === 'other') return true
+    if (fa === 'neutral' || fb === 'neutral') return true
+    if (fa === fb) return true
+    if ((fa === 'navy' && fb === 'earth') || (fa === 'earth' && fb === 'navy')) return false
+    return true
+  }
+
+  // Pick the best item in a category, preferring color-compatibility with already-chosen items.
+  // Falls back to any in-category item rather than fail.
+  function pickCompatible(category: string, used: Set<string>, chosenSoFar: Item[]): Item | null {
+    const candidates = items.filter(i => i.category === category && !used.has(i.id))
+    if (!candidates.length) {
+      const anyInCategory = items.filter(i => i.category === category)
+      return pickRandom(anyInCategory)
+    }
+    const compatible = candidates.filter(c => chosenSoFar.every(m => colorsCompatible(c, m)))
+    return pickRandom(compatible.length ? compatible : candidates)
+  }
+
+  // Build one outfit given a slot layout. Pinned item fills its own slot if relevant,
+  // and is always included regardless.
+  function buildOne(layout: string[]): Item[] {
+    const used = new Set<string>()
+    const chosen: Item[] = []
+
+    if (pinned) {
+      chosen.push(pinned)
+      used.add(pinned.id)
+    }
+
+    for (const slot of layout) {
+      if (pinned) {
+        if (slot === pinned.category) continue
+        if (slot === 'LightOuterwear' && pinned.category === 'Outerwear') continue
+      }
+
+      let item: Item | null = null
+      if (slot === 'LightOuterwear') {
+        const lightCands = items.filter(i =>
+          i.category === 'Outerwear' && LIGHT_OUTERWEAR.test(i.name) && !used.has(i.id)
+        )
+        const compatible = lightCands.filter(c => chosen.every(m => colorsCompatible(c, m)))
+        item = pickRandom(compatible.length ? compatible : lightCands)
+      } else {
+        item = pickCompatible(slot, used, chosen)
+      }
+
+      if (item) {
+        chosen.push(item)
+        used.add(item.id)
+      }
+    }
+
+    return chosen
+  }
+
+  // Pick layouts based on what the wardrobe supports and what (if anything) is pinned.
+  const hasTops = items.some(i => i.category === 'Tops')
+  const hasBottoms = items.some(i => i.category === 'Bottoms')
+  const hasDress = items.some(i => i.category === 'Dresses')
+  const hasLightOuterwear = items.some(i => i.category === 'Outerwear' && LIGHT_OUTERWEAR.test(i.name))
+  const tbViable = hasTops && hasBottoms
+
+  let layouts: string[][]
+  if (pinned?.category === 'Dresses') {
+    layouts = [['Dresses', 'Shoes'], ['Dresses', 'Shoes', 'LightOuterwear'], ['Dresses', 'Shoes']]
+  } else if (pinned?.category === 'Outerwear') {
+    const base = tbViable ? ['Outerwear', 'Tops', 'Bottoms', 'Shoes'] : ['Outerwear', 'Dresses', 'Shoes']
+    const alt  = hasDress  ? ['Outerwear', 'Dresses', 'Shoes']        : base
+    layouts = [base, alt, base]
+  } else if (tbViable && hasDress) {
+    layouts = [
+      ['Tops', 'Bottoms', 'Shoes'],
+      ['Dresses', 'Shoes'],
+      hasLightOuterwear ? ['Tops', 'Bottoms', 'LightOuterwear'] : ['Tops', 'Bottoms', 'Shoes'],
+    ]
+  } else if (tbViable) {
+    layouts = [
+      ['Tops', 'Bottoms', 'Shoes'],
+      ['Tops', 'Bottoms', 'Shoes'],
+      hasLightOuterwear ? ['Tops', 'Bottoms', 'LightOuterwear'] : ['Tops', 'Bottoms', 'Shoes'],
+    ]
+  } else {
+    // Dress-only wardrobe (essentials gate already passed)
+    layouts = [
+      ['Dresses', 'Shoes'],
+      ['Dresses', 'Shoes'],
+      hasLightOuterwear ? ['Dresses', 'LightOuterwear'] : ['Dresses', 'Shoes'],
+    ]
+  }
+
+  const outfitItems = [buildOne(layouts[0]), buildOne(layouts[1]), buildOne(layouts[2])]
+
+  // Names — 3 distinct, randomly picked from occasion pool. Unknown occasion → Casual Day pool.
+  // Pad with " II" suffix if pool has fewer than 3 entries (shouldn't happen with current pools).
+  const namePool = FALLBACK_NAMES_BY_OCCASION[occasion] || FALLBACK_NAMES_BY_OCCASION['Casual Day']
+  const shuffled = [...namePool].sort(() => Math.random() - 0.5).slice(0, 3)
+  while (shuffled.length < 3) shuffled.push((shuffled[shuffled.length - 1] || 'Easy Sunday') + ' II')
+
+  // Vibes — may repeat across outfits; pools are smaller and vibes feel less unique than names.
+  const vibePool = FALLBACK_VIBES_BY_OCCASION[occasion] || FALLBACK_VIBES_BY_OCCASION['Casual Day']
+
+  // Describe an outfit as "[colour first-word] with [colour first-word] — mood."
+  // Falls back to item.name when colour is missing.
+  function describeItem(item: Item): string {
+    const colour = (item.colour || '').trim()
+    const firstWord = (item.name || '').split(/\s+/)[0] || 'piece'
+    if (colour) return `${colour.toLowerCase()} ${firstWord.toLowerCase()}`
+    return (item.name || 'piece').toLowerCase()
+  }
+  function capitalize(s: string): string {
+    return s.length ? s.charAt(0).toUpperCase() + s.slice(1) : s
+  }
+  function describe(arr: Item[]): string {
+    const mood = pickRandom(DESCRIPTION_MOODS) || 'effortless'
+    if (arr.length === 0) return 'A look pulled together from your wardrobe.'
+    if (arr.length === 1) return `${capitalize(describeItem(arr[0]))} — ${mood}.`
+    return `${capitalize(describeItem(arr[0]))} with ${describeItem(arr[1])} — ${mood}.`
+  }
+
+  return [0, 1, 2].map(i => ({
+    id: crypto.randomUUID(),
+    vibe: pickRandom(vibePool) || 'EFFORTLESS',
+    name: shuffled[i],
+    description: describe(outfitItems[i]),
+    items: outfitItems[i].map(it => it.id),
+    styleMatchScore: 85,
+  }))
+}
+
 // Stub for Session 9 — outfit potential calculation. Currently inert (no callers).
 // Real formula lands in Session 9 alongside ratings/learning_notes tables.
 function computeOutfitPotential(_outfitItems: Item[], _fullWardrobe: Item[]): number {
@@ -1131,15 +1321,25 @@ Deno.serve(async (req) => {
           return jsonResponse({ outfits: mapped, source: 'sonnet' }, 200)
         }
       }
-      console.log('[generate-outfits] AI path failed — falling back to stub')
+      console.log('[generate-outfits] AI path failed — falling back')
     } else {
-      console.log('[generate-outfits] no ANTHROPIC_API_KEY set — falling back to stub')
+      console.log('[generate-outfits] no ANTHROPIC_API_KEY set — falling back')
     }
 
-    // 8. STUB fallback (composition from Session 7b-1)
-    const outfits = buildStubOutfits(items, pinned)
-    console.log('[generate-outfits] success — stub, 3 outfits returned')
-    return jsonResponse({ outfits, source: 'stub' }, 200)
+    // 8. SMART fallback (Session 7C) — uses filteredItems (safety filters already applied).
+    //    If filtered pool went thin, revert to unfiltered items (essentials gate already passed those).
+    //    If buildSmartFallback itself throws (any internal error), last-resort to buildStubOutfits.
+    try {
+      const fallbackPool = filteredItems.length >= 5 ? filteredItems : items
+      const outfits = buildSmartFallback(fallbackPool, pinned, occasion)
+      console.log('[generate-outfits] success — fallback, 3 outfits returned')
+      return jsonResponse({ outfits, source: 'fallback' }, 200)
+    } catch (e) {
+      console.log('[generate-outfits] smart fallback threw — last-resort stub:', (e as Error).message)
+      const outfits = buildStubOutfits(items, pinned)
+      console.log('[generate-outfits] success — stub, 3 outfits returned')
+      return jsonResponse({ outfits, source: 'stub' }, 200)
+    }
   } catch (e) {
     console.error('[generate-outfits] unexpected error:', (e as Error).message)
     return jsonResponse({ error: (e as Error).message }, 500)
