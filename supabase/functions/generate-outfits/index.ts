@@ -732,8 +732,9 @@ function applySafetyFilters(args: {
   occasion: string
   indoors: boolean
   pinnedItemId: string | null
+  neverWear: string | null
 }): Item[] {
-  const { items, temperature, condition, occasion, indoors, pinnedItemId } = args
+  const { items, temperature, condition, occasion, indoors, pinnedItemId, neverWear } = args
   let filtered = [...items]
 
   // C1 — Cold: drop Light/None warmth from Tops and Dresses (unless pinned).
@@ -953,6 +954,36 @@ function applySafetyFilters(args: {
     }
   }
 
+  // Dislikes — drop items whose name or colour matches user's "I never want to wear" text.
+  // Tokenized: split on commas/semicolons, lowercase, trim, drop empties, drop stopwords,
+  // minimum token length 4 to avoid false positives like "tan" matching "tank top" or
+  // "red" matching "adidas". Match on name + colour only — notes is free-form text and
+  // would over-filter. Pinned item is exempt (user pinned it deliberately, overrides dislikes).
+  if (typeof neverWear === 'string' && neverWear.trim()) {
+    const STOPWORDS = new Set(['anything', 'the', 'a', 'an', 'no', 'hate', 'nothing', 'with'])
+    const tokens = neverWear
+      .toLowerCase()
+      .split(/[,;]/)
+      .map(t => t.trim())
+      .filter(t => t.length >= 4 && !STOPWORDS.has(t))
+
+    if (tokens.length > 0) {
+      const before = filtered.length
+      filtered = filtered.filter(i => {
+        if (i.id === pinnedItemId) return true
+        const name = (i.name || '').toLowerCase()
+        const colour = (i.colour || '').toLowerCase()
+        for (const token of tokens) {
+          if (name.includes(token) || colour.includes(token)) return false
+        }
+        return true
+      })
+      if (filtered.length !== before) {
+        console.log(`[generate-outfits] dislikes filter dropped ${before - filtered.length} items (tokens: ${tokens.join(', ')})`)
+      }
+    }
+  }
+
   // Soft-fail safety net — if filters break the essentials gate, revert to unfiltered.
   const hasTops    = filtered.some(i => i.category === 'Tops')
   const hasBottoms = filtered.some(i => i.category === 'Bottoms')
@@ -1078,7 +1109,7 @@ Deno.serve(async (req) => {
 
     // 6.5. Apply weather/indoor safety filters before Sonnet sees the pool.
     // Pinned item is exempt. Soft-fail reverts to unfiltered if filters break essentials.
-    const filteredItems = applySafetyFilters({ items, temperature, condition, occasion, indoors, pinnedItemId })
+    const filteredItems = applySafetyFilters({ items, temperature, condition, occasion, indoors, pinnedItemId, neverWear: styleProfile?.neverWear ?? null })
     console.log('[generate-outfits] pool size after filters:', filteredItems.length, 'of', items.length)
 
     // 7. Try Anthropic. On any failure, fall back to stub silently.

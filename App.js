@@ -2196,7 +2196,7 @@ const polaroidStyles = StyleSheet.create({
 });
 
 // ── Your Looks Tab ──────────────────────────────────────────────────────────
-function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, wardrobeItems }) {
+function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, wardrobeItems, onRegenerate }) {
   // ── DEMO_MODE: flip to `true` for visual testing (HIG audit, Mood Board / Hanger View / Saved Outfits review). Production: always `false`. ──
   const DEMO_MODE = false;
 
@@ -2287,24 +2287,14 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
   };
 
   const handleRegenerate = () => {
-    setLoading(true);
-    setHasGenerated(false);
+    // Local UI resets — clear ratings, feedback, "worn today" markers, boutique panels
+    // before firing a new generation. Spinner + hasGenerated flags are driven by the
+    // lifted generationStatus useEffect above — no fake setTimeout needed.
     setRatings({});
     setRatingFeedback({});
     setWornToday({});
     setShowBoutique({});
-    spinAnim.setValue(0);
-    Animated.loop(
-      Animated.timing(spinAnim, {
-        toValue: 1,
-        duration: 1200,
-        useNativeDriver: true,
-      })
-    ).start();
-    setTimeout(() => {
-      setLoading(false);
-      setHasGenerated(true);
-    }, 2000);
+    if (onRegenerate) onRegenerate();
   };
 
   const hasAnyRating = Object.keys(ratings).length > 0;
@@ -5267,6 +5257,8 @@ function MainAppScreen({ onSignOut }) {
   const [generationStatus, setGenerationStatus] = useState('idle');
   const [generatedOutfits, setGeneratedOutfits] = useState([]);
   const [generationError, setGenerationError] = useState('');
+  // Last payload sent to handleGenerate — enables Regenerate button to re-fire same vibe.
+  const [lastPayload, setLastPayload] = useState(null);
   const [showSettingsScreen, setShowSettingsScreen] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -5319,6 +5311,7 @@ function MainAppScreen({ onSignOut }) {
   // resolves item IDs to full WardrobeItem objects → drives YourLooksTab via lifted state.
   const handleGenerate = async (payload) => {
     if (generationStatus === 'loading') return; // spam-tap guard
+    setLastPayload(payload);
     setGenerationStatus('loading');
     setGenerationError('');
     setGeneratedOutfits([]);
@@ -5366,6 +5359,13 @@ function MainAppScreen({ onSignOut }) {
     }
   };
 
+  // Regenerate — re-fire handleGenerate with the same payload from the previous run.
+  // Defensive no-op if no prior payload exists (button should not render in that state).
+  const handleRegenerate = () => {
+    if (!lastPayload) return;
+    handleGenerate(lastPayload);
+  };
+
   const tabs = [
     { label: 'My Style', icon: '✦', IconComponent: TabStarIcon },
     { label: `My Closet (${wardrobeItems.length})`, icon: '👗', IconComponent: TabHangerIcon },
@@ -5393,7 +5393,7 @@ function MainAppScreen({ onSignOut }) {
       {activeTab === 0 && <StyleDNATab onBuildCloset={() => setActiveTab(1)} />}
       {activeTab === 1 && <WardrobeTab items={wardrobeItems} setItems={setWardrobeItems} onGoToVibe={() => setActiveTab(2)} />}
       {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} onGenerate={handleGenerate} />}
-      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} wardrobeItems={wardrobeItems} />}
+      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} wardrobeItems={wardrobeItems} onRegenerate={handleRegenerate} />}
 
       {/* Bottom tab bar */}
       <View style={mainStyles.tabBar}>
