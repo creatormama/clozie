@@ -9,6 +9,7 @@ import {
   ScrollView,
   TextInput,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Modal,
   Switch,
@@ -907,10 +908,15 @@ function StyleDNATab({ onBuildCloset }) {
   };
 
   return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
     <ScrollView
       style={{ flex: 1, backgroundColor: '#E8E4CE' }}
       contentContainerStyle={dnaStyles.scrollContent}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       <Text style={dnaStyles.heading}>Your Style</Text>
       <Text style={dnaStyles.subtitle}>
@@ -977,7 +983,7 @@ function StyleDNATab({ onBuildCloset }) {
         <TextInput
           style={dnaStyles.textInput}
           placeholder="e.g. neon colours, crop tops, animal print..."
-          placeholderTextColor="rgba(44,26,14,0.35)"
+          placeholderTextColor="rgba(44,26,14,0.65)"
           value={neverWear}
           onChangeText={setNeverWear}
           multiline={true}
@@ -1015,6 +1021,7 @@ function StyleDNATab({ onBuildCloset }) {
         <Text style={dnaStyles.skipLink}>Skip</Text>
       </TouchableOpacity>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -1714,7 +1721,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
 }
 
 // ── Today's Vibe Tab ────────────────────────────────────────────────────────
-function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
+function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate, onGoToCloset }) {
   const [selectedTemperature, setSelectedTemperature] = useState(null);
   const [selectedCondition, setSelectedCondition] = useState(null);
   const [selectedOccasion, setSelectedOccasion] = useState(null);
@@ -1752,11 +1759,36 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
     setSelectedOccasion((prev) => prev === occasion ? null : occasion);
   };
 
+  // Empty wardrobe: show warm guidance instead of weather/occasion/Generate UI.
+  // Generate path is unreachable from this state — gate 4 (not_enough_items) would
+  // reject anyway, but the empty state is a friendlier UX than letting them tap and fail.
+  if (wardrobeItems.length === 0) {
+    return (
+      <View style={vibeStyles.emptyContainer}>
+        <Text style={vibeStyles.emptyText}>
+          Add a few pieces to your closet first — Clozie will do the rest.
+        </Text>
+        <TouchableOpacity
+          style={vibeStyles.emptyButton}
+          activeOpacity={0.8}
+          onPress={onGoToCloset}
+        >
+          <Text style={vibeStyles.emptyButtonText}>Go to My Closet →</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
     <ScrollView
       style={{ flex: 1, backgroundColor: '#E8E4CE' }}
       contentContainerStyle={vibeStyles.scrollContent}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
     >
       <Text style={vibeStyles.heading}>Today's Vibe</Text>
       <Text style={vibeStyles.subheading}>Pick your weather and occasion — Clozie does the rest.</Text>
@@ -1889,7 +1921,7 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
         <TextInput
           style={vibeStyles.textInput}
           placeholder="Tell Clozie more — which jacket? office is cold, dinner out, no heels today…"
-          placeholderTextColor="rgba(44,26,14,0.40)"
+          placeholderTextColor="rgba(44,26,14,0.65)"
           value={extraNotes}
           onChangeText={setExtraNotes}
           multiline={true}
@@ -1926,6 +1958,7 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate }) {
         <Text style={vibeStyles.hintText}>Select weather and occasion first</Text>
       )}
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -4345,6 +4378,10 @@ function SettingsScreen({ onClose, onSignOut }) {
         <View style={{ width: 44 }} />
       </View>
 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <ScrollView
         contentContainerStyle={settingsStyles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -4664,6 +4701,7 @@ function SettingsScreen({ onClose, onSignOut }) {
           <Text style={settingsStyles.signOutButtonText}>Sign Out</Text>
         </TouchableOpacity>
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Subscription Screen Modal */}
       <Modal
@@ -4715,6 +4753,10 @@ function SettingsScreen({ onClose, onSignOut }) {
         transparent={true}
         onRequestClose={() => setShowDeleteModal(false)}
       >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
         <View style={settingsStyles.deleteOverlay}>
           <View style={settingsStyles.deleteModal}>
             {deleteStep === 1 && (
@@ -4795,6 +4837,7 @@ function SettingsScreen({ onClose, onSignOut }) {
             )}
           </View>
         </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -5249,6 +5292,51 @@ function TabMirrorIcon({ active }) {
   );
 }
 
+// ── AI Consent Modal — Apple Guideline 5.1.2(i) ─────────────────────────────
+// One-time modal before first outfit generation. Names Anthropic explicitly per
+// Apple compliance — this is a documented legal exception to the "never say AI"
+// rule (the rule applies elsewhere in the app, not here).
+function ConsentModal({ visible, onAccept, onDecline }) {
+  const openPrivacyLink = () => {
+    Linking.openURL('https://www.anthropic.com/privacy').catch(() => {});
+  };
+  return (
+    <Modal
+      visible={visible}
+      animationType="fade"
+      transparent={true}
+      onRequestClose={onDecline}
+    >
+      <View style={consentStyles.backdrop}>
+        <View style={consentStyles.card}>
+          <Text style={consentStyles.title}>Before Clozie styles you</Text>
+          <Text style={consentStyles.body}>
+            Clozie creates outfits using technology provided by Anthropic. To generate outfit suggestions, your wardrobe photos and style preferences are sent to Anthropic for processing. For details on how Anthropic handles data, see their privacy policy at{' '}
+            <Text style={consentStyles.link} onPress={openPrivacyLink}>
+              anthropic.com/privacy
+            </Text>
+            .
+          </Text>
+          <TouchableOpacity
+            style={consentStyles.acceptButton}
+            activeOpacity={0.8}
+            onPress={onAccept}
+          >
+            <Text style={consentStyles.acceptButtonText}>Accept — I'm ready to style ✦</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={consentStyles.declineButton}
+            activeOpacity={0.7}
+            onPress={onDecline}
+          >
+            <Text style={consentStyles.declineButtonText}>Not now</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 // ── Main App Screen — 4 bottom tabs ─────────────────────────────────────────
 function MainAppScreen({ onSignOut }) {
   const [activeTab, setActiveTab] = useState(0);
@@ -5259,6 +5347,11 @@ function MainAppScreen({ onSignOut }) {
   const [generationError, setGenerationError] = useState('');
   // Last payload sent to handleGenerate — enables Regenerate button to re-fire same vibe.
   const [lastPayload, setLastPayload] = useState(null);
+  // AI consent state (Apple Guideline 5.1.2i) — read on mount from user_metadata.ai_consent_given.
+  const [consentGiven, setConsentGiven] = useState(false);
+  const [consentLoaded, setConsentLoaded] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState(null);
   const [showSettingsScreen, setShowSettingsScreen] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -5307,9 +5400,38 @@ function MainAppScreen({ onSignOut }) {
     };
   }, []);
 
+  // Load AI consent flag from auth.user_metadata on mount.
+  // consentLoaded becomes true after initial read (success or failure) so the
+  // modal trigger in handleGenerate doesn't fire during the load window.
+  useEffect(() => {
+    let cancelled = false;
+    const loadConsent = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (cancelled) return;
+        const given = user?.user_metadata?.ai_consent_given === true;
+        setConsentGiven(given);
+        setConsentLoaded(true);
+      } catch {
+        if (!cancelled) setConsentLoaded(true);
+      }
+    };
+    loadConsent();
+    return () => { cancelled = true; };
+  }, []);
+
   // Called from Today's Vibe → switches to Your Looks → calls Edge Function →
   // resolves item IDs to full WardrobeItem objects → drives YourLooksTab via lifted state.
-  const handleGenerate = async (payload) => {
+  const handleGenerate = async (payload, { skipConsentCheck = false } = {}) => {
+    // AI consent check (Apple Guideline 5.1.2i) — show modal before first generation.
+    // Gated on consentLoaded so we don't trigger the modal during the initial-load window.
+    // skipConsentCheck=true when called from handleAcceptConsent right after consent was saved
+    // (React setState is async — the closure here still sees the old consentGiven value).
+    if (!skipConsentCheck && consentLoaded && !consentGiven) {
+      setPendingPayload(payload);
+      setShowConsentModal(true);
+      return;
+    }
     if (generationStatus === 'loading') return; // spam-tap guard
     setLastPayload(payload);
     setGenerationStatus('loading');
@@ -5366,6 +5488,29 @@ function MainAppScreen({ onSignOut }) {
     handleGenerate(lastPayload);
   };
 
+  // Accept handler — saves consent to user_metadata, flips local state, resumes generation.
+  // Disclosure already made the moment the modal appeared (Apple 5.1.2i compliance).
+  // Save is best-effort; local state flips regardless so the user isn't blocked by a network blip.
+  const handleAcceptConsent = async () => {
+    const stash = pendingPayload;
+    setPendingPayload(null);
+    setShowConsentModal(false);
+    setConsentGiven(true);
+    try {
+      await supabase.auth.updateUser({ data: { ai_consent_given: true } });
+    } catch {
+      // Best-effort save — if it fails, local state still flipped for this session.
+      // Modal will re-appear next session if persistence didn't land.
+    }
+    if (stash) handleGenerate(stash, { skipConsentCheck: true });
+  };
+
+  // Decline handler — closes modal, clears pending payload, no save, no generation.
+  const handleDeclineConsent = () => {
+    setPendingPayload(null);
+    setShowConsentModal(false);
+  };
+
   const tabs = [
     { label: 'My Style', icon: '✦', IconComponent: TabStarIcon },
     { label: `My Closet (${wardrobeItems.length})`, icon: '👗', IconComponent: TabHangerIcon },
@@ -5392,7 +5537,7 @@ function MainAppScreen({ onSignOut }) {
       {/* Tab content area */}
       {activeTab === 0 && <StyleDNATab onBuildCloset={() => setActiveTab(1)} />}
       {activeTab === 1 && <WardrobeTab items={wardrobeItems} setItems={setWardrobeItems} onGoToVibe={() => setActiveTab(2)} />}
-      {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} onGenerate={handleGenerate} />}
+      {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} onGenerate={handleGenerate} onGoToCloset={() => setActiveTab(1)} />}
       {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} wardrobeItems={wardrobeItems} onRegenerate={handleRegenerate} />}
 
       {/* Bottom tab bar */}
@@ -5435,6 +5580,13 @@ function MainAppScreen({ onSignOut }) {
       >
         <SettingsScreen onClose={() => setShowSettingsScreen(false)} onSignOut={onSignOut} />
       </Modal>
+
+      {/* AI Consent Modal — Apple Guideline 5.1.2(i) */}
+      <ConsentModal
+        visible={showConsentModal}
+        onAccept={handleAcceptConsent}
+        onDecline={handleDeclineConsent}
+      />
     </View>
   );
 }
@@ -7065,6 +7217,41 @@ const vibeStyles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    backgroundColor: '#E8E4CE',
+  },
+  emptyText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 16,
+    color: '#5C4A3A',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 28,
+    maxWidth: 320,
+  },
+  emptyButton: {
+    backgroundColor: '#BCC7B7',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    paddingVertical: 18,
+    paddingHorizontal: 64,
+    borderRadius: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  emptyButtonText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 16,
+    color: '#2C1A0E',
+    textAlign: 'center',
+  },
   heading: {
     fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 32,
@@ -7678,5 +7865,65 @@ const mainStyles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: '#A44A34',
     marginTop: 4,
+  },
+});
+
+const consentStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 28,
+    paddingHorizontal: 28,
+    width: '100%',
+    maxWidth: 340,
+  },
+  title: {
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 22,
+    color: '#2C1A0E',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  body: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 15,
+    color: '#5C4A3A',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  link: {
+    color: '#A44A34',
+    textDecorationLine: 'underline',
+  },
+  acceptButton: {
+    backgroundColor: '#BCC7B7',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    borderRadius: 100,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  acceptButtonText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 15,
+    color: '#FFFFFF',
+  },
+  declineButton: {
+    marginTop: 16,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  declineButtonText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 14,
+    color: '#5C4A3A',
   },
 });
