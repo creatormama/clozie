@@ -32,6 +32,7 @@ import { supabase } from './src/lib/supabase';
 import { fetchWardrobeItems, getSignedPhotoUrl, uploadWardrobePhoto, insertWardrobeItem, updateWardrobeItem, deleteWardrobePhoto, deleteWardrobeItem } from './src/lib/wardrobeItems';
 import { recognizeWardrobePhoto } from './src/lib/clozieRecognition';
 import { generateOutfits } from './src/lib/outfitGeneration';
+import { upsertOutfitInteraction, markItemsWorn } from './src/lib/outfitHistory';
 
 // ── Design tokens — sacred, never change ─────────────────────────────────────
 const G = '#C9A96E';       // gold accent
@@ -2229,7 +2230,7 @@ const polaroidStyles = StyleSheet.create({
 });
 
 // ── Your Looks Tab ──────────────────────────────────────────────────────────
-function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, wardrobeItems, onRegenerate }) {
+function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, wardrobeItems, onRegenerate, onPersistInteraction, onMarkItemsWorn }) {
   // ── DEMO_MODE: flip to `true` for visual testing (HIG audit, Mood Board / Hanger View / Saved Outfits review). Production: always `false`. ──
   const DEMO_MODE = false;
 
@@ -2311,12 +2312,13 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
     setMoodBoardOutfit(buildDebugOutfit(key));
   };
 
-  const handleRate = (outfitId, rating) => {
-    setRatings((prev) => ({ ...prev, [outfitId]: rating }));
-    setRatingFeedback((prev) => ({ ...prev, [outfitId]: true }));
+  const handleRate = (outfit, rating) => {
+    setRatings((prev) => ({ ...prev, [outfit.id]: rating }));
+    setRatingFeedback((prev) => ({ ...prev, [outfit.id]: true }));
     setTimeout(() => {
-      setRatingFeedback((prev) => ({ ...prev, [outfitId]: false }));
+      setRatingFeedback((prev) => ({ ...prev, [outfit.id]: false }));
     }, 2000);
+    if (onPersistInteraction) onPersistInteraction(outfit, { rating });
   };
 
   const handleRegenerate = () => {
@@ -2332,17 +2334,28 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
 
   const hasAnyRating = Object.keys(ratings).length > 0;
 
-  const handleWornToday = (outfitId) => {
-    setWornToday((prev) => ({ ...prev, [outfitId]: true }));
+  const handleWornToday = (outfit) => {
+    setWornToday((prev) => ({ ...prev, [outfit.id]: true }));
     setTimeout(() => {
-      setWornToday((prev) => ({ ...prev, [outfitId]: false }));
+      setWornToday((prev) => ({ ...prev, [outfit.id]: false }));
     }, 2000);
+    if (onPersistInteraction) {
+      onPersistInteraction(outfit, { appendWornDate: new Date().toISOString() });
+    }
+    if (onMarkItemsWorn) {
+      const itemIds = (outfit.items || []).map((i) => i?.id).filter(Boolean);
+      if (itemIds.length > 0) onMarkItemsWorn(itemIds);
+    }
   };
 
-  const toggleSave = (outfitId) => {
+  const toggleSave = (outfit) => {
+    const isSavingNow = !savedOutfits.includes(outfit.id);
     setSavedOutfits((prev) =>
-      prev.includes(outfitId) ? prev.filter((id) => id !== outfitId) : [...prev, outfitId]
+      prev.includes(outfit.id) ? prev.filter((id) => id !== outfit.id) : [...prev, outfit.id]
     );
+    if (onPersistInteraction) {
+      onPersistInteraction(outfit, { saved: isSavingNow });
+    }
   };
 
   // Outfit shape: { id: string, vibe: string (uppercase), name: string,
@@ -2576,7 +2589,7 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                 savedOutfits.includes(outfit.id) && looksStyles.actionButtonHalfSaved,
               ]}
               activeOpacity={0.7}
-              onPress={() => toggleSave(outfit.id)}
+              onPress={() => toggleSave(outfit)}
             >
               <Text style={looksStyles.actionButtonText}>
                 {savedOutfits.includes(outfit.id) ? '❤️ Saved' : '🤍 Save'}
@@ -2585,7 +2598,7 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
             <TouchableOpacity
               style={looksStyles.actionButtonHalf}
               activeOpacity={0.7}
-              onPress={() => handleWornToday(outfit.id)}
+              onPress={() => handleWornToday(outfit)}
             >
               <Text style={looksStyles.actionButtonText}>
                 {wornToday[outfit.id] ? '✓ Worn today' : 'I wore this today'}
@@ -2609,7 +2622,7 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                     isSelected && looksStyles.ratingButtonSelected,
                   ]}
                   activeOpacity={0.7}
-                  onPress={() => handleRate(outfit.id, r.key)}
+                  onPress={() => handleRate(outfit, r.key)}
                 >
                   <Text style={[
                     looksStyles.ratingButtonText,
@@ -5488,6 +5501,24 @@ function MainAppScreen({ onSignOut }) {
     handleGenerate(lastPayload);
   };
 
+  // Fire-and-forget persistence for outfit interactions (rating, save, wear).
+  // Curries the generation context (lastPayload) away so callers pass only outfit + patch.
+  // Errors logged but never surfaced — local UI is the source of truth for this session.
+  const handlePersistInteraction = (outfit, patch) => {
+    upsertOutfitInteraction(outfit, lastPayload, patch).catch((err) => {
+      console.warn('[outfit_history] persist failed:', err?.message);
+    });
+  };
+
+  // Fire-and-forget wardrobe wear counter bumps. Updates last_worn + times_worn
+  // for each item id. Local wardrobeItems state stays stale until next reload —
+  // "Last worn: today" surfacing on My Closet cards is a follow-up polish item.
+  const handleMarkItemsWorn = (itemIds) => {
+    markItemsWorn(itemIds).catch((err) => {
+      console.warn('[outfit_history] mark items worn failed:', err?.message);
+    });
+  };
+
   // Accept handler — saves consent to user_metadata, flips local state, resumes generation.
   // Disclosure already made the moment the modal appeared (Apple 5.1.2i compliance).
   // Save is best-effort; local state flips regardless so the user isn't blocked by a network blip.
@@ -5538,7 +5569,7 @@ function MainAppScreen({ onSignOut }) {
       {activeTab === 0 && <StyleDNATab onBuildCloset={() => setActiveTab(1)} />}
       {activeTab === 1 && <WardrobeTab items={wardrobeItems} setItems={setWardrobeItems} onGoToVibe={() => setActiveTab(2)} />}
       {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} onGenerate={handleGenerate} onGoToCloset={() => setActiveTab(1)} />}
-      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} wardrobeItems={wardrobeItems} onRegenerate={handleRegenerate} />}
+      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} wardrobeItems={wardrobeItems} onRegenerate={handleRegenerate} onPersistInteraction={handlePersistInteraction} onMarkItemsWorn={handleMarkItemsWorn} />}
 
       {/* Bottom tab bar */}
       <View style={mainStyles.tabBar}>
