@@ -1053,6 +1053,18 @@ function getCategoryEmoji(category) {
   return emojis[category] || '👗';
 }
 
+// Format an ISO timestamp (or null) for the "Last worn" wardrobe card label.
+// Returns 'Never worn' when no date, or 'Last worn: May 16' (no year) when present.
+// Defensive: malformed strings fall back to 'Never worn' rather than rendering garbage.
+function formatLastWorn(iso) {
+  if (!iso) return 'Never worn';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return 'Never worn';
+  const month = d.toLocaleString('en-US', { month: 'short' });
+  const day = d.getDate();
+  return `Last worn: ${month} ${day}`;
+}
+
 // ── Wardrobe Tab ────────────────────────────────────────────────────────────
 function WardrobeTab({ items, setItems, onGoToVibe }) {
   const [showAddPanel, setShowAddPanel] = useState(false);
@@ -1398,7 +1410,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
                   <Image
                     source={{ uri: item.photoUri }}
                     style={wardrobeStyles.gridCardPhotoImage}
-                    resizeMode="cover"
+                    resizeMode="contain"
                   />
                 ) : (
                   <Text style={{ fontSize: 28 }}>👗</Text>
@@ -1464,7 +1476,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
               )}
               {/* Last worn date */}
               <Text style={wardrobeStyles.gridCardLastWorn}>
-                {item.lastWorn ? `Last worn: ${item.lastWorn}` : 'Never worn'}
+                {formatLastWorn(item.lastWorn)}
               </Text>
               {/* What goes with this — hidden until tappable feature is built (Phase 2) */}
               {false && (
@@ -2364,8 +2376,15 @@ const shareCardStyles = StyleSheet.create({
   },
 });
 
+// 9J: Rotating subtitle messages shown under the loading spinner.
+const LOADING_MESSAGES = [
+  'Browsing your closet ✦',
+  'Mixing and matching ✦',
+  'Clozie is working her magic ✦',
+];
+
 // ── Your Looks Tab ──────────────────────────────────────────────────────────
-function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, wardrobeItems, onRegenerate, onPersistInteraction, onMarkItemsWorn }) {
+function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, recoveryMode, wardrobeItems, onRegenerate, onPersistInteraction, onMarkItemsWorn }) {
   // ── DEMO_MODE: flip to `true` for visual testing (HIG audit, Mood Board / Hanger View / Saved Outfits review). Production: always `false`. ──
   const DEMO_MODE = false;
 
@@ -2461,6 +2480,30 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
   };
 
   const handleRegenerate = () => {
+    // 9F-A: Evaluate circuit-breaker counter from the JUST-RATED outfits, before
+    // local resets clear `ratings`. Fire-and-forget — the metadata write races
+    // with the next Edge Function call, and that's spec-compliant: recovery
+    // mode is meant to fire on subsequent generations, not retroactively.
+    //   - Any Love/Like in this session → reset counter to 0
+    //   - ALL outfits rated Nope → increment counter
+    //   - Incomplete session (0/1/2 ratings, no positives) → leave alone
+    const ratingsList = outfits.map((o) => ratings[o.id]);
+    const anyPositive = ratingsList.some((r) => r === 'love' || r === 'like');
+    const allRatedNegative = outfits.length > 0
+      && ratingsList.length === outfits.length
+      && ratingsList.every((r) => r === 'nope');
+    if (anyPositive) {
+      supabase.auth.updateUser({ data: { consecutive_negative_sessions: 0 } })
+        .catch((e) => console.warn('[counter] reset failed:', e?.message));
+    } else if (allRatedNegative) {
+      supabase.auth.getUser().then(({ data }) => {
+        const current = typeof data?.user?.user_metadata?.consecutive_negative_sessions === 'number'
+          ? data.user.user_metadata.consecutive_negative_sessions
+          : 0;
+        return supabase.auth.updateUser({ data: { consecutive_negative_sessions: current + 1 } });
+      }).catch((e) => console.warn('[counter] increment failed:', e?.message));
+    }
+
     // Local UI resets — clear ratings, feedback, "worn today" markers, boutique panels
     // before firing a new generation. Spinner + hasGenerated flags are driven by the
     // lifted generationStatus useEffect above — no fake setTimeout needed.
@@ -2603,6 +2646,18 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
     }
   }, [generationStatus]);
 
+  // 9J: Rotate loading subtitle every 1.5s while loading. Resets to index 0
+  // on each new 'loading' transition. Modulo loop covers slow generations.
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  useEffect(() => {
+    if (generationStatus !== 'loading') return;
+    setLoadingMessageIndex(0);
+    const id = setInterval(() => {
+      setLoadingMessageIndex((i) => (i + 1) % LOADING_MESSAGES.length);
+    }, 1500);
+    return () => clearInterval(id);
+  }, [generationStatus]);
+
   const spin = spinAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
@@ -2614,7 +2669,7 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
       <View style={[looksStyles.scrollContent, { flex: 1, backgroundColor: '#E8E4CE', justifyContent: 'center', alignItems: 'center' }]}>
         <Animated.Text style={[looksStyles.spinStar, { transform: [{ rotate: spin }] }]}>✦</Animated.Text>
         <Text style={looksStyles.loadingTitle}>Styling your outfits...</Text>
-        <Text style={looksStyles.loadingSubtext}>Clozie is working her magic ✦</Text>
+        <Text style={looksStyles.loadingSubtext}>{LOADING_MESSAGES[loadingMessageIndex]}</Text>
       </View>
     );
   }
@@ -2700,6 +2755,15 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
         <Text style={looksStyles.subtitle}>
           Here are today's looks, styled just for you. ✦ Clozie learns your taste with every rating.
         </Text>
+      )}
+
+      {/* 9F-E: Recovery banner — appears when circuit breaker is tripped (>=2 all-Nope sessions). */}
+      {recoveryMode && hasGenerated && outfits.length > 0 && (
+        <View style={looksStyles.recoveryBanner}>
+          <Text style={looksStyles.recoveryBannerText}>
+            I noticed my last few suggestions didn't land. I'm trying something different today — let me know if I'm getting warmer.
+          </Text>
+        </View>
       )}
 
       {/* Outfit cards */}
@@ -5540,6 +5604,9 @@ function MainAppScreen({ onSignOut }) {
   const [generationStatus, setGenerationStatus] = useState('idle');
   const [generatedOutfits, setGeneratedOutfits] = useState([]);
   const [generationError, setGenerationError] = useState('');
+  // 9F-B: Circuit-breaker — set true when Edge Function returns recoveryMode=true.
+  // Drives the recovery banner in YourLooksTab (wired in 9F-E).
+  const [generationRecoveryMode, setGenerationRecoveryMode] = useState(false);
   // Last payload sent to handleGenerate — enables Regenerate button to re-fire same vibe.
   const [lastPayload, setLastPayload] = useState(null);
   // AI consent state (Apple Guideline 5.1.2i) — read on mount from user_metadata.ai_consent_given.
@@ -5632,6 +5699,7 @@ function MainAppScreen({ onSignOut }) {
     setGenerationStatus('loading');
     setGenerationError('');
     setGeneratedOutfits([]);
+    setGenerationRecoveryMode(false); // 9F-B: clear stale value before new generation
     setActiveTab(3);
 
     // Read style profile from auth.user_metadata (same shape as StyleDNATab saves it)
@@ -5658,6 +5726,7 @@ function MainAppScreen({ onSignOut }) {
           .filter(Boolean),
       }));
       setGeneratedOutfits(resolved);
+      setGenerationRecoveryMode(response.recoveryMode === true); // 9F-B
       setGenerationStatus('success');
     } catch (err) {
       const code = err?.code;
@@ -5751,7 +5820,7 @@ function MainAppScreen({ onSignOut }) {
       {activeTab === 0 && <StyleDNATab onBuildCloset={() => setActiveTab(1)} />}
       {activeTab === 1 && <WardrobeTab items={wardrobeItems} setItems={setWardrobeItems} onGoToVibe={() => setActiveTab(2)} />}
       {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} onGenerate={handleGenerate} onGoToCloset={() => setActiveTab(1)} />}
-      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} wardrobeItems={wardrobeItems} onRegenerate={handleRegenerate} onPersistInteraction={handlePersistInteraction} onMarkItemsWorn={handleMarkItemsWorn} />}
+      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} recoveryMode={generationRecoveryMode} wardrobeItems={wardrobeItems} onRegenerate={handleRegenerate} onPersistInteraction={handlePersistInteraction} onMarkItemsWorn={handleMarkItemsWorn} />}
 
       {/* Bottom tab bar */}
       <View style={mainStyles.tabBar}>
@@ -7214,7 +7283,7 @@ const wardrobeStyles = StyleSheet.create({
   },
   gridCardPhoto: {
     width: '100%',
-    height: 120,
+    height: 150,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -7721,6 +7790,23 @@ const looksStyles = StyleSheet.create({
     fontSize: 16,
     color: '#2C1A0E',
     textAlign: 'center',
+  },
+  // 9F-E: Recovery banner — sage-pill card above outfit list when circuit breaker is tripped.
+  // Background uses the locked sage-pill color rgba(188,199,183,0.30) — same as CLOZIE
+  // RECOGNISED success bar — visible against the cream #E8E4CE YourLooksTab background.
+  recoveryBanner: {
+    backgroundColor: 'rgba(188,199,183,0.30)',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  recoveryBannerText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 14,
+    color: '#2C1A0E',
+    lineHeight: 21,
   },
   spinStar: {
     fontSize: 36,

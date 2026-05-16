@@ -445,8 +445,10 @@ function buildFreshContent(args: {
   brief: string | null
   pinned: Item | null
   items: Item[]
+  recoveryMode: boolean
+  recentOutfits: { name: string; vibe: string; itemNames: string[] }[]
 }): string {
-  const { styleProfile, temperature, condition, occasion, indoors, brief, pinned, items } = args
+  const { styleProfile, temperature, condition, occasion, indoors, brief, pinned, items, recoveryMode, recentOutfits } = args
 
   const styles = styleProfile?.styles?.length ? styleProfile.styles.join(', ') : 'Not specified'
   const colours = styleProfile?.colours?.length ? styleProfile.colours.join(', ') : 'Not specified'
@@ -485,12 +487,33 @@ function buildFreshContent(args: {
 
   const weatherHint = buildWeatherHint(temperature, condition)
 
+  // 9F-C: Recovery directive — fires when circuit breaker is tripped (>=2 all-Nope sessions).
+  // Surfaced as the second styling line so Sonnet weights it heavily, right after identity.
+  const recoveryLine = recoveryMode
+    ? "* RECOVERY: Her recent outfits weren't landing. Try a clearly different direction this time — vary the silhouette, mood, or anchor piece from her usual."
+    : null
+
   const stylingLines = [
     `* Her identity is ${identity} — every outfit should feel like her, even at ${occasion}.`,
+    ...(recoveryLine ? [recoveryLine] : []),
     ...(weatherHint ? [`* ${weatherHint}`] : []),
     ...flags.map(f => `* ${f}`),
     ...(small ? [`* ${small}`] : []),
   ].join('\n')
+
+  // 9F-D: Recent outfits block — formatted only when history has usable rows.
+  // Returns null when no history so the block is omitted entirely from the user message.
+  const recentLines = recentOutfits
+    .map(o => {
+      if (!o.name && o.itemNames.length === 0) return null
+      const vibePart = o.vibe ? ` (${o.vibe})` : ''
+      const itemsPart = o.itemNames.length > 0 ? ` — ${o.itemNames.join(', ')}` : ''
+      return `- "${o.name || 'Untitled'}"${vibePart}${itemsPart}`
+    })
+    .filter((line): line is string => line !== null)
+  const recentBlock = recentLines.length > 0
+    ? ['RECENT OUTFITS — already styled, avoid repeating these combinations:', ...recentLines].join('\n')
+    : null
 
   return [
     `Style she loves: ${styles}`,
@@ -507,6 +530,7 @@ function buildFreshContent(args: {
     '',
     'DRESS RULE: A dress is a complete outfit. Never pair a dress with bottoms. Shoes and outerwear are fine with a dress.',
     '',
+    ...(recentBlock ? [recentBlock, ''] : []),
     'WARDROBE POOL (sorted by preference):',
     buildCompressedPool(items),
   ].join('\n')
@@ -1218,6 +1242,15 @@ Deno.serve(async (req) => {
 
     console.log('[generate-outfits] auth OK, user:', user.id)
 
+    // 9F-B: Circuit-breaker counter — read from user_metadata (free, already did getUser).
+    // Client increments on all-Nope sessions and resets to 0 on any Love/Like.
+    const consecutiveNegativeSessions =
+      typeof user.user_metadata?.consecutive_negative_sessions === 'number'
+        ? user.user_metadata.consecutive_negative_sessions
+        : 0
+    const recoveryMode = consecutiveNegativeSessions >= 2
+    console.log('[generate-outfits] circuit breaker:', { consecutiveNegativeSessions, recoveryMode })
+
     // 2. Parse body
     const body = await req.json().catch(() => null)
     if (!body || typeof body !== 'object') {
@@ -1266,6 +1299,28 @@ Deno.serve(async (req) => {
 
     console.log('[generate-outfits] styleable items:', items.length)
 
+    // 9F-D: Recent outfit history — last 6 outfits (≈ last 2 sessions of 3) as don't-repeat hint.
+    // Lazy persistence (Session 9A) means outfit_history only contains outfits she actually
+    // interacted with (rated/saved/worn). New users start with empty history — no harm.
+    // Item names resolved here against the UNFILTERED wardrobe pool so filtered-out items
+    // still show by name in the history block. Errors silently swallowed — failure must not
+    // block generation.
+    const { data: historyRows } = await userClient
+      .from('outfit_history')
+      .select('name, vibe, item_ids')
+      .order('created_at', { ascending: false })
+      .limit(6)
+    const wardrobeNameById = new Map(items.map(i => [i.id, i.name]))
+    const recentOutfits = (historyRows || []).map(r => {
+      const ids = Array.isArray(r.item_ids) ? r.item_ids : []
+      const itemNames = ids
+        .map(id => wardrobeNameById.get(id))
+        .filter((n): n is string => Boolean(n))
+        .slice(0, 4)
+      return { name: r.name || '', vibe: r.vibe || '', itemNames }
+    })
+    console.log('[generate-outfits] recent outfit history:', recentOutfits.length, 'rows')
+
     // 4. Gate — minimum count (post-filter)
     if (items.length < 5) {
       return jsonResponse({
@@ -1305,7 +1360,7 @@ Deno.serve(async (req) => {
     // 7. Try Anthropic. On any failure, fall back to stub silently.
     if (anthropicKey) {
       const userContent = buildFreshContent({
-        styleProfile, temperature, condition, occasion, indoors, brief, pinned, items: filteredItems,
+        styleProfile, temperature, condition, occasion, indoors, brief, pinned, items: filteredItems, recoveryMode, recentOutfits,
       })
 
       const aiResult = await callAnthropic({
@@ -1318,7 +1373,7 @@ Deno.serve(async (req) => {
         const mapped = validateAndMapOutfits({ aiOutfits: aiResult.outfits, items, pinned })
         if (mapped) {
           console.log('[generate-outfits] success — sonnet, 3 outfits returned')
-          return jsonResponse({ outfits: mapped, source: 'sonnet' }, 200)
+          return jsonResponse({ outfits: mapped, source: 'sonnet', recoveryMode }, 200)
         }
       }
       console.log('[generate-outfits] AI path failed — falling back')
@@ -1333,12 +1388,12 @@ Deno.serve(async (req) => {
       const fallbackPool = filteredItems.length >= 5 ? filteredItems : items
       const outfits = buildSmartFallback(fallbackPool, pinned, occasion)
       console.log('[generate-outfits] success — fallback, 3 outfits returned')
-      return jsonResponse({ outfits, source: 'fallback' }, 200)
+      return jsonResponse({ outfits, source: 'fallback', recoveryMode }, 200)
     } catch (e) {
       console.log('[generate-outfits] smart fallback threw — last-resort stub:', (e as Error).message)
       const outfits = buildStubOutfits(items, pinned)
       console.log('[generate-outfits] success — stub, 3 outfits returned')
-      return jsonResponse({ outfits, source: 'stub' }, 200)
+      return jsonResponse({ outfits, source: 'stub', recoveryMode }, 200)
     }
   } catch (e) {
     console.error('[generate-outfits] unexpected error:', (e as Error).message)
