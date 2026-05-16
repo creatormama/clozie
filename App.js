@@ -28,6 +28,8 @@ import Svg, { Path, Circle, Line } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import ViewShot, { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { supabase } from './src/lib/supabase';
 import { fetchWardrobeItems, getSignedPhotoUrl, uploadWardrobePhoto, insertWardrobeItem, updateWardrobeItem, deleteWardrobePhoto, deleteWardrobeItem } from './src/lib/wardrobeItems';
 import { recognizeWardrobePhoto } from './src/lib/clozieRecognition';
@@ -2110,7 +2112,11 @@ function MoodAccCell({ cell }) {
       </View>
     );
   }
-  return <View style={{ flex: 1, backgroundColor: MOOD_PLACEHOLDER_COLORS.Accessories }} />;
+  return cell.item?.photoUri ? (
+    <Image source={{ uri: cell.item.photoUri }} style={{ flex: 1 }} />
+  ) : (
+    <View style={{ flex: 1, backgroundColor: MOOD_PLACEHOLDER_COLORS.Accessories }} />
+  );
 }
 
 // Accessory grid — 1 / 2x1 / 2x2 (with empty) / 2x2 / 2x2 + overflow
@@ -2173,6 +2179,8 @@ function MoodPolaroid({ kind, item, items, w, h, top, bottom, left, right, cente
       <View style={polaroidStyles.photoZone}>
         {kind === 'acc' ? (
           <MoodAccessoryGrid items={items} />
+        ) : item?.photoUri ? (
+          <Image source={{ uri: item.photoUri }} style={{ width: '92%', height: '92%' }} />
         ) : (
           <View style={{
             width: '92%',
@@ -2229,6 +2237,133 @@ const polaroidStyles = StyleSheet.create({
   },
 });
 
+// ── Share Card — offscreen, captured via react-native-view-shot ─────────────
+// Rendered offscreen at top: -10000 inside YourLooksTab. When the user taps
+// Share Outfit, the parent sets `outfit`, waits one render tick + ~300ms for
+// images to settle, then calls captureRef on the ref to produce a PNG file
+// that gets handed to expo-sharing.shareAsync().
+function ShareCard({ outfit, shotRef }) {
+  if (!outfit) return null;
+  const items = Array.isArray(outfit.items) ? outfit.items : [];
+  return (
+    <View style={shareCardStyles.offscreen} pointerEvents="none">
+      <ViewShot ref={shotRef} options={{ format: 'png', quality: 0.95, result: 'tmpfile' }}>
+        <View style={shareCardStyles.card}>
+          {/* Photo grid — 2 columns, real wardrobe photos */}
+          <View style={shareCardStyles.photoGrid}>
+            {items.slice(0, 4).map((item) => (
+              <View key={item.id} style={shareCardStyles.photoCell}>
+                <View style={shareCardStyles.photoThumb}>
+                  {item.photoUri ? (
+                    <Image source={{ uri: item.photoUri }} style={shareCardStyles.photoImage} />
+                  ) : (
+                    <View style={[shareCardStyles.photoImage, { backgroundColor: '#F5F0E8' }]} />
+                  )}
+                </View>
+                <Text style={shareCardStyles.photoName} numberOfLines={1}>{item.name}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Vibe + name + description */}
+          <View style={shareCardStyles.textBlock}>
+            <Text style={shareCardStyles.vibeLabel}>{outfit.vibe}</Text>
+            <Text style={shareCardStyles.outfitName} numberOfLines={2}>{outfit.name}</Text>
+            {outfit.description ? (
+              <Text style={shareCardStyles.description} numberOfLines={3}>{outfit.description}</Text>
+            ) : null}
+          </View>
+
+          {/* Watermark footer — sage bar */}
+          <View style={shareCardStyles.watermark}>
+            <Text style={shareCardStyles.watermarkText}>Styled by Clozie ✦ Find us in the App Store</Text>
+          </View>
+        </View>
+      </ViewShot>
+    </View>
+  );
+}
+
+const shareCardStyles = StyleSheet.create({
+  offscreen: {
+    position: 'absolute',
+    top: -10000,
+    left: 0,
+  },
+  card: {
+    width: 360,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 8,
+    gap: 12,
+  },
+  photoCell: {
+    width: (360 - 18 * 2 - 12) / 2,
+  },
+  photoThumb: {
+    aspectRatio: 4 / 5,
+    backgroundColor: '#F5F0E8',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  photoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  photoName: {
+    marginTop: 6,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 11,
+    color: '#5C4A3A',
+  },
+  textBlock: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 18,
+  },
+  vibeLabel: {
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 11,
+    color: '#A44A34',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  outfitName: {
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 24,
+    color: '#2C1A0E',
+    lineHeight: 30,
+    marginBottom: 8,
+  },
+  description: {
+    fontFamily: 'Outfit_400Regular',
+    fontStyle: 'italic',
+    fontSize: 13,
+    color: '#5C4A3A',
+    lineHeight: 19,
+  },
+  watermark: {
+    backgroundColor: '#E8E4CE',
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  watermarkText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 12,
+    color: '#2C1A0E',
+    letterSpacing: 0.4,
+  },
+});
+
 // ── Your Looks Tab ──────────────────────────────────────────────────────────
 function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, wardrobeItems, onRegenerate, onPersistInteraction, onMarkItemsWorn }) {
   // ── DEMO_MODE: flip to `true` for visual testing (HIG audit, Mood Board / Hanger View / Saved Outfits review). Production: always `false`. ──
@@ -2247,6 +2382,10 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
   const [mannequinBg, setMannequinBg] = useState('Cream');
   const [showSavedScreen, setShowSavedScreen] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
+  // Share — offscreen ShareCard ref + state for one-at-a-time share flow
+  const [outfitToShare, setOutfitToShare] = useState(null);
+  const [isSharing, setIsSharing] = useState(false);
+  const shareShotRef = useRef(null);
   // ── DEBUG (temporary — remove before shipping) ───────────────────────────
   // Layout switcher state for testing all 8 Mood Board polaroid layouts
   const [debugLayout, setDebugLayout] = useState('A');
@@ -2358,6 +2497,43 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
     }
   };
 
+  // Share Outfit — captures the offscreen ShareCard via react-native-view-shot,
+  // then hands the resulting PNG to expo-sharing for the native share sheet.
+  // No caption support (expo-sharing is file-only); the watermark on the image
+  // itself carries the brand signal.
+  const handleShareOutfit = async (outfit) => {
+    if (!outfit || isSharing) return;
+    try {
+      const available = await Sharing.isAvailableAsync();
+      if (!available) {
+        Alert.alert('Sharing unavailable', "Sharing isn't available on this device.");
+        return;
+      }
+      setOutfitToShare(outfit);
+      setIsSharing(true);
+      // Wait for the offscreen ShareCard to mount and images to settle.
+      // photoUri values are the same signed URLs the visible photo strip just
+      // rendered, so RN's image cache typically has them already.
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const uri = await captureRef(shareShotRef, {
+        format: 'png',
+        quality: 0.95,
+        result: 'tmpfile',
+      });
+      await Sharing.shareAsync(uri, {
+        dialogTitle: 'Share your outfit',
+        mimeType: 'image/png',
+        UTI: 'public.png',
+      });
+    } catch (err) {
+      console.warn('[share-outfit] failed', err);
+      Alert.alert("Couldn't share", 'Something went wrong opening the share sheet. Please try again.');
+    } finally {
+      setIsSharing(false);
+      setOutfitToShare(null);
+    }
+  };
+
   // Outfit shape: { id: string, vibe: string (uppercase), name: string,
   //                 description: string (quoted), items: WardrobeItem[] }
   // Production: outfits come from MainAppScreen via outfitsProp (Edge Function response,
@@ -2444,6 +2620,7 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
   }
 
   return (
+    <>
     <ScrollView
       style={{ flex: 1, backgroundColor: '#E8E4CE' }}
       contentContainerStyle={looksStyles.scrollContent}
@@ -2643,8 +2820,10 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
             <TouchableOpacity
               style={looksStyles.primaryButton}
               activeOpacity={0.8}
+              onPress={() => handleShareOutfit(outfit)}
+              disabled={isSharing}
             >
-              <Text style={looksStyles.primaryButtonText}>Share Outfit</Text>
+              <Text style={looksStyles.primaryButtonText}>{isSharing ? 'Preparing…' : 'Share Outfit'}</Text>
             </TouchableOpacity>
           </View>
 
@@ -2927,8 +3106,8 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                   {/* Centre stack — top/dress, pants, shoes */}
                   {top && (
                     <View style={moodBoardStyles.hangerSlotTop}>
-                      {top.image ? (
-                        <Image source={{ uri: top.image }} resizeMode="contain" style={moodBoardStyles.hangerImage} />
+                      {top.photoUri ? (
+                        <Image source={{ uri: top.photoUri }} resizeMode="contain" style={moodBoardStyles.hangerImage} />
                       ) : (
                         <View style={[StyleSheet.absoluteFill, { backgroundColor: MOOD_PLACEHOLDER_COLORS[top.category] || '#E8E0D5' }]} />
                       )}
@@ -2936,8 +3115,8 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                   )}
                   {pants && (
                     <View style={moodBoardStyles.hangerSlotPants}>
-                      {pants.image ? (
-                        <Image source={{ uri: pants.image }} resizeMode="contain" style={moodBoardStyles.hangerImage} />
+                      {pants.photoUri ? (
+                        <Image source={{ uri: pants.photoUri }} resizeMode="contain" style={moodBoardStyles.hangerImage} />
                       ) : (
                         <View style={[StyleSheet.absoluteFill, { backgroundColor: MOOD_PLACEHOLDER_COLORS[pants.category] || '#E8E0D5' }]} />
                       )}
@@ -2945,8 +3124,8 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                   )}
                   {shoes && (
                     <View style={moodBoardStyles.hangerSlotShoes}>
-                      {shoes.image ? (
-                        <Image source={{ uri: shoes.image }} resizeMode="contain" style={moodBoardStyles.hangerImage} />
+                      {shoes.photoUri ? (
+                        <Image source={{ uri: shoes.photoUri }} resizeMode="contain" style={moodBoardStyles.hangerImage} />
                       ) : (
                         <View style={[StyleSheet.absoluteFill, { backgroundColor: MOOD_PLACEHOLDER_COLORS[shoes.category] || '#E8E0D5' }]} />
                       )}
@@ -2958,8 +3137,8 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                     <View style={moodBoardStyles.hangerLightOuterCard}>
                       <View style={moodBoardStyles.hangerLightOuterClip} />
                       <View style={moodBoardStyles.hangerLightOuterInner}>
-                        {lightOuter.image ? (
-                          <Image source={{ uri: lightOuter.image }} resizeMode="contain" style={moodBoardStyles.hangerSideImage} />
+                        {lightOuter.photoUri ? (
+                          <Image source={{ uri: lightOuter.photoUri }} resizeMode="contain" style={moodBoardStyles.hangerSideImage} />
                         ) : (
                           <View style={[moodBoardStyles.hangerSideImage, { backgroundColor: MOOD_PLACEHOLDER_COLORS[lightOuter.category] || '#E8E0D5' }]} />
                         )}
@@ -2987,8 +3166,8 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                       >
                         <View style={moodBoardStyles.hangerAccClip} />
                         <View style={moodBoardStyles.hangerAccInner}>
-                          {acc.image ? (
-                            <Image source={{ uri: acc.image }} resizeMode="contain" style={moodBoardStyles.hangerAccImage} />
+                          {acc.photoUri ? (
+                            <Image source={{ uri: acc.photoUri }} resizeMode="contain" style={moodBoardStyles.hangerAccImage} />
                           ) : (
                             <View style={[moodBoardStyles.hangerAccImage, { backgroundColor: MOOD_PLACEHOLDER_COLORS[acc.category] || '#E8E0D5' }]} />
                           )}
@@ -3161,6 +3340,9 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
       </Modal>
 
     </ScrollView>
+    {/* Offscreen share card — captured by react-native-view-shot when user taps Share Outfit */}
+    <ShareCard outfit={outfitToShare} shotRef={shareShotRef} />
+    </>
   );
 }
 
