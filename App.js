@@ -35,6 +35,7 @@ import { fetchWardrobeItems, getSignedPhotoUrl, uploadWardrobePhoto, insertWardr
 import { recognizeWardrobePhoto } from './src/lib/clozieRecognition';
 import { generateOutfits } from './src/lib/outfitGeneration';
 import { upsertOutfitInteraction, markItemsWorn } from './src/lib/outfitHistory';
+import { filterWardrobeItems } from './src/lib/filterWardrobeItems';
 
 // ── Design tokens — sacred, never change ─────────────────────────────────────
 const G = '#C9A96E';       // gold accent
@@ -1066,6 +1067,10 @@ function formatLastWorn(iso) {
 }
 
 // ── Wardrobe Tab ────────────────────────────────────────────────────────────
+// Session 10B Step 4: Category chip labels for My Closet search.
+// Order locked by spec — "All" is the sentinel for "no category filter".
+const CATEGORY_CHIPS = ['All', 'Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories'];
+
 function WardrobeTab({ items, setItems, onGoToVibe }) {
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [newItemName, setNewItemName] = useState('');
@@ -1078,9 +1083,19 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
   const [isScanning, setIsScanning] = useState(false);
   const [recognitionStatus, setRecognitionStatus] = useState(null);
   const [autoFilledFields, setAutoFilledFields] = useState({});
+  // Session 10B: search + category filter state
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const itemCount = items.length;
   const maxItems = 30;
   const progressWidth = (itemCount / maxItems) * 100;
+
+  // Session 10B Step 5: Derived filtered list. When search UI is hidden, filter is bypassed.
+  // When visible, filterWardrobeItems applies name (case-insensitive contains) + category AND filters.
+  const filteredItems = searchVisible
+    ? filterWardrobeItems(items, searchText, selectedCategory)
+    : items;
 
   // Session 10A Step 1b: Auto-scroll the ScrollView to the Add Item panel when it opens.
   // One-shot per open — flag resets when panel closes so the next open scrolls fresh.
@@ -1418,6 +1433,43 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       {/* Item count row */}
       <View style={wardrobeStyles.headerRow}>
         <Text style={wardrobeStyles.itemCount}>{itemCount}/{maxItems} items</Text>
+        {/* Session 10B Step 2: Search button (active state swaps colors) */}
+        <TouchableOpacity
+          style={[
+            wardrobeStyles.searchButton,
+            searchVisible && wardrobeStyles.searchButtonActive,
+          ]}
+          activeOpacity={0.7}
+          onPress={() => setSearchVisible((v) => !v)}
+          hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+        >
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+            <Circle
+              cx={11}
+              cy={11}
+              r={7}
+              stroke={searchVisible ? '#6B7E65' : '#5C4A3A'}
+              strokeWidth={1.8}
+            />
+            <Line
+              x1={20}
+              y1={20}
+              x2={16.65}
+              y2={16.65}
+              stroke={searchVisible ? '#6B7E65' : '#5C4A3A'}
+              strokeWidth={1.8}
+              strokeLinecap="round"
+            />
+          </Svg>
+          <Text
+            style={[
+              wardrobeStyles.searchButtonText,
+              searchVisible && wardrobeStyles.searchButtonTextActive,
+            ]}
+          >
+            Search
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Progress bar */}
@@ -1427,6 +1479,87 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           { width: progressWidth + '%' },
         ]} />
       </View>
+
+      {/* Session 10B Step 3: Search bar (revealed when searchVisible is true) */}
+      {searchVisible && (
+        <View style={wardrobeStyles.searchBarRow}>
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+            <Circle cx={11} cy={11} r={7} stroke="#5C4A3A" strokeWidth={1.8} />
+            <Line
+              x1={20}
+              y1={20}
+              x2={16.65}
+              y2={16.65}
+              stroke="#5C4A3A"
+              strokeWidth={1.8}
+              strokeLinecap="round"
+            />
+          </Svg>
+          <TextInput
+            style={wardrobeStyles.searchBarInput}
+            placeholder="Search your closet..."
+            placeholderTextColor="rgba(44,26,14,0.65)"
+            value={searchText}
+            onChangeText={setSearchText}
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+          />
+          <TouchableOpacity
+            onPress={() => {
+              setSearchVisible(false);
+              setSearchText('');
+              setSelectedCategory('All');
+            }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.7}
+          >
+            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+              <Line x1={6} y1={6} x2={18} y2={18} stroke="#5C4A3A" strokeWidth={1.8} strokeLinecap="round" />
+              <Line x1={18} y1={6} x2={6} y2={18} stroke="#5C4A3A" strokeWidth={1.8} strokeLinecap="round" />
+            </Svg>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Session 10B Step 4: Category chips (horizontal scroll, gated on searchVisible) */}
+      {searchVisible && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          style={wardrobeStyles.chipsScroll}
+          contentContainerStyle={wardrobeStyles.chipsScrollContent}
+        >
+          {CATEGORY_CHIPS.map((label) => (
+            <TouchableOpacity
+              key={label}
+              style={[
+                wardrobeStyles.categoryChip,
+                selectedCategory === label && wardrobeStyles.categoryChipActive,
+              ]}
+              activeOpacity={0.7}
+              onPress={() => setSelectedCategory(label)}
+            >
+              <Text
+                style={[
+                  wardrobeStyles.categoryChipText,
+                  selectedCategory === label && wardrobeStyles.categoryChipTextActive,
+                ]}
+              >
+                {label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
+      {/* Session 10B Step 5: Result count (only when search is visible AND text is non-empty) */}
+      {searchVisible && searchText.trim() !== '' && (
+        <Text style={wardrobeStyles.searchResultsCount}>
+          Showing {filteredItems.length} results for {searchText}
+        </Text>
+      )}
 
       {/* HIDDEN: Session 10A Step 4 — replaced by the new empty state early return at the top of WardrobeTab render */}
       {/*
@@ -1443,7 +1576,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       {/* Item grid — 2 columns */}
       {itemCount > 0 && (
         <View style={wardrobeStyles.grid}>
-          {items.map((item) => (
+          {filteredItems.map((item) => (
             <View key={item.id} style={wardrobeStyles.gridCard}>
               {/* Photo (real if added, placeholder emoji otherwise) */}
               <View style={wardrobeStyles.gridCardPhoto}>
@@ -7093,8 +7226,88 @@ const wardrobeStyles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 12,
+  },
+  // Session 10B Step 2: Search button (magnifying glass + "Search" text in header row)
+  searchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(44,26,14,0.06)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.08)',
+  },
+  searchButtonActive: {
+    backgroundColor: 'rgba(188,199,183,0.3)',
+  },
+  searchButtonText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 13,
+    color: '#5C4A3A',
+    marginLeft: 6,
+  },
+  searchButtonTextActive: {
+    color: '#6B7E65',
+  },
+  // Session 10B Step 3: Search bar (40px white pill with magnifying glass + TextInput + X reset)
+  searchBarRow: {
+    height: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.12)',
+    paddingHorizontal: 12,
+    marginBottom: 14,
+  },
+  searchBarInput: {
+    flex: 1,
+    height: 40,
+    paddingVertical: 0,
+    marginHorizontal: 10,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 14,
+    color: '#2C1A0E',
+  },
+  // Session 10B Step 4: Category chips horizontal scroll
+  chipsScroll: {
+    marginBottom: 14,
+  },
+  chipsScrollContent: {
+    paddingRight: 4,
+  },
+  categoryChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 100,
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.10)',
+    backgroundColor: '#FFFFFF',
+    marginRight: 8,
+  },
+  categoryChipActive: {
+    backgroundColor: '#BCC7B7',
+    borderColor: '#FFFFFF',
+  },
+  categoryChipText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 13,
+    color: '#5C4A3A',
+    letterSpacing: 0.2,
+  },
+  categoryChipTextActive: {
+    color: '#FFFFFF',
+  },
+  // Session 10B Step 5: Result count line (12px muted, only when search text non-empty)
+  searchResultsCount: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 12,
+    color: '#A09888',
     marginBottom: 12,
   },
   label: {
