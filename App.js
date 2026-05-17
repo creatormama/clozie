@@ -12,6 +12,7 @@ import {
   Linking,
   Platform,
   Modal,
+  Pressable,
   Switch,
   Image,
   ImageBackground,
@@ -1970,7 +1971,21 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate, onGoToClo
   const [selectedOccasion, setSelectedOccasion] = useState(null);
   const [indoors, setIndoors] = useState(false);
   const [pinnedItemId, setPinnedItemId] = useState(null);
+  const pinnedItem = pinnedItemId ? wardrobeItems.find((i) => i.id === pinnedItemId) : null;
   const [extraNotes, setExtraNotes] = useState('');
+  // Session 11 Step B2 — Pin Selector bottom sheet state. Resets on close so reopens start fresh.
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [sheetSearchText, setSheetSearchText] = useState('');
+  const [sheetSelectedCategory, setSheetSelectedCategory] = useState('All');
+  useEffect(() => {
+    if (!sheetVisible) {
+      setSheetSearchText('');
+      setSheetSelectedCategory('All');
+    }
+  }, [sheetVisible]);
+  const sheetFilteredItems = sheetVisible
+    ? filterWardrobeItems(wardrobeItems, sheetSearchText, sheetSelectedCategory)
+    : [];
   const temperatureOptions = ['Cold', 'Cool', 'Warm', 'Hot'];
   const conditionOptions = ['Sunny', 'Cloudy', 'Rainy', 'Snowy'];
   const occasionOptions = ['Casual Day', 'Work · Office', 'Going Out', 'Formal Event', 'Outdoor · Sport', 'Weekend Errands', 'Travel'];
@@ -2125,6 +2140,10 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate, onGoToClo
       {/* MUST INCLUDE ITEM card */}
       <View style={vibeStyles.card}>
         <Text style={vibeStyles.cardHeading}>MUST INCLUDE ITEM</Text>
+        <Text style={vibeStyles.mustIncludeLine1}>Something in mind? Pin it — Clozie builds around it.</Text>
+        <Text style={vibeStyles.mustIncludeLine2}>A jacket, a dress, those new shoes.</Text>
+
+        {/* HIDDEN: Session 11 Step B1 — replaced by text-only card + search button. Bottom sheet wires in B2.
         <Text style={vibeStyles.cardSubtext}>Something in mind? Pin it — Clozie builds around it.{'\n'}A jacket, a dress, those new shoes.</Text>
         {wardrobeItems.length === 0 ? (
           <Text style={vibeStyles.emptyItemsText}>✦ Add items to your wardrobe first ✦</Text>
@@ -2155,6 +2174,41 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate, onGoToClo
               );
             })}
           </ScrollView>
+        )}
+        */}
+
+        <View style={vibeStyles.mustIncludeRow}>
+          <TouchableOpacity
+            style={vibeStyles.mustIncludeSearchBtn}
+            activeOpacity={0.7}
+            onPress={() => setSheetVisible(true)}
+            hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+          >
+            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+              <Circle cx={11} cy={11} r={7} stroke="#5C4A3A" strokeWidth={1.8} />
+              <Line x1={20} y1={20} x2={16.65} y2={16.65} stroke="#5C4A3A" strokeWidth={1.8} strokeLinecap="round" />
+            </Svg>
+            <Text style={vibeStyles.mustIncludeSearchBtnText}>Search</Text>
+          </TouchableOpacity>
+
+          {pinnedItem && (
+            <View style={vibeStyles.pinnedPill}>
+              <Text style={vibeStyles.pinnedPillSparkle}>✦</Text>
+              <Text style={vibeStyles.pinnedPillText} numberOfLines={1}>{pinnedItem.name}</Text>
+              <TouchableOpacity
+                style={vibeStyles.pinnedPillX}
+                activeOpacity={0.7}
+                onPress={() => setPinnedItemId(null)}
+                hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+              >
+                <Text style={vibeStyles.pinnedPillXText}>×</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {!pinnedItem && (
+          <Text style={vibeStyles.mustIncludeHint}>No item pinned — Clozie picks freely</Text>
         )}
       </View>
 
@@ -2201,6 +2255,166 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate, onGoToClo
         <Text style={vibeStyles.hintText}>Select weather and occasion first</Text>
       )}
     </ScrollView>
+
+    {/* Session 11 Step B2 — Pin Selector bottom sheet. Render-only; tap-to-pin wiring lands in B3. */}
+    <Modal
+      transparent
+      visible={sheetVisible}
+      animationType="slide"
+      onRequestClose={() => setSheetVisible(false)}
+    >
+      <View style={pinSheetStyles.modalRoot}>
+        <Pressable style={pinSheetStyles.backdrop} onPress={() => setSheetVisible(false)} />
+        <View style={pinSheetStyles.sheet}>
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
+            {/* Handle bar */}
+            <View style={pinSheetStyles.handleBar} />
+
+            {/* Header row */}
+            <View style={pinSheetStyles.headerRow}>
+              <Text style={pinSheetStyles.headerTitle}>Pin an Item</Text>
+              <TouchableOpacity
+                style={pinSheetStyles.closeButton}
+                activeOpacity={0.7}
+                onPress={() => setSheetVisible(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={pinSheetStyles.closeButtonText}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Subtext */}
+            <Text style={pinSheetStyles.subtext}>Tap any item — Clozie builds every outfit around it.</Text>
+
+            {/* Search bar */}
+            <View style={pinSheetStyles.searchBar}>
+              <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                <Circle cx={11} cy={11} r={7} stroke="#5C4A3A" strokeWidth={1.8} />
+                <Line x1={20} y1={20} x2={16.65} y2={16.65} stroke="#5C4A3A" strokeWidth={1.8} strokeLinecap="round" />
+              </Svg>
+              <TextInput
+                style={pinSheetStyles.searchInput}
+                value={sheetSearchText}
+                onChangeText={setSheetSearchText}
+                placeholder="Search your closet..."
+                placeholderTextColor="rgba(44,26,14,0.65)"
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+              {sheetSearchText.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setSheetSearchText('')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={pinSheetStyles.searchClearX}>×</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Category chips — reuses wardrobeStyles.categoryChip cross-tab (intentional, see B2 plan note 3) */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={pinSheetStyles.chipScroll}
+              contentContainerStyle={pinSheetStyles.chipScrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              {CATEGORY_CHIPS.map((label) => (
+                <TouchableOpacity
+                  key={label}
+                  style={[
+                    wardrobeStyles.categoryChip,
+                    sheetSelectedCategory === label && wardrobeStyles.categoryChipActive,
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => setSheetSelectedCategory(label)}
+                >
+                  <Text
+                    style={[
+                      wardrobeStyles.categoryChipText,
+                      sheetSelectedCategory === label && wardrobeStyles.categoryChipTextActive,
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Tap to pin hint */}
+            <Text style={pinSheetStyles.tapHint}>Tap to pin</Text>
+
+            {/* Grid */}
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={pinSheetStyles.gridContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {sheetFilteredItems.length === 0 ? (
+                <Text style={pinSheetStyles.emptyResults}>No items match</Text>
+              ) : (
+                <View style={pinSheetStyles.grid}>
+                  {sheetFilteredItems.map((item) => {
+                    const isPinned = pinnedItemId === item.id;
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        activeOpacity={0.85}
+                        onPress={() => {
+                          if (pinnedItemId === item.id) {
+                            // Tap already-pinned card → unpin, sheet stays open
+                            setPinnedItemId(null);
+                          } else {
+                            // Unpinned card OR different card while one is pinned → switch + auto-dismiss
+                            setPinnedItemId(item.id);
+                            setSheetVisible(false);
+                          }
+                        }}
+                        style={[
+                          pinSheetStyles.gridCard,
+                          isPinned && pinSheetStyles.gridCardPinned,
+                        ]}
+                      >
+                        <View style={pinSheetStyles.gridCardPhoto}>
+                          {item.photoUri ? (
+                            <Image
+                              source={{ uri: item.photoUri }}
+                              style={pinSheetStyles.gridCardPhotoImage}
+                              resizeMode="contain"
+                            />
+                          ) : (
+                            <View style={pinSheetStyles.gridCardPlaceholder}>
+                              <TabHangerIcon active={false} size={40} color="#BCC7B7" strokeWidth={1.6} viewBox="-2 -2 28 28" />
+                              <Text style={pinSheetStyles.gridCardPlaceholderText}>No photo</Text>
+                            </View>
+                          )}
+                          {isPinned && (
+                            <View style={pinSheetStyles.checkCircle}>
+                              <Text style={pinSheetStyles.checkCircleText}>✓</Text>
+                            </View>
+                          )}
+                        </View>
+                        <View style={pinSheetStyles.categoryTag}>
+                          <Text style={pinSheetStyles.categoryTagText}>{item.category}</Text>
+                        </View>
+                        <Text style={pinSheetStyles.gridCardName} numberOfLines={1}>{item.name}</Text>
+                        {item.colour ? (
+                          <Text style={pinSheetStyles.gridCardColour} numberOfLines={1}>{item.colour}</Text>
+                        ) : null}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </View>
+      </View>
+    </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -8148,6 +8362,312 @@ const vibeStyles = StyleSheet.create({
     color: '#5C4A3A',
     textAlign: 'center',
     marginBottom: 20,
+  },
+  // Session 11 Step B1 — Must Include redesign (text-only card + Search button + pinned pill)
+  mustIncludeLine1: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
+    lineHeight: 20,
+    marginTop: 6,
+  },
+  mustIncludeLine2: {
+    fontFamily: 'Outfit_400Regular',
+    fontStyle: 'italic',
+    fontSize: 12,
+    color: '#A09888',
+    lineHeight: 18,
+    marginTop: 2,
+    marginBottom: 12,
+  },
+  mustIncludeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  mustIncludeSearchBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(44,26,14,0.06)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.08)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    marginRight: 10,
+    marginBottom: 6,
+  },
+  mustIncludeSearchBtnText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 13,
+    color: '#2C1A0E',
+    marginLeft: 8,
+  },
+  mustIncludeHint: {
+    fontFamily: 'Outfit_400Regular',
+    fontStyle: 'italic',
+    fontSize: 12,
+    color: '#A09888',
+    marginTop: 4,
+  },
+  pinnedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(200,122,82,0.08)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(200,122,82,0.18)',
+    borderRadius: 100,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    marginBottom: 6,
+    maxWidth: '100%',
+  },
+  pinnedPillSparkle: {
+    color: '#C87A52',
+    fontSize: 14,
+    marginRight: 6,
+  },
+  pinnedPillText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 13,
+    color: '#C87A52',
+    flexShrink: 1,
+    marginRight: 8,
+  },
+  pinnedPillX: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(200,122,82,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pinnedPillXText: {
+    color: '#C87A52',
+    fontSize: 13,
+    lineHeight: 13,
+    fontWeight: '500',
+    includeFontPadding: false,
+  },
+});
+
+// ── Pin Selector bottom sheet styles (Session 11 Step B2) ─────────────────
+const pinSheetStyles = StyleSheet.create({
+  modalRoot: {
+    flex: 1,
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(44,26,14,0.35)',
+  },
+  sheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '85%',
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    overflow: 'hidden',
+  },
+  handleBar: {
+    width: 36,
+    height: 4,
+    backgroundColor: 'rgba(44,26,14,0.15)',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginTop: 6,
+  },
+  headerTitle: {
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 20,
+    color: '#2C1A0E',
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(44,26,14,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeButtonText: {
+    color: '#2C1A0E',
+    fontSize: 20,
+    lineHeight: 22,
+    fontWeight: '400',
+    includeFontPadding: false,
+  },
+  subtext: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
+    paddingHorizontal: 20,
+    marginTop: 6,
+    marginBottom: 14,
+    lineHeight: 19,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 40,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: 'rgba(44,26,14,0.10)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    marginHorizontal: 20,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 14,
+    color: '#2C1A0E',
+    marginLeft: 8,
+    paddingVertical: 0,
+  },
+  searchClearX: {
+    color: '#5C4A3A',
+    fontSize: 18,
+    lineHeight: 20,
+    marginLeft: 8,
+    includeFontPadding: false,
+  },
+  chipScroll: {
+    marginTop: 14,
+    marginBottom: 4,
+    flexGrow: 0,
+    height: 56,
+  },
+  chipScrollContent: {
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  tapHint: {
+    fontFamily: 'Outfit_400Regular',
+    fontStyle: 'italic',
+    fontSize: 12,
+    color: '#A09888',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  gridContent: {
+    paddingHorizontal: 14,
+    paddingTop: 6,
+    paddingBottom: 40,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  gridCard: {
+    width: '47%',
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(44,26,14,0.06)',
+    paddingBottom: 10,
+  },
+  gridCardPinned: {
+    borderWidth: 2.5,
+    borderColor: '#C87A52',
+  },
+  gridCardPhoto: {
+    width: '100%',
+    height: 150,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 11,
+    borderTopRightRadius: 11,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  gridCardPhotoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  gridCardPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(188,199,183,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gridCardPlaceholderText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 10,
+    color: '#A09888',
+    letterSpacing: 0.2,
+    marginTop: 6,
+  },
+  checkCircle: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#BCC7B7',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  checkCircleText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontFamily: 'Outfit_700Bold',
+    lineHeight: 14,
+    includeFontPadding: false,
+  },
+  categoryTag: {
+    backgroundColor: 'rgba(188,199,183,0.30)',
+    borderRadius: 100,
+    paddingVertical: 2,
+    paddingHorizontal: 10,
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    marginLeft: 10,
+  },
+  categoryTagText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 11,
+    color: '#5C4A3A',
+    letterSpacing: 0.3,
+  },
+  gridCardName: {
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 16,
+    color: '#2C1A0E',
+    paddingHorizontal: 10,
+    marginTop: 6,
+  },
+  gridCardColour: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 12,
+    color: '#5C4A3A',
+    paddingHorizontal: 10,
+    marginTop: 2,
+  },
+  emptyResults: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 14,
+    color: '#A09888',
+    textAlign: 'center',
+    marginTop: 40,
   },
 });
 
