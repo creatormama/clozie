@@ -1082,6 +1082,14 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
   const maxItems = 30;
   const progressWidth = (itemCount / maxItems) * 100;
 
+  // Session 10A Step 1b: Auto-scroll the ScrollView to the Add Item panel when it opens.
+  // One-shot per open — flag resets when panel closes so the next open scrolls fresh.
+  const scrollRef = useRef(null);
+  const hasScrolledForPanelRef = useRef(false);
+  useEffect(() => {
+    if (!showAddPanel) hasScrolledForPanelRef.current = false;
+  }, [showAddPanel]);
+
   const handleAddItem = async () => {
     if (!newItemName.trim() || isSaving) return;
     setIsSaving(true);
@@ -1362,12 +1370,43 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
     }
   };
 
+  // Session 10A Step 4: Empty state — full-screen centered view when closet has 0 items.
+  // Falls through to normal render once user taps "+ Add Your First Item" (showAddPanel → true).
+  if (itemCount === 0 && !showAddPanel) {
+    return (
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: '#E8E4CE' }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={wardrobeStyles.emptyStateContainer}>
+          <View style={wardrobeStyles.emptyStateHanger}>
+            <TabHangerIcon active={false} size={80} color="#BCC7B7" strokeWidth={1.6} viewBox="-2 -2 28 28" />
+          </View>
+          <Text style={wardrobeStyles.emptyStateHeading}>
+            Every great wardrobe starts with one piece.
+          </Text>
+          <Text style={wardrobeStyles.emptyStateSubtext}>
+            Add your first item and let's see what Clozie can do
+          </Text>
+          <TouchableOpacity
+            style={wardrobeStyles.emptyStateButton}
+            activeOpacity={0.85}
+            onPress={() => setShowAddPanel(true)}
+          >
+            <Text style={wardrobeStyles.emptyStateButtonText}>+ Add Your First Item</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
     <ScrollView
+      ref={scrollRef}
       style={{ flex: 1, backgroundColor: '#E8E4CE' }}
       contentContainerStyle={wardrobeStyles.scrollContent}
       showsVerticalScrollIndicator={false}
@@ -1389,7 +1428,8 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
         ]} />
       </View>
 
-      {/* Empty state */}
+      {/* HIDDEN: Session 10A Step 4 — replaced by the new empty state early return at the top of WardrobeTab render */}
+      {/*
       {itemCount === 0 && (
         <View style={wardrobeStyles.emptyState}>
           <Text style={wardrobeStyles.emptyEmoji}>👗</Text>
@@ -1398,6 +1438,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           </Text>
         </View>
       )}
+      */}
 
       {/* Item grid — 2 columns */}
       {itemCount > 0 && (
@@ -1413,10 +1454,14 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
                     resizeMode="contain"
                   />
                 ) : (
-                  <Text style={{ fontSize: 28 }}>👗</Text>
+                  <View style={wardrobeStyles.gridCardPlaceholder}>
+                    <TabHangerIcon active={false} size={40} color="#BCC7B7" strokeWidth={1.6} viewBox="-2 -2 28 28" />
+                    <Text style={wardrobeStyles.gridCardPlaceholderText}>No photo</Text>
+                  </View>
                 )}
               </View>
-              {/* Edit icon — positioned over photo */}
+              {/* HIDDEN: Session 10A Step 6 — pencil moved to the category-tag row (below) */}
+              {/*
               <TouchableOpacity
                 style={wardrobeStyles.editIcon}
                 activeOpacity={0.7}
@@ -1425,6 +1470,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
               >
                 <Text style={wardrobeStyles.editIconText}>✎</Text>
               </TouchableOpacity>
+              */}
               {/* Delete icon — positioned over photo */}
               <TouchableOpacity
                 style={wardrobeStyles.deleteIcon}
@@ -1464,9 +1510,19 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
                 </View>
               )}
 
-              {/* Category tag pill */}
-              <View style={wardrobeStyles.categoryTag}>
-                <Text style={wardrobeStyles.categoryTagText}>{item.category}</Text>
+              {/* Category tag row — Session 10A Step 6: pencil edit icon right-aligned on this row */}
+              <View style={wardrobeStyles.categoryTagRow}>
+                <View style={wardrobeStyles.categoryTag}>
+                  <Text style={wardrobeStyles.categoryTagText}>{item.category}</Text>
+                </View>
+                <TouchableOpacity
+                  style={wardrobeStyles.editPencil}
+                  activeOpacity={0.7}
+                  onPress={() => handleEditItem(item)}
+                  hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+                >
+                  <Text style={wardrobeStyles.editPencilText}>✎</Text>
+                </TouchableOpacity>
               </View>
               {/* Item name */}
               <Text style={wardrobeStyles.gridCardName} numberOfLines={1}>{item.name}</Text>
@@ -1487,7 +1543,8 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
         </View>
       )}
 
-      {/* Add Item button */}
+      {/* HIDDEN: Session 10A Step 2 — replaced by floating + button (Step 1) and sticky bar (Step 3) */}
+      {/*
       {!showAddPanel && (
         <TouchableOpacity
           style={wardrobeStyles.addButton}
@@ -1499,10 +1556,20 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           </Text>
         </TouchableOpacity>
       )}
+      */}
 
       {/* Add Item panel */}
       {showAddPanel && (
-        <View style={wardrobeStyles.addPanel}>
+        <View
+          style={wardrobeStyles.addPanel}
+          onLayout={(e) => {
+            if (showAddPanel && !hasScrolledForPanelRef.current && scrollRef.current) {
+              hasScrolledForPanelRef.current = true;
+              const { y } = e.nativeEvent.layout;
+              scrollRef.current.scrollTo({ y: Math.max(0, y - 12), animated: true });
+            }
+          }}
+        >
           <View style={wardrobeStyles.addPanelHeader}>
             <Text style={wardrobeStyles.addPanelHeading}>{editingItemId ? 'EDIT ITEM' : 'ADD NEW ITEM'}</Text>
             <TouchableOpacity
@@ -1720,7 +1787,8 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
         </View>
       )}
 
-      {/* Set Today's Vibe button */}
+      {/* HIDDEN: Session 10A Step 2 — replaced by sticky bar (Step 3) */}
+      {/*
       {!showAddPanel && (
         <TouchableOpacity
           style={wardrobeStyles.vibeButton}
@@ -1730,7 +1798,34 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           <Text style={wardrobeStyles.vibeButtonText}>Set Today's Vibe →</Text>
         </TouchableOpacity>
       )}
+      */}
     </ScrollView>
+
+    {/* Session 10A Step 1: Floating + button — opens Add Item panel. Hidden when closet is empty (Step 4 owns empty state) or while Add Item panel is open. */}
+    {itemCount > 0 && !showAddPanel && (
+      <TouchableOpacity
+        style={wardrobeStyles.floatingAddButton}
+        activeOpacity={0.85}
+        onPress={() => setShowAddPanel(true)}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Svg width={26} height={26} viewBox="0 0 26 26">
+          <Line x1="13" y1="4" x2="13" y2="22" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
+          <Line x1="4" y1="13" x2="22" y2="13" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
+        </Svg>
+      </TouchableOpacity>
+    )}
+
+    {/* Session 10A Step 3: Sticky "Set Today's Vibe →" bar — sits flush above the tab bar. Hidden when closet is empty or Add Item panel is open. */}
+    {itemCount > 0 && !showAddPanel && (
+      <TouchableOpacity
+        style={wardrobeStyles.stickyVibeBar}
+        activeOpacity={0.85}
+        onPress={onGoToVibe}
+      >
+        <Text style={wardrobeStyles.stickyVibeBarText}>Set Today's Vibe →</Text>
+      </TouchableOpacity>
+    )}
     </KeyboardAvoidingView>
   );
 }
@@ -5507,13 +5602,15 @@ function TabStarIcon({ active }) {
   );
 }
 
-function TabHangerIcon({ active }) {
+function TabHangerIcon({ active, size = 20, color, strokeWidth, viewBox = '0 0 24 24' }) {
+  const resolvedStroke = color ?? (active ? '#A44A34' : 'rgba(44,26,14,0.28)');
+  const resolvedWidth = strokeWidth ?? (active ? 1.9 : 1.6);
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Svg width={size} height={size} viewBox={viewBox} fill="none">
       <Path
         d="M12 4a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 0v3L3.5 13.5A1.5 1.5 0 0 0 4.5 16h15a1.5 1.5 0 0 0 1-2.5L12 7"
-        stroke={active ? '#A44A34' : 'rgba(44,26,14,0.28)'}
-        strokeWidth={active ? 1.9 : 1.6}
+        stroke={resolvedStroke}
+        strokeWidth={resolvedWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -6983,7 +7080,7 @@ const wardrobeStyles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 108,
-    paddingBottom: 40,
+    paddingBottom: 90,
     maxWidth: 480,
     alignSelf: 'center',
     width: '100%',
@@ -7041,6 +7138,51 @@ const wardrobeStyles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
+  // Session 10A Step 4: Full-screen empty state (closet has 0 items) — replaces old 👗 inline empty state.
+  emptyStateContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyStateHanger: {
+    marginBottom: 28,
+  },
+  emptyStateHeading: {
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 22,
+    color: '#2C1A0E',
+    textAlign: 'center',
+    lineHeight: 30,
+    marginBottom: 12,
+  },
+  emptyStateSubtext: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 14,
+    color: '#5C4A3A',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 32,
+    maxWidth: 320,
+  },
+  emptyStateButton: {
+    backgroundColor: '#BCC7B7',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    borderRadius: 100,
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  emptyStateButtonText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 15,
+    color: '#FFFFFF',
+  },
   addButton: {
     backgroundColor: '#BCC7B7',
     borderWidth: 3,
@@ -7061,6 +7203,49 @@ const wardrobeStyles = StyleSheet.create({
     fontSize: 16,
     color: '#2C1A0E',
     textAlign: 'center',
+  },
+  // Session 10A Step 1: Floating + button — bottom offset is Platform-aware to clear the
+  // ~86px iOS / ~70px Android tab bar PLUS the 50px sticky vibe bar PLUS a 14px breathing gap.
+  floatingAddButton: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 150 : 134,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#BCC7B7',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 6,
+    zIndex: 10,
+  },
+  // Session 10A Step 3: Sticky vibe bar — sits flush above tab bar, doesn't scroll with content.
+  stickyVibeBar: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 86 : 70,
+    left: 0,
+    right: 0,
+    height: 50,
+    backgroundColor: '#BCC7B7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 5,
+  },
+  stickyVibeBarText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 15,
+    color: '#FFFFFF',
   },
   addPanel: {
     backgroundColor: '#FFFFFF',
@@ -7295,20 +7480,50 @@ const wardrobeStyles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  // Session 10A Step 5: Placeholder shown inside gridCardPhoto when item.photoUri is absent.
+  // Replaces the old 👗 emoji fallback. Sage tint + small hanger + 10px "No photo".
+  gridCardPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(188,199,183,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gridCardPlaceholderText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 10,
+    color: '#A09888',
+    marginTop: 6,
+    letterSpacing: 0.2,
+  },
   categoryTag: {
-    alignSelf: 'flex-start',
     backgroundColor: 'rgba(188,199,183,0.30)',
     paddingVertical: 2,
     paddingHorizontal: 10,
     borderRadius: 100,
-    marginTop: 10,
-    marginLeft: 10,
   },
   categoryTagText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 11,
     color: '#5C4A3A',
     letterSpacing: 0.3,
+  },
+  // Session 10A Step 6: Category-tag row — pill on left, pencil edit on right, vertically centered.
+  categoryTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingHorizontal: 10,
+  },
+  editPencil: {
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+  },
+  editPencilText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 16,
+    color: '#5C4A3A',
   },
   gridCardName: {
     fontFamily: 'Outfit_500Medium',
@@ -7791,16 +8006,21 @@ const looksStyles = StyleSheet.create({
     color: '#2C1A0E',
     textAlign: 'center',
   },
-  // 9F-E: Recovery banner — sage-pill card above outfit list when circuit breaker is tripped.
-  // Background uses the locked sage-pill color rgba(188,199,183,0.30) — same as CLOZIE
-  // RECOGNISED success bar — visible against the cream #E8E4CE YourLooksTab background.
+  // Session 10A Step 7: Recovery banner restyled — white card with terracotta left-border
+  // accent stripe (#C87A52) + subtle shadow. Sits cleanly against cream YourLooksTab bg.
   recoveryBanner: {
-    backgroundColor: 'rgba(188,199,183,0.30)',
-    borderRadius: 12,
-    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: '#C87A52',
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 16,
+    marginBottom: 14,
+    shadowColor: '#2C1A0E',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
   },
   recoveryBannerText: {
     fontFamily: 'Outfit_400Regular',
