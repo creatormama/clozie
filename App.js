@@ -35,8 +35,9 @@ import { supabase } from './src/lib/supabase';
 import { fetchWardrobeItems, getSignedPhotoUrl, uploadWardrobePhoto, insertWardrobeItem, updateWardrobeItem, deleteWardrobePhoto, deleteWardrobeItem } from './src/lib/wardrobeItems';
 import { recognizeWardrobePhoto } from './src/lib/clozieRecognition';
 import { generateOutfits } from './src/lib/outfitGeneration';
-import { upsertOutfitInteraction, markItemsWorn } from './src/lib/outfitHistory';
+import { upsertOutfitInteraction, markItemsWorn, fetchSavedOutfits } from './src/lib/outfitHistory';
 import { filterWardrobeItems } from './src/lib/filterWardrobeItems';
+import { filterSavedOutfits } from './src/lib/filterSavedOutfits';
 
 // ── Design tokens — sacred, never change ─────────────────────────────────────
 const G = '#C9A96E';       // gold accent
@@ -2825,15 +2826,24 @@ const LOADING_MESSAGES = [
   'Clozie is working her magic ✦',
 ];
 
+// Session 12 S2: Occasion filter chips for Saved Outfits search.
+// Order: 'All' first (default), then the 7 occasions in the same order they
+// appear in the Today's Vibe THE OCCASION card (App.js:221) + the Edge Function's
+// FALLBACK_NAMES_BY_OCCASION keys (Session 7C). MIDDOT (·, U+00B7) NOT slash —
+// must match the canonical strings the Edge Function writes into outfit_history.occasion.
+const OCCASION_CHIPS = ['All', 'Casual Day', 'Work · Office', 'Going Out', 'Formal Event', 'Outdoor · Sport', 'Weekend Errands', 'Travel'];
+
 // ── Your Looks Tab ──────────────────────────────────────────────────────────
-function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, recoveryMode, wardrobeItems, onRegenerate, onPersistInteraction, onMarkItemsWorn }) {
+function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, recoveryMode, wardrobeItems, onRegenerate, onPersistInteraction, onMarkItemsWorn, savedOutfits, setSavedOutfits }) {
   // ── DEMO_MODE: flip to `true` for visual testing (HIG audit, Mood Board / Hanger View / Saved Outfits review). Production: always `false`. ──
   const DEMO_MODE = false;
 
   const [loading, setLoading] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(DEMO_MODE);
   const spinAnim = useRef(new Animated.Value(0)).current;
-  const [savedOutfits, setSavedOutfits] = useState(DEMO_MODE ? ['demo-2'] : []);
+  // Session 12: savedOutfits is now lifted to MainAppScreen via props.
+  // Derived set gives O(1) `is this outfit saved?` checks across the render tree.
+  const savedIds = new Set((savedOutfits || []).map((o) => o.id));
   const [ratings, setRatings] = useState({});
   const [ratingFeedback, setRatingFeedback] = useState({});
   const [wornToday, setWornToday] = useState({});
@@ -2843,6 +2853,10 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
   const [mannequinBg, setMannequinBg] = useState('Cream');
   const [showSavedScreen, setShowSavedScreen] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
+  // Session 12 S2: Search state for the Saved Outfits modal (wired in S3-S6).
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [selectedOccasion, setSelectedOccasion] = useState('All');
   // Share — offscreen ShareCard ref + state for one-at-a-time share flow
   const [outfitToShare, setOutfitToShare] = useState(null);
   const [isSharing, setIsSharing] = useState(false);
@@ -2973,9 +2987,15 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
   };
 
   const toggleSave = (outfit) => {
-    const isSavingNow = !savedOutfits.includes(outfit.id);
+    // Session 12: savedOutfits is now SavedOutfit[] (full objects), not string[] (IDs).
+    // Newest-first ordering matches fetchSavedOutfits's saved_at DESC order.
+    // S1b: stamp itemIds on the optimistic add so the re-hydration effect can
+    // re-resolve items if wardrobeItems changes after the save (edit/delete in My Closet).
+    const isSavingNow = !savedIds.has(outfit.id);
     setSavedOutfits((prev) =>
-      prev.includes(outfit.id) ? prev.filter((id) => id !== outfit.id) : [...prev, outfit.id]
+      prev.some((o) => o.id === outfit.id)
+        ? prev.filter((o) => o.id !== outfit.id)
+        : [{ ...outfit, itemIds: (outfit.items || []).map((i) => i.id) }, ...prev]
     );
     if (onPersistInteraction) {
       onPersistInteraction(outfit, { saved: isSavingNow });
@@ -3104,6 +3124,25 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
   });
+
+  // Session 12 S6: Derive filtered saved outfits + result count text.
+  // When search is open, filterSavedOutfits handles default ('All' + '') as no-op,
+  // so filteredSavedOutfits === savedOutfits when no filter content is applied.
+  const filteredSavedOutfits = searchVisible
+    ? filterSavedOutfits(savedOutfits, searchText, selectedOccasion)
+    : savedOutfits;
+  const showResultCount = searchVisible
+    && (searchText.trim() !== '' || selectedOccasion !== 'All');
+  let resultCountText = null;
+  if (showResultCount) {
+    const n = filteredSavedOutfits.length;
+    if (searchText.trim() !== '') {
+      resultCountText = `Showing ${n} result${n === 1 ? '' : 's'} for ${searchText.trim()}`;
+    } else {
+      resultCountText = `Showing ${n} outfit${n === 1 ? '' : 's'} for ${selectedOccasion}`;
+    }
+  }
+  const showFilteredEmpty = showResultCount && filteredSavedOutfits.length === 0;
 
   // Loading state
   if (loading) {
@@ -3269,13 +3308,13 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
             <TouchableOpacity
               style={[
                 looksStyles.actionButtonHalf,
-                savedOutfits.includes(outfit.id) && looksStyles.actionButtonHalfSaved,
+                savedIds.has(outfit.id) && looksStyles.actionButtonHalfSaved,
               ]}
               activeOpacity={0.7}
               onPress={() => toggleSave(outfit)}
             >
               <Text style={looksStyles.actionButtonText}>
-                {savedOutfits.includes(outfit.id) ? '❤️ Saved' : '🤍 Save'}
+                {savedIds.has(outfit.id) ? '❤️ Saved' : '🤍 Save'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -3719,11 +3758,131 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
             </TouchableOpacity>
           </View>
 
+          {/* Session 12 S4: KAV wraps the ScrollView so the keyboard doesn't cover
+              the search input. keyboardShouldPersistTaps lets X-close (and S5 chips)
+              tap through when the keyboard is open. Mirrors Session 8 pattern. */}
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <ScrollView
             contentContainerStyle={savedStyles.scrollContent}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            <Text style={savedStyles.heading}>Saved Outfits</Text>
+            {/* Session 12 S3: Heading row pairs "Saved Outfits" with the Search button. */}
+            <View style={savedStyles.headingRow}>
+              <Text style={savedStyles.heading}>Saved Outfits</Text>
+              {savedOutfits.length > 0 && (
+                <TouchableOpacity
+                  style={[
+                    wardrobeStyles.searchButton,
+                    searchVisible && wardrobeStyles.searchButtonActive,
+                  ]}
+                  activeOpacity={0.7}
+                  onPress={() => setSearchVisible((v) => !v)}
+                  hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                >
+                  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                    <Circle
+                      cx={11}
+                      cy={11}
+                      r={7}
+                      stroke={searchVisible ? '#6B7E65' : '#5C4A3A'}
+                      strokeWidth={1.8}
+                    />
+                    <Line
+                      x1={20}
+                      y1={20}
+                      x2={16.65}
+                      y2={16.65}
+                      stroke={searchVisible ? '#6B7E65' : '#5C4A3A'}
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                    />
+                  </Svg>
+                  <Text
+                    style={[
+                      wardrobeStyles.searchButtonText,
+                      searchVisible && wardrobeStyles.searchButtonTextActive,
+                    ]}
+                  >
+                    Search
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Session 12 S4: Search bar (revealed when searchVisible is true). */}
+            {searchVisible && (
+              <View style={wardrobeStyles.searchBarRow}>
+                <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+                  <Circle cx={11} cy={11} r={7} stroke="#5C4A3A" strokeWidth={1.8} />
+                  <Line
+                    x1={20}
+                    y1={20}
+                    x2={16.65}
+                    y2={16.65}
+                    stroke="#5C4A3A"
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                  />
+                </Svg>
+                <TextInput
+                  style={wardrobeStyles.searchBarInput}
+                  placeholder="Search your outfits..."
+                  placeholderTextColor="rgba(44,26,14,0.65)"
+                  value={searchText}
+                  onChangeText={setSearchText}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  returnKeyType="search"
+                />
+                <TouchableOpacity
+                  onPress={() => {
+                    setSearchVisible(false);
+                    setSearchText('');
+                    setSelectedOccasion('All');
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  activeOpacity={0.7}
+                >
+                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                    <Line x1={6} y1={6} x2={18} y2={18} stroke="#5C4A3A" strokeWidth={1.8} strokeLinecap="round" />
+                    <Line x1={18} y1={6} x2={6} y2={18} stroke="#5C4A3A" strokeWidth={1.8} strokeLinecap="round" />
+                  </Svg>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Session 12 S5: Occasion chips (horizontal scroll, gated on searchVisible). */}
+            {searchVisible && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                style={wardrobeStyles.chipsScroll}
+                contentContainerStyle={wardrobeStyles.chipsScrollContent}
+              >
+                {OCCASION_CHIPS.map((label) => (
+                  <TouchableOpacity
+                    key={label}
+                    style={[
+                      wardrobeStyles.categoryChip,
+                      selectedOccasion === label && wardrobeStyles.categoryChipActive,
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => setSelectedOccasion(label)}
+                  >
+                    <Text
+                      style={[
+                        wardrobeStyles.categoryChipText,
+                        selectedOccasion === label && wardrobeStyles.categoryChipTextActive,
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
 
             {/* Empty state */}
             {savedOutfits.length === 0 && (
@@ -3746,15 +3905,28 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
               </View>
             )}
 
-            {/* Saved outfits list */}
-            {savedOutfits.length > 0 && (
-              <>
-                <Text style={savedStyles.countText}>{savedOutfits.length} saved look{savedOutfits.length !== 1 ? 's' : ''}</Text>
-                <Text style={savedStyles.hintText}>Tap an outfit to see the mood board</Text>
+            {/* Session 12 S6: Result count line — only when filter active. */}
+            {showResultCount && (
+              <Text style={wardrobeStyles.searchResultsCount}>{resultCountText}</Text>
+            )}
 
-                {outfits
-                  .filter((o) => savedOutfits.includes(o.id))
-                  .map((outfit) => (
+            {/* Session 12 S6: Empty search results — when filter active and zero match. */}
+            {showFilteredEmpty && (
+              <Text style={savedStyles.emptySearchResults}>No outfits found</Text>
+            )}
+
+            {/* Saved outfits list — filtered or full */}
+            {savedOutfits.length > 0 && !showFilteredEmpty && (
+              <>
+                {/* Hide "N saved looks" + hint when filter is active — result count line above already communicates the relevant number */}
+                {!showResultCount && (
+                  <>
+                    <Text style={savedStyles.countText}>{savedOutfits.length} saved look{savedOutfits.length !== 1 ? 's' : ''}</Text>
+                    <Text style={savedStyles.hintText}>Tap an outfit to see the mood board</Text>
+                  </>
+                )}
+
+                {filteredSavedOutfits.map((outfit) => (
                     <TouchableOpacity
                       key={outfit.id}
                       style={savedStyles.outfitCard}
@@ -3806,6 +3978,7 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
               </>
             )}
           </ScrollView>
+          </KeyboardAvoidingView>
 
           {/* Confirm remove modal — replaces Alert.alert (May 2026) */}
           <Modal
@@ -3825,7 +3998,13 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                     style={savedStyles.confirmPrimaryButton}
                     activeOpacity={0.8}
                     onPress={() => {
-                      setSavedOutfits((prev) => prev.filter((id) => id !== confirmRemoveId));
+                      // Session 12: persist { saved: false } to DB so the unsave survives reload.
+                      // Find the outfit object before filtering so the closure has it for the persist call.
+                      const outfitToRemove = savedOutfits.find((o) => o.id === confirmRemoveId);
+                      setSavedOutfits((prev) => prev.filter((o) => o.id !== confirmRemoveId));
+                      if (outfitToRemove && onPersistInteraction) {
+                        onPersistInteraction(outfitToRemove, { saved: false });
+                      }
                       setConfirmRemoveId(null);
                     }}
                   >
@@ -3899,11 +4078,19 @@ const savedStyles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 8,
   },
+  // Session 12 S3: Row containing the "Saved Outfits" heading + Search button.
+  // marginBottom migrated here from the heading style so spacing below the row
+  // matches the prior spacing below the standalone heading (no layout shift).
+  headingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   heading: {
     fontFamily: 'DMSerifDisplay_400Regular',
     fontSize: 28,
     color: '#2C1A0E',
-    marginBottom: 8,
   },
   countText: {
     fontFamily: 'Outfit_400Regular',
@@ -3915,6 +4102,17 @@ const savedStyles = StyleSheet.create({
     fontFamily: 'Outfit_400Regular',
     fontSize: 12,
     color: '#5C4A3A',
+    marginBottom: 20,
+  },
+  // Session 12 S6: Empty state when search filter returns zero results.
+  // Distinct from emptyState (no saved outfits at all) — this one is the
+  // "you have saved outfits but none match your filter" case.
+  emptySearchResults: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 14,
+    color: '#A09888',
+    textAlign: 'center',
+    paddingTop: 40,
     marginBottom: 20,
   },
   emptyState: {
@@ -6053,6 +6251,9 @@ function MainAppScreen({ onSignOut }) {
   const [generationRecoveryMode, setGenerationRecoveryMode] = useState(false);
   // Last payload sent to handleGenerate — enables Regenerate button to re-fire same vibe.
   const [lastPayload, setLastPayload] = useState(null);
+  // Session 12: lifted from YourLooksTab to survive tab switches + reload (S1b loads from DB).
+  // Shape: SavedOutfit[] — each entry is the full outfit object with items: WardrobeItem[].
+  const [savedOutfits, setSavedOutfits] = useState([]);
   // AI consent state (Apple Guideline 5.1.2i) — read on mount from user_metadata.ai_consent_given.
   const [consentGiven, setConsentGiven] = useState(false);
   const [consentLoaded, setConsentLoaded] = useState(false);
@@ -6060,6 +6261,9 @@ function MainAppScreen({ onSignOut }) {
   const [pendingPayload, setPendingPayload] = useState(null);
   const [showSettingsScreen, setShowSettingsScreen] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  // Session 12 S1b: ref-tracked wardrobeItems so the savedOutfits load useEffect
+  // can read the current value without including wardrobeItems in its deps.
+  const wardrobeItemsRef = useRef([]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -6068,6 +6272,12 @@ function MainAppScreen({ onSignOut }) {
       useNativeDriver: true,
     }).start();
   }, []);
+
+  // Session 12 S1b: keep wardrobeItemsRef in sync so the savedOutfits DB load
+  // can hydrate against the latest wardrobeItems without being in its deps.
+  useEffect(() => {
+    wardrobeItemsRef.current = wardrobeItems;
+  }, [wardrobeItems]);
 
   useEffect(() => {
     let cancelled = false;
@@ -6097,6 +6307,7 @@ function MainAppScreen({ onSignOut }) {
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT' && !cancelled) {
         setWardrobeItems([]);
+        setSavedOutfits([]); // Session 12 S1b: also reset saved outfits on sign-out
       }
     });
 
@@ -6105,6 +6316,54 @@ function MainAppScreen({ onSignOut }) {
       data.subscription.unsubscribe();
     };
   }, []);
+
+  // Session 12 S1b: Load saved outfits from outfit_history on mount.
+  // fetchSavedOutfits returns rows with itemIds: string[] (the snapshot of which
+  // items were in the outfit when saved). Items get resolved against the current
+  // wardrobeItems via wardrobeItemsRef. The hydration effect below re-resolves
+  // when wardrobeItems changes.
+  useEffect(() => {
+    let cancelled = false;
+    const loadSaved = async () => {
+      try {
+        const rows = await fetchSavedOutfits();
+        if (cancelled) return;
+        const byId = new Map(wardrobeItemsRef.current.map((i) => [i.id, i]));
+        const dbHydrated = rows.map((row) => ({
+          ...row,
+          items: (row.itemIds || []).map((id) => byId.get(id)).filter(Boolean),
+        }));
+        // Merge-by-id: preserve any local-only entries added via toggleSave during
+        // the brief load window (their DB write may not have propagated yet).
+        // For matching IDs, DB version wins (authoritative).
+        setSavedOutfits((prev) => {
+          const dbIds = new Set(dbHydrated.map((o) => o.id));
+          const localOnly = prev.filter((o) => !dbIds.has(o.id));
+          return [...localOnly, ...dbHydrated];
+        });
+      } catch (err) {
+        console.warn('[savedOutfits] load failed:', err?.message);
+      }
+    };
+    loadSaved();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Session 12 S1b: Re-hydrate saved outfit items whenever wardrobeItems changes.
+  // Source of truth for an outfit's membership is its itemIds (snapshot at save
+  // time). The items array is the rendered display layer, resolved against the
+  // current wardrobeItems. Deleted wardrobe items silently drop from items.
+  useEffect(() => {
+    setSavedOutfits((prev) => {
+      if (!prev || prev.length === 0) return prev;
+      const byId = new Map(wardrobeItems.map((i) => [i.id, i]));
+      return prev.map((outfit) => {
+        const ids = Array.isArray(outfit.itemIds) ? outfit.itemIds : [];
+        const items = ids.map((id) => byId.get(id)).filter(Boolean);
+        return { ...outfit, items };
+      });
+    });
+  }, [wardrobeItems]);
 
   // Load AI consent flag from auth.user_metadata on mount.
   // consentLoaded becomes true after initial read (success or failure) so the
@@ -6264,7 +6523,7 @@ function MainAppScreen({ onSignOut }) {
       {activeTab === 0 && <StyleDNATab onBuildCloset={() => setActiveTab(1)} />}
       {activeTab === 1 && <WardrobeTab items={wardrobeItems} setItems={setWardrobeItems} onGoToVibe={() => setActiveTab(2)} />}
       {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} onGenerate={handleGenerate} onGoToCloset={() => setActiveTab(1)} />}
-      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} recoveryMode={generationRecoveryMode} wardrobeItems={wardrobeItems} onRegenerate={handleRegenerate} onPersistInteraction={handlePersistInteraction} onMarkItemsWorn={handleMarkItemsWorn} />}
+      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} recoveryMode={generationRecoveryMode} wardrobeItems={wardrobeItems} onRegenerate={handleRegenerate} onPersistInteraction={handlePersistInteraction} onMarkItemsWorn={handleMarkItemsWorn} savedOutfits={savedOutfits} setSavedOutfits={setSavedOutfits} />}
 
       {/* Bottom tab bar */}
       <View style={mainStyles.tabBar}>
