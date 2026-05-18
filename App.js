@@ -8,6 +8,7 @@ import {
   Dimensions,
   ScrollView,
   TextInput,
+  Keyboard,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -99,10 +100,10 @@ function SplashScreenView({ onFinished }) {
     <View style={styles.splashScreen}>
       <StatusBar style="light" />
       <Animated.View style={{ opacity: logoFade }}>
-        <Text style={styles.splashLogo}>
+        <View style={styles.splashLogo}>
           <Text style={styles.splashLogoClo}>Clo</Text>
           <Text style={styles.splashLogoZie}>zie</Text>
-        </Text>
+        </View>
       </Animated.View>
       <Animated.View style={{ opacity: Animated.multiply(labelFade, labelPulse) }}>
         <Text style={styles.splashLabel}>✦ YOUR PERSONAL STYLIST ✦</Text>
@@ -1146,6 +1147,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       setRecognitionStatus(null);
       setAutoFilledFields({});
       setShowCategoryPicker(false);
+      Keyboard.dismiss();
       setShowAddPanel(false);
     } catch (err) {
       Alert.alert(
@@ -1227,6 +1229,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       setRecognitionStatus(null);
       setAutoFilledFields({});
       setShowCategoryPicker(false);
+      Keyboard.dismiss();
       setShowAddPanel(false);
     } catch (err) {
       Alert.alert(
@@ -1563,6 +1566,14 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
         </Text>
       )}
 
+      {/* Session 13A: Friendly empty state when search filter returns zero results */}
+      {searchVisible && itemCount > 0 && filteredItems.length === 0 && (
+        <View style={wardrobeStyles.searchEmptyState}>
+          <Text style={wardrobeStyles.searchEmptyTitle}>No items match your search</Text>
+          <Text style={wardrobeStyles.searchEmptySubtext}>Try a different name or category</Text>
+        </View>
+      )}
+
       {/* HIDDEN: Session 10A Step 4 — replaced by the new empty state early return at the top of WardrobeTab render */}
       {/*
       {itemCount === 0 && (
@@ -1706,15 +1717,15 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           }}
         >
           <View style={wardrobeStyles.addPanelHeader}>
-            <Text style={wardrobeStyles.addPanelHeading}>{editingItemId ? 'EDIT ITEM' : 'ADD NEW ITEM'}</Text>
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => { setShowAddPanel(false); setEditingItemId(null); setNewItemName(''); setNewItemCategory(''); setNewItemColour(''); setNewItemNotes(''); setPhotoUri(null); setIsScanning(false); setRecognitionStatus(null); setAutoFilledFields({}); setShowCategoryPicker(false); }}
+              onPress={() => { Keyboard.dismiss(); setShowAddPanel(false); setEditingItemId(null); setNewItemName(''); setNewItemCategory(''); setNewItemColour(''); setNewItemNotes(''); setPhotoUri(null); setIsScanning(false); setRecognitionStatus(null); setAutoFilledFields({}); setShowCategoryPicker(false); }}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={{ minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'flex-end' }}
+              style={{ minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'flex-start' }}
             >
               <Text style={wardrobeStyles.addPanelClose}>✕</Text>
             </TouchableOpacity>
+            <Text style={wardrobeStyles.addPanelHeading}>{editingItemId ? 'EDIT ITEM' : 'ADD NEW ITEM'}</Text>
           </View>
 
           {/* Photo section */}
@@ -1876,6 +1887,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
             activeOpacity={0.7}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             onPress={() => {
+              Keyboard.dismiss();
               setShowAddPanel(false);
               setEditingItemId(null);
               setNewItemName('');
@@ -2731,7 +2743,7 @@ function ShareCard({ outfit, shotRef }) {
 
           {/* Watermark footer — sage bar */}
           <View style={shareCardStyles.watermark}>
-            <Text style={shareCardStyles.watermarkText}>Styled by Clozie ✦ Find us in the App Store</Text>
+            <Text style={shareCardStyles.watermarkText}>Styled by Clozie</Text>
           </View>
         </View>
       </ViewShot>
@@ -3928,8 +3940,12 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
             )}
 
             {/* Session 12 S6: Empty search results — when filter active and zero match. */}
+            {/* Session 13A: Added subtext line below the existing "No outfits found". */}
             {showFilteredEmpty && (
-              <Text style={savedStyles.emptySearchResults}>No outfits found</Text>
+              <>
+                <Text style={savedStyles.emptySearchResults}>No outfits found</Text>
+                <Text style={savedStyles.emptySearchSubtext}>Try a different name or occasion</Text>
+              </>
             )}
 
             {/* Saved outfits list — filtered or full */}
@@ -4124,12 +4140,21 @@ const savedStyles = StyleSheet.create({
   // Session 12 S6: Empty state when search filter returns zero results.
   // Distinct from emptyState (no saved outfits at all) — this one is the
   // "you have saved outfits but none match your filter" case.
+  // Session 13A: marginBottom dropped 20 → 4 so the new subtext sits close.
   emptySearchResults: {
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,
     color: '#A09888',
     textAlign: 'center',
     paddingTop: 40,
+    marginBottom: 4,
+  },
+  // Session 13A: Subtext below "No outfits found".
+  emptySearchSubtext: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#A09888',
+    textAlign: 'center',
     marginBottom: 20,
   },
   emptyState: {
@@ -6718,6 +6743,8 @@ const styles = StyleSheet.create({
     fontSize: 72,
     color: '#C87A52',
     letterSpacing: -2,
+    paddingRight: 8,
+    lineHeight: 92,
   },
   splashLabel: {
     fontFamily: 'Outfit_700Bold',
@@ -7799,6 +7826,25 @@ const wardrobeStyles = StyleSheet.create({
     fontSize: 12,
     color: '#A09888',
     marginBottom: 12,
+  },
+  // Session 13A: Friendly empty state when search filter returns zero results
+  searchEmptyState: {
+    alignItems: 'center',
+    paddingTop: 32,
+    paddingBottom: 32,
+  },
+  searchEmptyTitle: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 15,
+    color: '#5C4A3A',
+    textAlign: 'center',
+  },
+  searchEmptySubtext: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#A09888',
+    marginTop: 4,
+    textAlign: 'center',
   },
   label: {
     fontFamily: 'Outfit_700Bold',
