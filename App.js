@@ -2834,7 +2834,7 @@ const LOADING_MESSAGES = [
 const OCCASION_CHIPS = ['All', 'Casual Day', 'Work · Office', 'Going Out', 'Formal Event', 'Outdoor · Sport', 'Weekend Errands', 'Travel'];
 
 // ── Your Looks Tab ──────────────────────────────────────────────────────────
-function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, recoveryMode, wardrobeItems, onRegenerate, onPersistInteraction, onMarkItemsWorn, savedOutfits, setSavedOutfits }) {
+function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, recoveryMode, wardrobeItems, onRegenerate, onPersistInteraction, onMarkItemsWorn, savedOutfits, setSavedOutfits, generationContext }) {
   // ── DEMO_MODE: flip to `true` for visual testing (HIG audit, Mood Board / Hanger View / Saved Outfits review). Production: always `false`. ──
   const DEMO_MODE = false;
 
@@ -2991,11 +2991,28 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
     // Newest-first ordering matches fetchSavedOutfits's saved_at DESC order.
     // S1b: stamp itemIds on the optimistic add so the re-hydration effect can
     // re-resolve items if wardrobeItems changes after the save (edit/delete in My Closet).
+    // Session 13: stamp context fields onto the optimistic entry so its shape matches
+    // fetchSavedOutfits — without this the occasion chip filter returned 0 results
+    // for any outfit saved in the current session (outfit.occasion was undefined).
     const isSavingNow = !savedIds.has(outfit.id);
+    const nowIso = new Date().toISOString();
     setSavedOutfits((prev) =>
       prev.some((o) => o.id === outfit.id)
         ? prev.filter((o) => o.id !== outfit.id)
-        : [{ ...outfit, itemIds: (outfit.items || []).map((i) => i.id) }, ...prev]
+        : [{
+            ...outfit,
+            itemIds: (outfit.items || []).map((i) => i.id),
+            occasion: generationContext?.occasion ?? null,
+            temperature: generationContext?.temperature ?? null,
+            condition: generationContext?.condition ?? null,
+            indoors: generationContext?.indoors === true,
+            brief: generationContext?.brief ?? null,
+            pinnedItemId: generationContext?.pinnedItemId ?? null,
+            rating: null,
+            wornDates: [],
+            savedAt: nowIso,
+            createdAt: nowIso,
+          }, ...prev]
     );
     if (onPersistInteraction) {
       onPersistInteraction(outfit, { saved: isSavingNow });
@@ -6523,7 +6540,7 @@ function MainAppScreen({ onSignOut }) {
       {activeTab === 0 && <StyleDNATab onBuildCloset={() => setActiveTab(1)} />}
       {activeTab === 1 && <WardrobeTab items={wardrobeItems} setItems={setWardrobeItems} onGoToVibe={() => setActiveTab(2)} />}
       {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} onGenerate={handleGenerate} onGoToCloset={() => setActiveTab(1)} />}
-      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} recoveryMode={generationRecoveryMode} wardrobeItems={wardrobeItems} onRegenerate={handleRegenerate} onPersistInteraction={handlePersistInteraction} onMarkItemsWorn={handleMarkItemsWorn} savedOutfits={savedOutfits} setSavedOutfits={setSavedOutfits} />}
+      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} recoveryMode={generationRecoveryMode} wardrobeItems={wardrobeItems} onRegenerate={handleRegenerate} onPersistInteraction={handlePersistInteraction} onMarkItemsWorn={handleMarkItemsWorn} savedOutfits={savedOutfits} setSavedOutfits={setSavedOutfits} generationContext={lastPayload} />}
 
       {/* Bottom tab bar */}
       <View style={mainStyles.tabBar}>

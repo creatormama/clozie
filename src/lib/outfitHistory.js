@@ -15,10 +15,14 @@ function itemsToIds(items) {
     .filter(Boolean);
 }
 
-// Snapshot fields written on every upsert. Same outfit + same client_outfit_id
-// always produces identical snapshot values, so rewriting them is a no-op.
-function buildSnapshot(outfit, context) {
-  return {
+// Identity fields are always written (same client_outfit_id always produces
+// the same vibe/name/items so rewriting is safe).
+// Context fields are written ONLY on INSERT — on UPDATE they're omitted so
+// Supabase upsert preserves the existing DB values. Fixes Session 12 bug
+// where context-less subsequent writes (e.g. unsave from a prior session
+// where lastPayload was null) wiped occasion/temperature/etc. to NULL.
+function buildSnapshot(outfit, context, isInsert) {
+  const snapshot = {
     client_outfit_id: outfit.id,
     vibe: outfit.vibe || '',
     name: outfit.name || '',
@@ -26,13 +30,16 @@ function buildSnapshot(outfit, context) {
     item_ids: itemsToIds(outfit.items),
     style_match_score: typeof outfit.styleMatchScore === 'number' ? outfit.styleMatchScore : null,
     source: outfit.source || null,
-    occasion: context?.occasion || null,
-    temperature: context?.temperature || null,
-    condition: context?.condition || null,
-    indoors: context?.indoors === true,
-    brief: context?.brief || null,
-    pinned_item_id: context?.pinnedItemId || null,
   };
+  if (isInsert) {
+    snapshot.occasion = context?.occasion || null;
+    snapshot.temperature = context?.temperature || null;
+    snapshot.condition = context?.condition || null;
+    snapshot.indoors = context?.indoors === true;
+    snapshot.brief = context?.brief || null;
+    snapshot.pinned_item_id = context?.pinnedItemId || null;
+  }
+  return snapshot;
 }
 
 // Upsert one interaction onto an outfit_history row.
@@ -47,16 +54,20 @@ export async function upsertOutfitInteraction(outfit, context, patch) {
 
   const now = new Date().toISOString();
 
+  // Session 13: single read at top drives both worn-date dedupe AND the
+  // insert-vs-update decision for context-field preservation. Costs 1 extra
+  // read per save/rate (worn-date already had this read). Trivial at this scale.
+  const { data: existing, error: fetchErr } = await supabase
+    .from('outfit_history')
+    .select('worn_dates')
+    .eq('user_id', user.id)
+    .eq('client_outfit_id', outfit.id)
+    .maybeSingle();
+  if (fetchErr) throw fetchErr;
+  const isInsert = existing === null;
+
   // worn-date append is read-modify-write so we can dedupe same-day taps.
   if (patch.appendWornDate) {
-    const { data: existing, error: fetchErr } = await supabase
-      .from('outfit_history')
-      .select('worn_dates')
-      .eq('user_id', user.id)
-      .eq('client_outfit_id', outfit.id)
-      .maybeSingle();
-    if (fetchErr) throw fetchErr;
-
     const wornDates = Array.isArray(existing?.worn_dates) ? existing.worn_dates : [];
     const today = patch.appendWornDate.slice(0, 10); // 'YYYY-MM-DD'
     const alreadyLoggedToday = wornDates.some(
@@ -66,7 +77,7 @@ export async function upsertOutfitInteraction(outfit, context, patch) {
 
     const row = {
       user_id: user.id,
-      ...buildSnapshot(outfit, context),
+      ...buildSnapshot(outfit, context, isInsert),
       worn_dates: [...wornDates, patch.appendWornDate],
       updated_at: now,
     };
@@ -80,7 +91,7 @@ export async function upsertOutfitInteraction(outfit, context, patch) {
   // rating + saved share the simple upsert path.
   const row = {
     user_id: user.id,
-    ...buildSnapshot(outfit, context),
+    ...buildSnapshot(outfit, context, isInsert),
     updated_at: now,
   };
   if (patch.rating !== undefined) {
