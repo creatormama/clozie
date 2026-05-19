@@ -3294,14 +3294,12 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                     <Text style={{ fontSize: 22 }}>{getCategoryEmoji(item.category)}</Text>
                   )}
                 </View>
-                <Text style={looksStyles.photoStripName} numberOfLines={1}>{item.name}</Text>
               </View>
             )) : (
               <View style={looksStyles.photoStripItem}>
                 <View style={looksStyles.photoStripThumb}>
                   <Text style={{ fontSize: 22 }}>{getCategoryEmoji('Tops')}</Text>
                 </View>
-                <Text style={looksStyles.photoStripName}>Sample item</Text>
               </View>
             )}
           </View>
@@ -3980,7 +3978,7 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                           <View key={item.id} style={savedStyles.photoStripItem}>
                             <View style={savedStyles.photoStripThumb}>
                               {item.photoUri ? (
-                                <Image source={{ uri: item.photoUri }} style={savedStyles.photoStripThumbImage} />
+                                <Image source={{ uri: item.photoUri }} resizeMode="contain" style={savedStyles.photoStripThumbImage} />
                               ) : (
                                 <Text style={{ fontSize: 20 }}>{getCategoryEmoji(item.category)}</Text>
                               )}
@@ -4660,11 +4658,11 @@ const moodBoardStyles = StyleSheet.create({
   },
   hangerSlotShoes: {
     position: 'absolute',
-    top: 438,
+    top: 455,
     left: '50%',
-    marginLeft: -52.5,
-    width: 105,
-    height: 72,
+    marginLeft: -62.5,
+    width: 125,
+    height: 95,
     overflow: 'hidden',
     zIndex: 3,
   },
@@ -4675,10 +4673,10 @@ const moodBoardStyles = StyleSheet.create({
   // Left side card — light outerwear
   hangerLightOuterCard: {
     position: 'absolute',
-    top: 116,
+    top: 120,
     left: 14,
-    width: 76,
-    height: 96,
+    width: 110,
+    height: 130,
     padding: 5,
     borderRadius: 4,
     backgroundColor: '#FFFFFF',
@@ -9129,12 +9127,12 @@ const looksStyles = StyleSheet.create({
     marginBottom: 14,
   },
   photoStripItem: {
-    width: '47%',
+    width: '30%',
     alignItems: 'center',
   },
   photoStripThumb: {
     width: '100%',
-    height: 80,
+    aspectRatio: 3 / 4,
     backgroundColor: '#E8E4CE',
     borderRadius: 8,
     alignItems: 'center',
