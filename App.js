@@ -1963,15 +1963,17 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       </TouchableOpacity>
     )}
 
-    {/* Session 10A Step 3: Sticky "Set Today's Vibe →" bar — sits flush above the tab bar. Hidden when closet is empty or Add Item panel is open. */}
+    {/* Session 10A Step 3 → Session 13B: Floating centered pill (was full-width sticky bar). Wrapper uses pointerEvents="box-none" so taps outside the pill pass through to closet content. Hidden when closet is empty or Add Item panel is open. */}
     {itemCount > 0 && !showAddPanel && (
-      <TouchableOpacity
-        style={wardrobeStyles.stickyVibeBar}
-        activeOpacity={0.85}
-        onPress={onGoToVibe}
-      >
-        <Text style={wardrobeStyles.stickyVibeBarText}>Set Today's Vibe →</Text>
-      </TouchableOpacity>
+      <View style={wardrobeStyles.stickyVibeBarWrapper} pointerEvents="box-none">
+        <TouchableOpacity
+          style={wardrobeStyles.stickyVibeBar}
+          activeOpacity={0.85}
+          onPress={onGoToVibe}
+        >
+          <Text style={wardrobeStyles.stickyVibeBarText}>Set Today's Vibe →</Text>
+        </TouchableOpacity>
+      </View>
     )}
     </KeyboardAvoidingView>
   );
@@ -2835,6 +2837,8 @@ const shareCardStyles = StyleSheet.create({
 const LOADING_MESSAGES = [
   'Browsing your closet ✦',
   'Mixing and matching ✦',
+  'Finding your best looks ✦',
+  'Almost there ✦',
   'Clozie is working her magic ✦',
 ];
 
@@ -6254,7 +6258,7 @@ function ConsentModal({ visible, onAccept, onDecline }) {
         <View style={consentStyles.card}>
           <Text style={consentStyles.title}>Before Clozie styles you</Text>
           <Text style={consentStyles.body}>
-            Clozie creates outfits using technology provided by Anthropic. To generate outfit suggestions, your wardrobe photos and style preferences are sent to Anthropic for processing. For details on how Anthropic handles data, see their privacy policy at{' '}
+            Clozie uses Anthropic to create outfit suggestions from your wardrobe details and style preferences. Learn more about how Anthropic handles data at{' '}
             <Text style={consentStyles.link} onPress={openPrivacyLink}>
               anthropic.com/privacy
             </Text>
@@ -6265,7 +6269,7 @@ function ConsentModal({ visible, onAccept, onDecline }) {
             activeOpacity={0.8}
             onPress={onAccept}
           >
-            <Text style={consentStyles.acceptButtonText}>Accept — I'm ready to style ✦</Text>
+            <Text style={consentStyles.acceptButtonText}>Accept</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={consentStyles.declineButton}
@@ -7974,22 +7978,32 @@ const wardrobeStyles = StyleSheet.create({
     elevation: 6,
     zIndex: 10,
   },
-  // Session 10A Step 3: Sticky vibe bar — sits flush above tab bar, doesn't scroll with content.
-  stickyVibeBar: {
+  // Session 13B: Wrapper for the floating "Set Today's Vibe →" pill. Full-width invisible
+  // positioned layer that centers the pill via alignItems. The JSX uses pointerEvents="box-none"
+  // so taps outside the pill pass through to closet content (cards remain tappable).
+  stickyVibeBarWrapper: {
     position: 'absolute',
     bottom: Platform.OS === 'ios' ? 86 : 70,
     left: 0,
     right: 0,
-    height: 50,
+    alignItems: 'center',
+    zIndex: 5,
+  },
+  // Session 10A Step 3 → Session 13B: Floating centered pill. Positioning lives on stickyVibeBarWrapper above.
+  stickyVibeBar: {
+    height: 44,
+    paddingHorizontal: 28,
+    borderRadius: 22,
     backgroundColor: '#BCC7B7',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#2C1A0E',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 6,
+    elevation: 2,
   },
   stickyVibeBarText: {
     fontFamily: 'Outfit_500Medium',
