@@ -3611,6 +3611,10 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                 .sort((a, b) => accessoryRank(a.name) - accessoryRank(b.name))
                 .slice(0, 5);
 
+              // Dress-outfit shoe position. Dress box ends at y=408 (top:88 + height:320).
+              // 418 = 10px gap below dress hem. LOCKED.
+              const DRESS_SHOES_TOP = 418;
+
               const stageBg = { Cream: '#F5F0E8', White: '#FFFFFF', Sage: '#E8E4CE', Dark: '#2C1A0E', 'Sage green': '#BCC7B7' }[mannequinBg] || '#F5F0E8';
 
               return (
@@ -3680,7 +3684,15 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                   </View>
 
                   {/* Centre stack — top/dress, pants, shoes */}
-                  {top && (
+                  {dress ? (
+                    <View style={moodBoardStyles.hangerSlotDress}>
+                      {dress.photoUri ? (
+                        <Image source={{ uri: dress.photoUri }} resizeMode="contain" style={moodBoardStyles.hangerImageDress} />
+                      ) : (
+                        <View style={[StyleSheet.absoluteFill, { backgroundColor: MOOD_PLACEHOLDER_COLORS[dress.category] || '#E8E0D5' }]} />
+                      )}
+                    </View>
+                  ) : top ? (
                     <View style={moodBoardStyles.hangerSlotTop}>
                       {top.photoUri ? (
                         <Image source={{ uri: top.photoUri }} resizeMode="contain" style={moodBoardStyles.hangerImage} />
@@ -3688,7 +3700,7 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                         <View style={[StyleSheet.absoluteFill, { backgroundColor: MOOD_PLACEHOLDER_COLORS[top.category] || '#E8E0D5' }]} />
                       )}
                     </View>
-                  )}
+                  ) : null}
                   {pants && (
                     <View style={moodBoardStyles.hangerSlotPants}>
                       {pants.photoUri ? (
@@ -3699,7 +3711,7 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                     </View>
                   )}
                   {shoes && (
-                    <View style={moodBoardStyles.hangerSlotShoes}>
+                    <View style={[moodBoardStyles.hangerSlotShoes, dress && { top: DRESS_SHOES_TOP }]}>
                       {shoes.photoUri ? (
                         <Image source={{ uri: shoes.photoUri }} resizeMode="contain" style={moodBoardStyles.hangerImage} />
                       ) : (
@@ -4669,6 +4681,26 @@ const moodBoardStyles = StyleSheet.create({
   hangerImage: {
     width: '100%',
     height: '100%',
+  },
+  // Dress slot — taller box for dress outfits (no pants). Uses flex-start + shorter
+  // Image height together to pin the photo to the top under the hanger. Neither
+  // alone works — Image resizeMode="contain" centers within Image bounds, so the
+  // Image height must be < container height for flex-start to anchor anything.
+  hangerSlotDress: {
+    position: 'absolute',
+    top: 88,
+    left: '50%',
+    marginLeft: -92.5,
+    width: 185,
+    height: 320,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    overflow: 'hidden',
+    zIndex: 4,
+  },
+  hangerImageDress: {
+    width: '100%',
+    height: '88%',
   },
   // Left side card — light outerwear
   hangerLightOuterCard: {
