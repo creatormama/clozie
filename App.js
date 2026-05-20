@@ -5231,7 +5231,7 @@ const subStyles = StyleSheet.create({
 });
 
 // ── Settings Screen ─────────────────────────────────────────────────────────
-function SettingsScreen({ onClose, onSignOut }) {
+function SettingsScreen({ onClose, onSignOut, onRevokeConsent }) {
   // Real user data — pulled from Supabase auth session on mount
   const [displayName, setDisplayName] = useState('');
   const [userEmail, setUserEmail] = useState('');
@@ -5374,6 +5374,16 @@ function SettingsScreen({ onClose, onSignOut }) {
   };
 
   const [showClearMemoryModal, setShowClearMemoryModal] = useState(false);
+  const [showRevokeConsentModal, setShowRevokeConsentModal] = useState(false);
+  const [revokeFlash, setRevokeFlash] = useState(false);
+
+  // 1.5s inline "Consent revoked" flash after Yes-revoke. Cleanup clears the
+  // timer if SettingsScreen unmounts mid-flash (user closes Settings).
+  useEffect(() => {
+    if (!revokeFlash) return;
+    const t = setTimeout(() => setRevokeFlash(false), 1500);
+    return () => clearTimeout(t);
+  }, [revokeFlash]);
 
   const handleClearMemory = () => {
     setShowClearMemoryModal(true);
@@ -5703,6 +5713,30 @@ function SettingsScreen({ onClose, onSignOut }) {
               </View>
             </View>
           )}
+
+          {/* Divider */}
+          <View style={settingsStyles.divider} />
+
+          {/* Styling Permissions — Apple 5.1.2(i) revocable consent */}
+          <View style={settingsStyles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={settingsStyles.cardRowLabel}>Styling Permissions</Text>
+              <Text style={settingsStyles.cardRowValue}>Manage your consent for Clozie styling</Text>
+            </View>
+            {revokeFlash ? (
+              <Text style={{ color: '#5C4A3A', fontFamily: 'Outfit_500Medium', fontSize: 14 }}>
+                Consent revoked
+              </Text>
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setShowRevokeConsentModal(true)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={settingsStyles.goldLink}>Revoke</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* PREFERENCES card — hidden until Daily Notifications is built (Phase 2) */}
@@ -5810,6 +5844,43 @@ function SettingsScreen({ onClose, onSignOut }) {
               style={savedStyles.confirmCancelButton}
               activeOpacity={0.7}
               onPress={() => setShowClearMemoryModal(false)}
+            >
+              <Text style={savedStyles.confirmCancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Revoke Styling Permissions confirm modal — Apple 5.1.2(i) */}
+      <Modal
+        visible={showRevokeConsentModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowRevokeConsentModal(false)}
+      >
+        <View style={savedStyles.confirmOverlay}>
+          <View style={savedStyles.confirmModal}>
+            <Text style={savedStyles.confirmHeading}>Revoke Styling Permissions?</Text>
+            <Text style={savedStyles.confirmBody}>
+              This will require you to re-accept before Clozie can generate outfits. Continue?
+            </Text>
+            <View style={savedStyles.confirmPrimaryRing}>
+              <TouchableOpacity
+                style={savedStyles.confirmPrimaryButton}
+                activeOpacity={0.8}
+                onPress={() => {
+                  setShowRevokeConsentModal(false);
+                  onRevokeConsent();
+                  setRevokeFlash(true);
+                }}
+              >
+                <Text style={savedStyles.confirmPrimaryButtonText}>Yes, revoke</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={savedStyles.confirmCancelButton}
+              activeOpacity={0.7}
+              onPress={() => setShowRevokeConsentModal(false)}
             >
               <Text style={savedStyles.confirmCancelButtonText}>Cancel</Text>
             </TouchableOpacity>
@@ -6746,6 +6817,17 @@ function MainAppScreen({ onSignOut }) {
     setShowConsentModal(false);
   };
 
+  // Revoke handler — Apple 5.1.2(i) requires consent be revocable. Optimistic flip
+  // (mirrors handleAcceptConsent pattern); next Generate tap re-triggers ConsentModal.
+  const handleRevokeConsent = async () => {
+    setConsentGiven(false);
+    try {
+      await supabase.auth.updateUser({ data: { ai_consent_given: false } });
+    } catch {
+      // Best-effort save — local state flipped regardless, same pattern as handleAcceptConsent.
+    }
+  };
+
   const tabs = [
     { label: 'My Style', icon: '✦', IconComponent: TabStarIcon },
     { label: `My Closet (${wardrobeItems.length})`, icon: '👗', IconComponent: TabHangerIcon },
@@ -6813,7 +6895,11 @@ function MainAppScreen({ onSignOut }) {
         transparent={false}
         onRequestClose={() => setShowSettingsScreen(false)}
       >
-        <SettingsScreen onClose={() => setShowSettingsScreen(false)} onSignOut={onSignOut} />
+        <SettingsScreen
+          onClose={() => setShowSettingsScreen(false)}
+          onSignOut={onSignOut}
+          onRevokeConsent={handleRevokeConsent}
+        />
       </Modal>
 
       {/* AI Consent Modal — Apple Guideline 5.1.2(i) */}
