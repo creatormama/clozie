@@ -2857,6 +2857,11 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
   const [loading, setLoading] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(DEMO_MODE);
   const spinAnim = useRef(new Animated.Value(0)).current;
+  // Hanger View entrance animation — staggered drop+fade per slot (Session 14)
+  const hangerCentreAnim = useRef(new Animated.Value(0)).current;
+  const hangerPantsAnim = useRef(new Animated.Value(0)).current;
+  const hangerShoesAnim = useRef(new Animated.Value(0)).current;
+  const hangerSideAnim = useRef(new Animated.Value(0)).current;
   // Session 12: savedOutfits is now lifted to MainAppScreen via props.
   // Derived set gives O(1) `is this outfit saved?` checks across the render tree.
   const savedIds = new Set((savedOutfits || []).map((o) => o.id));
@@ -3152,6 +3157,24 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
     }, 1500);
     return () => clearInterval(id);
   }, [generationStatus]);
+
+  // Hanger View entrance — runs when user opens Hanger tab or switches outfit.
+  // Stagger: centre 0ms → pants +250 → shoes +500 → side +750, each 350ms duration.
+  // useNativeDriver:true keeps animation on the native thread, zero JS impact.
+  useEffect(() => {
+    if (moodBoardTab === 'hanger' && moodBoardOutfit) {
+      hangerCentreAnim.setValue(0);
+      hangerPantsAnim.setValue(0);
+      hangerShoesAnim.setValue(0);
+      hangerSideAnim.setValue(0);
+      Animated.stagger(250, [
+        Animated.timing(hangerCentreAnim, { toValue: 1, duration: 350, useNativeDriver: true }),
+        Animated.timing(hangerPantsAnim,  { toValue: 1, duration: 350, useNativeDriver: true }),
+        Animated.timing(hangerShoesAnim,  { toValue: 1, duration: 350, useNativeDriver: true }),
+        Animated.timing(hangerSideAnim,   { toValue: 1, duration: 350, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [moodBoardTab, moodBoardOutfit]);
 
   const spin = spinAnim.interpolate({
     inputRange: [0, 1],
@@ -3598,13 +3621,16 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
               // ── Item categorisation for Hanger View ───────────────────────────
               const allItems = moodBoardOutfit.items || [];
               const dress = allItems.find(i => i.category === 'Dresses') || null;
-              const top = dress || allItems.find(i => i.category === 'Tops') || null;
+              const directTop = dress || allItems.find(i => i.category === 'Tops') || null;
               const pants = dress ? null : (allItems.find(i => i.category === 'Bottoms') || null);
               const shoes = allItems.find(i => i.category === 'Shoes') || null;
               // Heavy outerwear silently dropped; everything else in Outerwear = light
               const HEAVY_OUTER_RE = /(trench|puffer|parka|winter coat|wrap coat)/i;
               const outerCandidate = allItems.find(i => i.category === 'Outerwear');
               const lightOuter = (outerCandidate && !HEAVY_OUTER_RE.test(outerCandidate.name || '')) ? outerCandidate : null;
+              // Headless fallback: outerwear promotes to centre top slot when no top/dress
+              const top = directTop || lightOuter;
+              const sideOuter = (top === lightOuter) ? null : lightOuter;
               // Accessories ordered head → ears → neck → wrist → waist → hand
               const accs = allItems
                 .filter(i => i.category === 'Accessories')
@@ -3685,53 +3711,88 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
 
                   {/* Centre stack — top/dress, pants, shoes */}
                   {dress ? (
-                    <View style={moodBoardStyles.hangerSlotDress}>
+                    <Animated.View style={[
+                      moodBoardStyles.hangerSlotDress,
+                      {
+                        opacity: hangerCentreAnim,
+                        transform: [{ translateY: hangerCentreAnim.interpolate({ inputRange: [0, 1], outputRange: [-15, 0] }) }],
+                      },
+                    ]}>
                       {dress.photoUri ? (
                         <Image source={{ uri: dress.photoUri }} resizeMode="contain" style={moodBoardStyles.hangerImageDress} />
                       ) : (
                         <View style={[StyleSheet.absoluteFill, { backgroundColor: MOOD_PLACEHOLDER_COLORS[dress.category] || '#E8E0D5' }]} />
                       )}
-                    </View>
+                    </Animated.View>
                   ) : top ? (
-                    <View style={moodBoardStyles.hangerSlotTop}>
+                    <Animated.View style={[
+                      moodBoardStyles.hangerSlotTop,
+                      {
+                        opacity: hangerCentreAnim,
+                        transform: [{ translateY: hangerCentreAnim.interpolate({ inputRange: [0, 1], outputRange: [-15, 0] }) }],
+                      },
+                    ]}>
                       {top.photoUri ? (
                         <Image source={{ uri: top.photoUri }} resizeMode="contain" style={moodBoardStyles.hangerImage} />
                       ) : (
                         <View style={[StyleSheet.absoluteFill, { backgroundColor: MOOD_PLACEHOLDER_COLORS[top.category] || '#E8E0D5' }]} />
                       )}
-                    </View>
+                    </Animated.View>
                   ) : null}
                   {pants && (
-                    <View style={moodBoardStyles.hangerSlotPants}>
+                    <Animated.View style={[
+                      moodBoardStyles.hangerSlotPants,
+                      {
+                        opacity: hangerPantsAnim,
+                        transform: [{ translateY: hangerPantsAnim.interpolate({ inputRange: [0, 1], outputRange: [-15, 0] }) }],
+                      },
+                    ]}>
                       {pants.photoUri ? (
                         <Image source={{ uri: pants.photoUri }} resizeMode="contain" style={moodBoardStyles.hangerImage} />
                       ) : (
                         <View style={[StyleSheet.absoluteFill, { backgroundColor: MOOD_PLACEHOLDER_COLORS[pants.category] || '#E8E0D5' }]} />
                       )}
-                    </View>
+                    </Animated.View>
                   )}
                   {shoes && (
-                    <View style={[moodBoardStyles.hangerSlotShoes, dress && { top: DRESS_SHOES_TOP }]}>
+                    <Animated.View style={[
+                      moodBoardStyles.hangerSlotShoes,
+                      dress && { top: DRESS_SHOES_TOP },
+                      {
+                        opacity: hangerShoesAnim,
+                        transform: [{ translateY: hangerShoesAnim.interpolate({ inputRange: [0, 1], outputRange: [-15, 0] }) }],
+                      },
+                    ]}>
                       {shoes.photoUri ? (
                         <Image source={{ uri: shoes.photoUri }} resizeMode="contain" style={moodBoardStyles.hangerImage} />
                       ) : (
                         <View style={[StyleSheet.absoluteFill, { backgroundColor: MOOD_PLACEHOLDER_COLORS[shoes.category] || '#E8E0D5' }]} />
                       )}
-                    </View>
+                    </Animated.View>
                   )}
 
-                  {/* Left side card — light outerwear (heavy is silently dropped in categorisation) */}
-                  {lightOuter && (
-                    <View style={moodBoardStyles.hangerLightOuterCard}>
+                  {/* Left side card — light outerwear (heavy is silently dropped in categorisation).
+                      Hidden when outerwear got promoted to centre top slot for a headless outfit. */}
+                  {sideOuter && (
+                    <Animated.View style={[
+                      moodBoardStyles.hangerLightOuterCard,
+                      {
+                        opacity: hangerSideAnim,
+                        transform: [
+                          { rotate: '-4deg' },
+                          { translateY: hangerSideAnim.interpolate({ inputRange: [0, 1], outputRange: [-15, 0] }) },
+                        ],
+                      },
+                    ]}>
                       <View style={moodBoardStyles.hangerLightOuterClip} />
                       <View style={moodBoardStyles.hangerLightOuterInner}>
-                        {lightOuter.photoUri ? (
-                          <Image source={{ uri: lightOuter.photoUri }} resizeMode="contain" style={moodBoardStyles.hangerSideImage} />
+                        {sideOuter.photoUri ? (
+                          <Image source={{ uri: sideOuter.photoUri }} resizeMode="contain" style={moodBoardStyles.hangerSideImage} />
                         ) : (
-                          <View style={[moodBoardStyles.hangerSideImage, { backgroundColor: MOOD_PLACEHOLDER_COLORS[lightOuter.category] || '#E8E0D5' }]} />
+                          <View style={[moodBoardStyles.hangerSideImage, { backgroundColor: MOOD_PLACEHOLDER_COLORS[sideOuter.category] || '#E8E0D5' }]} />
                         )}
                       </View>
-                    </View>
+                    </Animated.View>
                   )}
 
                   {/* Right accessory stack — anatomical order, up to 5 cards */}
@@ -3745,11 +3806,18 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                     ];
                     const pos = ACC_POSITIONS[i];
                     return (
-                      <View
+                      <Animated.View
                         key={acc.id || ('acc-' + i)}
                         style={[
                           moodBoardStyles.hangerAccCard,
-                          { top: pos.top, transform: [{ rotate: pos.rot }] },
+                          {
+                            top: pos.top,
+                            opacity: hangerSideAnim,
+                            transform: [
+                              { rotate: pos.rot },
+                              { translateY: hangerSideAnim.interpolate({ inputRange: [0, 1], outputRange: [-15, 0] }) },
+                            ],
+                          },
                         ]}
                       >
                         <View style={moodBoardStyles.hangerAccClip} />
@@ -3760,7 +3828,7 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                             <View style={[moodBoardStyles.hangerAccImage, { backgroundColor: MOOD_PLACEHOLDER_COLORS[acc.category] || '#E8E0D5' }]} />
                           )}
                         </View>
-                      </View>
+                      </Animated.View>
                     );
                   })}
                 </View>
