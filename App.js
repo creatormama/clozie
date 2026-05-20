@@ -1405,21 +1405,23 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       >
         <View style={wardrobeStyles.emptyStateContainer}>
           <View style={wardrobeStyles.emptyStateHanger}>
-            <TabHangerIcon active={false} size={80} color="#BCC7B7" strokeWidth={1.6} viewBox="-2 -2 28 28" />
+            <AnimatedEmptyStateHanger size={120} color="#BCC7B7" strokeWidth={1.6} viewBox="-2 -2 28 28" />
           </View>
-          <Text style={wardrobeStyles.emptyStateHeading}>
-            Every great wardrobe starts with one piece.
-          </Text>
-          <Text style={wardrobeStyles.emptyStateSubtext}>
-            Add your first item and let's see what Clozie can do
-          </Text>
-          <TouchableOpacity
-            style={wardrobeStyles.emptyStateButton}
-            activeOpacity={0.85}
-            onPress={() => setShowAddPanel(true)}
-          >
-            <Text style={wardrobeStyles.emptyStateButtonText}>+ Add Your First Item</Text>
-          </TouchableOpacity>
+          <AnimatedEmptyStateText>
+            <Text style={wardrobeStyles.emptyStateHeading}>
+              Every great wardrobe starts with one piece.
+            </Text>
+            <Text style={wardrobeStyles.emptyStateSubtext}>
+              Add your first item and let's see what Clozie can do
+            </Text>
+            <TouchableOpacity
+              style={wardrobeStyles.emptyStateButton}
+              activeOpacity={0.85}
+              onPress={() => setShowAddPanel(true)}
+            >
+              <Text style={wardrobeStyles.emptyStateButtonText}>+ Add Your First Item</Text>
+            </TouchableOpacity>
+          </AnimatedEmptyStateText>
         </View>
       </KeyboardAvoidingView>
     );
@@ -6330,6 +6332,83 @@ function TabHangerIcon({ active, size = 20, color, strokeWidth, viewBox = '0 0 2
         strokeLinejoin="round"
       />
     </Svg>
+  );
+}
+
+// Session 13H — empty-state hanger split into two paths for stagger-draw animation.
+// TabHangerIcon above stays untouched — this is a parallel component scoped to the
+// My Closet empty state only. Step 1.2 adds the stroke-dashoffset draw animation.
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
+function AnimatedEmptyStateHanger({ size = 80, color = '#BCC7B7', strokeWidth = 1.6, viewBox = '-2 -2 28 28' }) {
+  // strokeDashoffset = 100 → invisible; → 0 = fully drawn.
+  // Hardcoded 100 is safely larger than both path lengths (hook ~12, bar ~44).
+  const hookOffset = useRef(new Animated.Value(100)).current;
+  const barOffset = useRef(new Animated.Value(100)).current;
+
+  useEffect(() => {
+    // Hook draws first (400ms), then bar follows (1100ms). Total ~1.5s.
+    // useNativeDriver: false because SVG stroke props aren't supported on native driver.
+    Animated.sequence([
+      Animated.timing(hookOffset, { toValue: 0, duration: 400, useNativeDriver: false }),
+      Animated.timing(barOffset, { toValue: 0, duration: 1100, useNativeDriver: false }),
+    ]).start();
+  }, []);
+
+  return (
+    <Svg width={size} height={size} viewBox={viewBox} fill="none">
+      {/* Hook — closed circle at top */}
+      <AnimatedPath
+        d="M12 4a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray={100}
+        strokeDashoffset={hookOffset}
+      />
+      {/* Stem + bar — vertical line down from hook, then the triangular hanger */}
+      <AnimatedPath
+        d="M12 4v3L3.5 13.5A1.5 1.5 0 0 0 4.5 16h15a1.5 1.5 0 0 0 1-2.5L12 7"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray={100}
+        strokeDashoffset={barOffset}
+      />
+    </Svg>
+  );
+}
+
+// Session 13H Phase 3 — fades in heading + subtext + button after the hanger draw
+// completes. Mounts/unmounts with the empty state (same gate as AnimatedEmptyStateHanger),
+// so the animation replays whenever the user returns to an empty closet.
+function AnimatedEmptyStateText({ children }) {
+  const textAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(textAnim, {
+      toValue: 1,
+      duration: 500,
+      delay: 1500, // start after hanger draw completes (400ms hook + 1100ms bar)
+      useNativeDriver: true,
+    }).start();
+  }, []);
+  const translateY = textAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [10, 0],
+  });
+  return (
+    <Animated.View
+      style={{
+        width: '100%',
+        alignItems: 'center',
+        opacity: textAnim,
+        transform: [{ translateY }],
+      }}
+    >
+      {children}
+    </Animated.View>
   );
 }
 
