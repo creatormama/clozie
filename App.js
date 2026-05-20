@@ -4075,7 +4075,7 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                       <View style={savedStyles.chipRow}>
                         {outfit.items.map((item) => (
                           <View key={item.id} style={savedStyles.chip}>
-                            <Text style={savedStyles.chipText}>{getCategoryEmoji(item.category)} {item.name}</Text>
+                            <Text style={savedStyles.chipText}>{item.name}</Text>
                           </View>
                         ))}
                       </View>
@@ -6839,6 +6839,7 @@ const styles = StyleSheet.create({
     fontSize: 72,
     color: '#2C1A0E',
     letterSpacing: -2,
+    lineHeight: 92,
   },
   splashLogoZie: {
     fontFamily: 'DMSerifDisplay_400Regular_Italic',
