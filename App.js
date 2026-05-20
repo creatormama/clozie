@@ -10,6 +10,7 @@ import {
   TextInput,
   Keyboard,
   KeyboardAvoidingView,
+  LayoutAnimation,
   Linking,
   Platform,
   Modal,
@@ -32,6 +33,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
+import * as Haptics from 'expo-haptics';
 import { supabase } from './src/lib/supabase';
 import { fetchWardrobeItems, getSignedPhotoUrl, uploadWardrobePhoto, insertWardrobeItem, updateWardrobeItem, deleteWardrobePhoto, deleteWardrobeItem } from './src/lib/wardrobeItems';
 import { recognizeWardrobePhoto } from './src/lib/clozieRecognition';
@@ -1137,6 +1139,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
         }
       }
 
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setItems((prev) => [{ ...newItem, photoUri: signedUrl }, ...prev]);
       setNewItemName('');
       setNewItemCategory('');
@@ -1248,6 +1251,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
     try {
       const item = items.find((i) => i.id === id);
       await deleteWardrobeItem(id, item?.photoPath || null);
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setItems((prev) => prev.filter((i) => i.id !== id));
       setDeleteConfirmId(null);
     } catch (err) {
@@ -1315,6 +1319,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       }
       setAutoFilledFields(filled);
       setRecognitionStatus('success');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (recogErr) {
       console.log('Recognition error:', recogErr);
       if (recogErr?.code === 'NO_KEY') {
@@ -2213,7 +2218,10 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate, onGoToClo
               <TouchableOpacity
                 style={vibeStyles.pinnedPillX}
                 activeOpacity={0.7}
-                onPress={() => setPinnedItemId(null)}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setPinnedItemId(null);
+                }}
                 hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
               >
                 <Text style={vibeStyles.pinnedPillXText}>×</Text>
@@ -2380,6 +2388,7 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate, onGoToClo
                         key={item.id}
                         activeOpacity={0.85}
                         onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                           if (pinnedItemId === item.id) {
                             // Tap already-pinned card → unpin, sheet stays open
                             setPinnedItemId(null);
@@ -2862,6 +2871,10 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
   const hangerPantsAnim = useRef(new Animated.Value(0)).current;
   const hangerShoesAnim = useRef(new Animated.Value(0)).current;
   const hangerSideAnim = useRef(new Animated.Value(0)).current;
+  // Session 13G: heart save pulse — single shared Animated.Value, gated by savingOutfitId
+  // so only the just-saved card's heart scales (others stay scale=1).
+  const saveAnim = useRef(new Animated.Value(1)).current;
+  const [savingOutfitId, setSavingOutfitId] = useState(null);
   // Session 12: savedOutfits is now lifted to MainAppScreen via props.
   // Derived set gives O(1) `is this outfit saved?` checks across the render tree.
   const savedIds = new Set((savedOutfits || []).map((o) => o.id));
@@ -3016,6 +3029,15 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
     // fetchSavedOutfits — without this the occasion chip filter returned 0 results
     // for any outfit saved in the current session (outfit.occasion was undefined).
     const isSavingNow = !savedIds.has(outfit.id);
+    if (isSavingNow) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setSavingOutfitId(outfit.id);
+      saveAnim.setValue(1);
+      Animated.sequence([
+        Animated.spring(saveAnim, { toValue: 1.12, useNativeDriver: true, friction: 5, tension: 150 }),
+        Animated.spring(saveAnim, { toValue: 1.0, useNativeDriver: true, friction: 4, tension: 120 }),
+      ]).start(() => setSavingOutfitId(null));
+    }
     const nowIso = new Date().toISOString();
     setSavedOutfits((prev) =>
       prev.some((o) => o.id === outfit.id)
@@ -3367,9 +3389,13 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
               activeOpacity={0.7}
               onPress={() => toggleSave(outfit)}
             >
-              <Text style={looksStyles.actionButtonText}>
-                {savedIds.has(outfit.id) ? '❤️ Saved' : '🤍 Save'}
-              </Text>
+              <Animated.View
+                style={savingOutfitId === outfit.id ? { transform: [{ scale: saveAnim }] } : null}
+              >
+                <Text style={looksStyles.actionButtonText}>
+                  {savedIds.has(outfit.id) ? '❤️ Saved' : '🤍 Save'}
+                </Text>
+              </Animated.View>
             </TouchableOpacity>
             <TouchableOpacity
               style={looksStyles.actionButtonHalf}
@@ -6532,6 +6558,7 @@ function MainAppScreen({ onSignOut }) {
   // Called from Today's Vibe → switches to Your Looks → calls Edge Function →
   // resolves item IDs to full WardrobeItem objects → drives YourLooksTab via lifted state.
   const handleGenerate = async (payload, { skipConsentCheck = false } = {}) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     // AI consent check (Apple Guideline 5.1.2i) — show modal before first generation.
     // Gated on consentLoaded so we don't trigger the modal during the initial-load window.
     // skipConsentCheck=true when called from handleAcceptConsent right after consent was saved
