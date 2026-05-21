@@ -48,8 +48,9 @@ function buildSnapshot(outfit, context, isInsert) {
 //   { saved: true | false }
 //   { appendWornDate: '<ISO timestamp>' }  // same-day dedupe applied
 export async function upsertOutfitInteraction(outfit, context, patch) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not signed in');
+  const user = session.user;
   if (!outfit?.id) throw new Error('Missing outfit id');
 
   const now = new Date().toISOString();

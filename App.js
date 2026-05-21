@@ -58,6 +58,28 @@ const POSTLOGIN_PHOTO = require('./assets/mirror-photo-post-login.jpg');
 const PRIVACY_POLICY_URL = 'https://app.termly.io/policy-viewer/policy.html?policyUUID=025e96b1-361b-48eb-bc7a-9e2d065b2834';
 const TERMS_OF_SERVICE_URL = 'https://app.termly.io/policy-viewer/policy.html?policyUUID=a55d3621-5c8f-46e6-b7a6-e819434b3acb';
 
+// ── Network error detection (Session 14B) ───────────────────────────────────
+// Detects network-level failures (no connection, DNS failure, timeout) vs
+// HTTP errors (4xx/5xx with a real response body — gate codes, server errors).
+// Used to surface warm Clozie offline messages instead of generic copy.
+//
+// React Native fetch throws "Network request failed" on no connection.
+// supabase-js wraps as FunctionsFetchError when the edge call can't reach Supabase.
+function isNetworkError(err) {
+  if (!err) return false;
+  const message = String(err.message || '').toLowerCase();
+  const name = String(err.name || '');
+  return (
+    message.includes('network request failed') ||
+    message.includes('failed to fetch') ||
+    message.includes('network error') ||
+    message.includes('failed to send a request') ||
+    (name === 'TypeError' && message.includes('network')) ||
+    name === 'FunctionsFetchError' ||
+    name === 'AuthRetryableFetchError'
+  );
+}
+
 // Keep native splash visible while fonts load
 NativeSplash.preventAutoHideAsync();
 
@@ -436,6 +458,10 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
         });
 
         if (supaErr) {
+          if (isNetworkError(supaErr)) {
+            setError('Clozie needs internet to style you. Check your connection and try again.');
+            return;
+          }
           const msg = (supaErr.message || '').toLowerCase();
           const code = supaErr.code || '';
           if (
@@ -454,7 +480,11 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
         // Success — navigate to Post-Login Welcome
         onDone({ name: name.trim(), email: email.trim(), mode: 'signup' });
       } catch (e) {
-        setError('Something went wrong — please try again');
+        if (isNetworkError(e)) {
+          setError('Clozie needs internet to style you. Check your connection and try again.');
+        } else {
+          setError('Something went wrong — please try again');
+        }
       } finally {
         setLoading(false);
       }
@@ -477,6 +507,10 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
         });
 
         if (supaErr) {
+          if (isNetworkError(supaErr)) {
+            setError('Clozie needs internet to style you. Check your connection and try again.');
+            return;
+          }
           setError("Email or password doesn't match — please try again");
           return;
         }
@@ -484,7 +518,11 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
         // Success — navigate to main app
         onDone({ email: email.trim(), mode: 'login' });
       } catch (e) {
-        setError('Something went wrong — please try again');
+        if (isNetworkError(e)) {
+          setError('Clozie needs internet to style you. Check your connection and try again.');
+        } else {
+          setError('Something went wrong — please try again');
+        }
       } finally {
         setLoading(false);
       }
@@ -501,12 +539,20 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
       try {
         const { error: supaErr } = await supabase.auth.resetPasswordForEmail(email.trim());
         if (supaErr) {
+          if (isNetworkError(supaErr)) {
+            setError('Clozie needs internet to style you. Check your connection and try again.');
+            return;
+          }
           setError("Couldn't send reset link — please try again");
           return;
         }
         setResetSent(true);
       } catch (e) {
-        setError("Couldn't send reset link — please try again");
+        if (isNetworkError(e)) {
+          setError('Clozie needs internet to style you. Check your connection and try again.');
+        } else {
+          setError("Couldn't send reset link — please try again");
+        }
       } finally {
         setLoading(false);
       }
@@ -1119,8 +1165,9 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
     if (!newItemName.trim() || isSaving) return;
     setIsSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Please sign in again to add items.');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Please sign in again to add items.');
+      const user = session.user;
 
       let photoPath = null;
       if (photoUri) {
@@ -1158,11 +1205,15 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       Keyboard.dismiss();
       setShowAddPanel(false);
     } catch (err) {
-      Alert.alert(
-        "Couldn't save your item",
-        err?.message || 'Something went wrong — please try again.',
-        [{ text: 'OK' }]
-      );
+      if (isNetworkError(err)) {
+        setRecognitionStatus('offline');
+      } else {
+        Alert.alert(
+          "Couldn't save your item",
+          err?.message || 'Something went wrong — please try again.',
+          [{ text: 'OK' }]
+        );
+      }
     } finally {
       setIsSaving(false);
     }
@@ -1196,9 +1247,9 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       let newSignedUrl = photoUri;
 
       if (photoUri && photoUri.startsWith('file://')) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Please sign in again to save changes.');
-        newPhotoPath = await uploadWardrobePhoto(photoUri, user.id);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Please sign in again to save changes.');
+        newPhotoPath = await uploadWardrobePhoto(photoUri, session.user.id);
         try {
           newSignedUrl = await getSignedPhotoUrl(newPhotoPath);
         } catch {
@@ -1240,11 +1291,15 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       Keyboard.dismiss();
       setShowAddPanel(false);
     } catch (err) {
-      Alert.alert(
-        "Couldn't save your changes",
-        err?.message || 'Something went wrong — please try again.',
-        [{ text: 'OK' }]
-      );
+      if (isNetworkError(err)) {
+        setRecognitionStatus('offline');
+      } else {
+        Alert.alert(
+          "Couldn't save your changes",
+          err?.message || 'Something went wrong — please try again.',
+          [{ text: 'OK' }]
+        );
+      }
     } finally {
       setIsSaving(false);
     }
@@ -1329,6 +1384,8 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
       console.log('Recognition error:', recogErr);
       if (recogErr?.code === 'NO_KEY') {
         setRecognitionStatus('no-key');
+      } else if (isNetworkError(recogErr)) {
+        setRecognitionStatus('offline');
       } else {
         setRecognitionStatus('error');
       }
@@ -1773,6 +1830,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
               recognitionStatus === 'success' && wardrobeStyles.recognitionBarSuccess,
               recognitionStatus === 'no-key' && wardrobeStyles.recognitionBarNoKey,
               recognitionStatus === 'error' && wardrobeStyles.recognitionBarError,
+              recognitionStatus === 'offline' && wardrobeStyles.recognitionBarError,
             ]}>
               {recognitionStatus === 'success' && (
                 <Text style={wardrobeStyles.recognitionBarBadge}>CLOZIE RECOGNISED</Text>
@@ -1785,6 +1843,7 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
                 {recognitionStatus === 'success' && 'Clozie filled in your details — check and edit below!'}
                 {recognitionStatus === 'no-key' && 'No Clozie key — fill in details manually'}
                 {recognitionStatus === 'error' && "Couldn't read your item — fill in details manually"}
+                {recognitionStatus === 'offline' && "Your photo didn't go through. Check your connection and try again."}
               </Text>
             </View>
           )}
@@ -6794,16 +6853,20 @@ function MainAppScreen({ onSignOut }) {
       setGenerationRecoveryMode(response.recoveryMode === true); // 9F-B
       setGenerationStatus('success');
     } catch (err) {
-      const code = err?.code;
       let warm;
-      if (code === 'not_enough_items') {
-        warm = 'Add at least 5 items to your wardrobe for Clozie to style you.';
-      } else if (code === 'missing_essentials') {
-        warm = 'Add at least one top and one bottom (or a dress) so Clozie can style you.';
-      } else if (code === 'invalid_pin') {
-        warm = "That pinned item isn't available to style — pick another.";
+      if (isNetworkError(err)) {
+        warm = 'Clozie needs a connection to style you. Check your connection and try again.';
       } else {
-        warm = "Couldn't generate outfits — please try again";
+        const code = err?.code;
+        if (code === 'not_enough_items') {
+          warm = 'Add at least 5 items to your wardrobe for Clozie to style you.';
+        } else if (code === 'missing_essentials') {
+          warm = 'Add at least one top and one bottom (or a dress) so Clozie can style you.';
+        } else if (code === 'invalid_pin') {
+          warm = "That pinned item isn't available to style — pick another.";
+        } else {
+          warm = "Couldn't generate outfits — please try again";
+        }
       }
       setGenerationError(warm);
       setGenerationStatus('error');

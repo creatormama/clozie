@@ -51,8 +51,9 @@ export async function getSignedPhotoUrl(photoPath) {
 }
 
 export async function insertWardrobeItem(itemData) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not signed in');
+  const user = session.user;
   const row = {
     user_id: user.id,
     name: itemData.name,
