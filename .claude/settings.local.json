@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -E \"^d.*\\\\.git$|^-.*\\\\.git\")"
+      "Bash(grep -E \"^d.*\\\\.git$|^-.*\\\\.git\")",
+      "Bash(git -C \"/Users/grace/Desktop/Clozie Native\" branch --show-current)",
+      "Bash(pip3 install *)",
+      "Bash(python3 -c ' *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

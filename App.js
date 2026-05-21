@@ -34,6 +34,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import * as Haptics from 'expo-haptics';
+import * as WebBrowser from 'expo-web-browser';
 import { supabase } from './src/lib/supabase';
 import { fetchWardrobeItems, getSignedPhotoUrl, uploadWardrobePhoto, insertWardrobeItem, updateWardrobeItem, deleteWardrobePhoto, deleteWardrobeItem } from './src/lib/wardrobeItems';
 import { recognizeWardrobePhoto } from './src/lib/clozieRecognition';
@@ -52,6 +53,10 @@ const CREAM = '#EDE5D8';    // logo "Clo" color
 // ── Welcome Screen photo asset ───────────────────────────────────────────────
 const WELCOME_PHOTO = require('./assets/New-welcome-screen-photo.jpg');
 const POSTLOGIN_PHOTO = require('./assets/mirror-photo-post-login.jpg');
+
+// ── Legal document URLs (Termly-hosted) ──────────────────────────────────────
+const PRIVACY_POLICY_URL = 'https://app.termly.io/policy-viewer/policy.html?policyUUID=025e96b1-361b-48eb-bc7a-9e2d065b2834';
+const TERMS_OF_SERVICE_URL = 'https://app.termly.io/policy-viewer/policy.html?policyUUID=a55d3621-5c8f-46e6-b7a6-e819434b3acb';
 
 // Keep native splash visible while fonts load
 NativeSplash.preventAutoHideAsync();
@@ -5780,6 +5785,42 @@ function SettingsScreen({ onClose, onSignOut, onRevokeConsent }) {
           >
             <Text style={settingsStyles.deleteAccountButtonText}>Delete Account</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* LEGAL card */}
+        <View style={settingsStyles.card}>
+          {/* Privacy Policy */}
+          <View style={settingsStyles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={settingsStyles.cardRowLabel}>Privacy Policy</Text>
+              <Text style={settingsStyles.cardRowValue}>How we handle your data</Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL).catch(() => {})}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={settingsStyles.goldLink}>View</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Divider */}
+          <View style={settingsStyles.divider} />
+
+          {/* Terms of Service */}
+          <View style={settingsStyles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={settingsStyles.cardRowLabel}>Terms of Service</Text>
+              <Text style={settingsStyles.cardRowValue}>How Clozie works for you</Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => WebBrowser.openBrowserAsync(TERMS_OF_SERVICE_URL).catch(() => {})}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={settingsStyles.goldLink}>View</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Sign Out error — terracotta inline message */}
