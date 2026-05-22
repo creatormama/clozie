@@ -752,6 +752,26 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
                   </View>
                 )}
 
+                {/* Legal agreement — Sign Up only (Session 14C) */}
+                {!isLogin && !isForgot && (
+                  <Text style={authStyles.legalAgreement}>
+                    By creating an account, you agree to the{' '}
+                    <Text
+                      style={authStyles.legalAgreementLink}
+                      onPress={() => WebBrowser.openBrowserAsync(TERMS_OF_SERVICE_URL).catch(() => {})}
+                    >
+                      Terms of Service
+                    </Text>
+                    {' '}and{' '}
+                    <Text
+                      style={authStyles.legalAgreementLink}
+                      onPress={() => WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL).catch(() => {})}
+                    >
+                      Privacy Policy
+                    </Text>
+                  </Text>
+                )}
+
                 {/* Error message — warm terracotta */}
                 {error !== '' && (
                   <Text style={authStyles.errorText}>{error}</Text>
@@ -7942,6 +7962,21 @@ const authStyles = StyleSheet.create({
     color: 'rgba(164,74,52,0.88)',
     marginTop: 6,
     marginLeft: 34,
+  },
+
+  // Legal agreement text — Sign Up only (Session 14C)
+  legalAgreement: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#5C4A3A',
+    textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  legalAgreementLink: {
+    color: '#A44A34',
+    textDecorationLine: 'underline',
   },
 
   // Error message — terracotta at 88% opacity
