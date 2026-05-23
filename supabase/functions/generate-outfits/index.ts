@@ -126,6 +126,7 @@ COMPOSITION RULES:
 10. Never apologize for wardrobe size. Never suggest adding items. Frame every outfit as intentional.
 11. Only describe items from the pool. Never mention items she has not uploaded.
 12. Items marked * were added today — she likely chose them for this occasion.
+13. STRUCTURE: Every outfit MUST include at least one Top or one Dress. A Dress replaces both Top and Bottom. Never output two Bottoms in one outfit. Never output an outfit built from only Accessories, Bottoms, and Shoes — the core upper piece must always be present.
 
 VOICE: warm stylist friend, not a machine. Reference items by feel/color/fabric. Match tone to occasion.
 Forbidden: AI, algorithm, generated, automated, system, model, processed.
@@ -1408,7 +1409,76 @@ Deno.serve(async (req) => {
       if (aiResult) {
         const mapped = validateAndMapOutfits({ aiOutfits: aiResult.outfits, items, pinned })
         if (mapped) {
-          console.log('[generate-outfits] success — sonnet, 3 outfits returned')
+          // SESSION 17F STEP 4: Server-side structural validation (belt-and-suspenders
+          // even though SYSTEM_PROMPT Rule 13 instructs Sonnet to enforce structure).
+          // Check 1: every outfit must have at least one Top or Dress.
+          // Check 3: dedupe Bottoms — keep pinned Bottom if any, else first encountered.
+          // Check 2: trim Accessories if outfit has more than 6 items.
+          const itemById = new Map(items.map(i => [i.id, i]))
+
+          const malformedIndices: number[] = []
+          for (let i = 0; i < mapped.length; i++) {
+            const hasTopOrDress = mapped[i].items.some(id => {
+              const item = itemById.get(id)
+              return !!item && (item.category === 'Tops' || item.category === 'Dresses')
+            })
+            if (!hasTopOrDress) malformedIndices.push(i)
+          }
+
+          let allReplaced = false
+          if (malformedIndices.length > 0) {
+            try {
+              const fallbackPool = filteredItems.length >= 5 ? filteredItems : items
+              const replacements = buildSmartFallback(fallbackPool, pinned, occasion)
+              for (const idx of malformedIndices) {
+                mapped[idx] = replacements[idx]
+                console.log(`[generate-outfits] structural fix: replaced outfit ${idx} (missing Top/Dress)`)
+              }
+              allReplaced = malformedIndices.length === mapped.length
+            } catch (e) {
+              console.warn('[generate-outfits] structural fix: smart fallback threw, leaving outfits as-is:', (e as Error).message)
+            }
+          }
+
+          // Check 3: dedupe Bottoms — Sonnet has historically slipped in two Bottoms
+          // (e.g. jeans + skirt) despite Rule 13. Keep the pinned Bottom if it's among
+          // them (preserves pinned-item contract from validateAndMapOutfits line 714);
+          // otherwise keep the first encountered. Remove the rest.
+          for (let i = 0; i < mapped.length; i++) {
+            const bottomIds = mapped[i].items.filter(id => {
+              const item = itemById.get(id)
+              return !!item && item.category === 'Bottoms'
+            })
+            if (bottomIds.length > 1) {
+              const keepId = (pinned && bottomIds.includes(pinned.id)) ? pinned.id : bottomIds[0]
+              const toRemove = new Set(bottomIds.filter(id => id !== keepId))
+              mapped[i].items = mapped[i].items.filter(id => !toRemove.has(id))
+              console.log(`[generate-outfits] structural fix: removed duplicate Bottom from outfit ${i}`)
+            }
+          }
+
+          for (let i = 0; i < mapped.length; i++) {
+            if (mapped[i].items.length > 6) {
+              const beforeCount = mapped[i].items.length
+              const nonAcc = mapped[i].items.filter(id => {
+                const item = itemById.get(id)
+                return !item || item.category !== 'Accessories'
+              })
+              const acc = mapped[i].items.filter(id => {
+                const item = itemById.get(id)
+                return !!item && item.category === 'Accessories'
+              })
+              const accBudget = Math.max(0, 6 - nonAcc.length)
+              const trimmed = [...nonAcc, ...acc.slice(0, accBudget)]
+              if (trimmed.length >= 1) {
+                mapped[i].items = trimmed
+                console.log(`[generate-outfits] structural fix: trimmed outfit ${i} from ${beforeCount} to ${trimmed.length} items`)
+              }
+            }
+          }
+
+          const finalSource = allReplaced ? 'fallback' : 'sonnet'
+          console.log(`[generate-outfits] success — ${finalSource}, 3 outfits returned`)
           try {
             const { error: logErr } = await userClient.from('session_log').insert({ user_id: user.id })
             if (logErr) {
@@ -1417,7 +1487,7 @@ Deno.serve(async (req) => {
           } catch (e) {
             console.warn('[generate-outfits] session_log insert threw:', (e as Error).message)
           }
-          return jsonResponse({ outfits: mapped, source: 'sonnet', recoveryMode, sessionsUsedThisWeek: sessionsUsedThisWeek + 1, isVip }, 200)
+          return jsonResponse({ outfits: mapped, source: finalSource, recoveryMode, sessionsUsedThisWeek: sessionsUsedThisWeek + 1, isVip }, 200)
         }
       }
       console.log('[generate-outfits] AI path failed — falling back')
