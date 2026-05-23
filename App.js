@@ -1147,7 +1147,7 @@ function formatLastWorn(iso) {
 // Order locked by spec — "All" is the sentinel for "no category filter".
 const CATEGORY_CHIPS = ['All', 'Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories'];
 
-function WardrobeTab({ items, setItems, onGoToVibe }) {
+function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [newItemName, setNewItemName] = useState('');
   const [newItemCategory, setNewItemCategory] = useState('');
@@ -1164,8 +1164,20 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const itemCount = items.length;
-  const maxItems = 30;
+  const maxItems = 50;
   const progressWidth = (itemCount / maxItems) * 100;
+
+  // Session 16B: derived nudge for non-VIP wardrobe state.
+  // 48 → 2 spots left, 49 → 1 spot left, 50+ → full. VIP always null.
+  const wardrobeNudge = isVip
+    ? null
+    : itemCount === 48
+    ? '2 spots left in your wardrobe.'
+    : itemCount === 49
+    ? '1 spot left in your wardrobe.'
+    : itemCount >= 50
+    ? 'Your wardrobe is full.'
+    : null;
 
   // Session 10B Step 5: Derived filtered list. When search UI is hidden, filter is bypassed.
   // When visible, filterWardrobeItems applies name (case-insensitive contains) + category AND filters.
@@ -1183,6 +1195,9 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
 
   const handleAddItem = async () => {
     if (!newItemName.trim() || isSaving) return;
+    // Session 16B: cap guard — non-VIP can't add a 51st item. Floating + button
+    // is hidden at the cap so this should never fire, but belt-and-suspenders.
+    if (!isVip && items.length >= maxItems) return;
     setIsSaving(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -1526,7 +1541,9 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
 
       {/* Item count row */}
       <View style={wardrobeStyles.headerRow}>
-        <Text style={wardrobeStyles.itemCount}>{itemCount}/{maxItems} items</Text>
+        <Text style={wardrobeStyles.itemCount}>
+          {isVip ? `${itemCount} items` : `${itemCount}/${maxItems} items`}
+        </Text>
         {/* Session 10B Step 2: Search button (active state swaps colors) */}
         <TouchableOpacity
           style={[
@@ -1565,6 +1582,11 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Session 16B: wardrobe nudge — gentle terracotta line for non-VIP at 48/49/50. */}
+      {wardrobeNudge && (
+        <Text style={wardrobeStyles.wardrobeNudge}>{wardrobeNudge}</Text>
+      )}
 
       {/* Progress bar */}
       <View style={wardrobeStyles.progressBarBg}>
@@ -2040,7 +2062,8 @@ function WardrobeTab({ items, setItems, onGoToVibe }) {
     </ScrollView>
 
     {/* Session 10A Step 1: Floating + button — opens Add Item panel. Hidden when closet is empty (Step 4 owns empty state) or while Add Item panel is open. */}
-    {itemCount > 0 && !showAddPanel && (
+    {/* Session 16B: also hidden for non-VIP at cap so they can't open the panel to try to exceed 50. */}
+    {itemCount > 0 && !showAddPanel && (isVip || itemCount < maxItems) && (
       <TouchableOpacity
         style={wardrobeStyles.floatingAddButton}
         activeOpacity={0.85}
@@ -2945,7 +2968,7 @@ const LOADING_MESSAGES = [
 const OCCASION_CHIPS = ['All', 'Casual Day', 'Work · Office', 'Going Out', 'Formal Event', 'Outdoor · Sport', 'Weekend Errands', 'Travel'];
 
 // ── Your Looks Tab ──────────────────────────────────────────────────────────
-function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, recoveryMode, wardrobeItems, onRegenerate, onPersistInteraction, onMarkItemsWorn, savedOutfits, setSavedOutfits, generationContext }) {
+function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, recoveryMode, wardrobeItems, onRegenerate, onPersistInteraction, onMarkItemsWorn, savedOutfits, setSavedOutfits, generationContext, sessionsUsedThisWeek, isVip }) {
   // ── DEMO_MODE: flip to `true` for visual testing (HIG audit, Mood Board / Hanger View / Saved Outfits review). Production: always `false`. ──
   const DEMO_MODE = false;
 
@@ -3319,6 +3342,18 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
     );
   }
 
+  // Session 16B: session nudge text. Shown alongside outfit cards on Your Looks.
+  // VIP always null. Otherwise: 9 → "3 left", 11 → "1 left", else null.
+  // sessionsUsedThisWeek is post-insert count from Edge Function (so 9 = "9 used, 3 left").
+  const sessionNudge =
+    isVip || typeof sessionsUsedThisWeek !== 'number'
+      ? null
+      : sessionsUsedThisWeek === 9
+      ? '3 styling sessions left this week.'
+      : sessionsUsedThisWeek === 11
+      ? '1 styling session left this week.'
+      : null;
+
   return (
     <>
     <ScrollView
@@ -3409,6 +3444,11 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
             I noticed my last few suggestions didn't land. I'm trying something different today — let me know if I'm getting warmer.
           </Text>
         </View>
+      )}
+
+      {/* Session 16B: session nudge — gentle terracotta line for non-VIP at 9 or 11 of 12. */}
+      {sessionNudge && hasGenerated && outfits.length > 0 && (
+        <Text style={looksStyles.sessionNudge}>{sessionNudge}</Text>
       )}
 
       {/* Outfit cards */}
@@ -4999,7 +5039,7 @@ function SubscriptionScreen({ onClose }) {
   //   // 'Seasonal Wardrobe Report', // Hidden May 2026 — moved to Phase 4+ Pro feature
   // ];
   const freeFeatures = [
-    'Up to 30 items in your closet',
+    'Up to 50 items in your closet',
     '12 styling sessions every week',
     'Add your clothes — Clozie fills in the details',
     'Pin one item — Clozie builds around it',
@@ -6689,6 +6729,10 @@ function MainAppScreen({ onSignOut }) {
   // 9F-B: Circuit-breaker — set true when Edge Function returns recoveryMode=true.
   // Drives the recovery banner in YourLooksTab (wired in 9F-E).
   const [generationRecoveryMode, setGenerationRecoveryMode] = useState(false);
+  // Session 16B: count of styling sessions used in the rolling 7-day window.
+  // Set from generate-outfits response on success. Drives the 9-of-12 / 11-of-12
+  // nudges on Your Looks (Step 5). null = unknown (no generation yet this app open).
+  const [sessionsUsedThisWeek, setSessionsUsedThisWeek] = useState(null);
   // Last payload sent to handleGenerate — enables Regenerate button to re-fire same vibe.
   const [lastPayload, setLastPayload] = useState(null);
   // Session 12: lifted from YourLooksTab to survive tab switches + reload (S1b loads from DB).
@@ -6700,6 +6744,9 @@ function MainAppScreen({ onSignOut }) {
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [pendingPayload, setPendingPayload] = useState(null);
   const [showSettingsScreen, setShowSettingsScreen] = useState(false);
+  // Session 16B: VIP status — fresh check on every login, no caching across sessions.
+  // Drives bypass of all wardrobe + session limits and nudges. Defaults false (fail-safe).
+  const [isVip, setIsVip] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   // Session 12 S1b: ref-tracked wardrobeItems so the savedOutfits load useEffect
   // can read the current value without including wardrobeItems in its deps.
@@ -6748,6 +6795,59 @@ function MainAppScreen({ onSignOut }) {
       if (event === 'SIGNED_OUT' && !cancelled) {
         setWardrobeItems([]);
         setSavedOutfits([]); // Session 12 S1b: also reset saved outfits on sign-out
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Session 16B: VIP status check. Reads vip_emails table on mount + auth changes.
+  // RLS scopes the SELECT to the user's own email (auth.jwt() ->> 'email') so a row
+  // returned = VIP; null = non-VIP. Fail-safe to false on any error or missing email.
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkVipStatus = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const email = session?.user?.email;
+        if (!email) {
+          if (!cancelled) setIsVip(false);
+          return;
+        }
+        const { data, error } = await supabase
+          .from('vip_emails')
+          .select('email')
+          .eq('email', email)
+          .maybeSingle();
+        if (cancelled) return;
+        if (error) {
+          console.warn('[VIP check] query error:', error.message);
+          setIsVip(false);
+          return;
+        }
+        const vip = data !== null;
+        setIsVip(vip);
+        console.log('[VIP check]', { email, isVip: vip });
+      } catch (err) {
+        if (!cancelled) {
+          console.warn('[VIP check] failed:', err?.message);
+          setIsVip(false);
+        }
+      }
+    };
+
+    checkVipStatus();
+
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (cancelled) return;
+      if (event === 'SIGNED_OUT') {
+        setIsVip(false);
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        checkVipStatus();
       }
     });
 
@@ -6844,6 +6944,7 @@ function MainAppScreen({ onSignOut }) {
     setGenerationError('');
     setGeneratedOutfits([]);
     setGenerationRecoveryMode(false); // 9F-B: clear stale value before new generation
+    setSessionsUsedThisWeek(null); // Session 16B: clear stale value before new generation
     setActiveTab(3);
 
     // Read style profile from auth.user_metadata (same shape as StyleDNATab saves it)
@@ -6871,6 +6972,17 @@ function MainAppScreen({ onSignOut }) {
       }));
       setGeneratedOutfits(resolved);
       setGenerationRecoveryMode(response.recoveryMode === true); // 9F-B
+      // Session 16B: capture session counter. Edge Function returns post-insert count
+      // (so 12 = "12 used this week, including this one"). null-safe — if Edge Function
+      // is on an old deploy that doesn't return this field, we skip the nudge.
+      setSessionsUsedThisWeek(
+        typeof response.sessionsUsedThisWeek === 'number' ? response.sessionsUsedThisWeek : null
+      );
+      // Session 16B: sanity-check server VIP status against client check. Log only —
+      // client-side isVip remains the source of truth for UI bypass.
+      if (typeof response.isVip === 'boolean' && response.isVip !== isVip) {
+        console.warn('[VIP mismatch] client isVip:', isVip, 'server isVip:', response.isVip);
+      }
       setGenerationStatus('success');
     } catch (err) {
       let warm;
@@ -6884,6 +6996,9 @@ function MainAppScreen({ onSignOut }) {
           warm = 'Add at least one top and one bottom (or a dress) so Clozie can style you.';
         } else if (code === 'invalid_pin') {
           warm = "That pinned item isn't available to style — pick another.";
+        } else if (code === 'session_limit_reached') {
+          // Session 16B: server-side gate fired (non-VIP at 12 sessions in 7-day window).
+          warm = "You've used all 12 styling sessions this week. Your earliest session refreshes soon.";
         } else {
           warm = "Couldn't generate outfits — please try again";
         }
@@ -6977,9 +7092,9 @@ function MainAppScreen({ onSignOut }) {
 
       {/* Tab content area */}
       {activeTab === 0 && <StyleDNATab onBuildCloset={() => setActiveTab(1)} />}
-      {activeTab === 1 && <WardrobeTab items={wardrobeItems} setItems={setWardrobeItems} onGoToVibe={() => setActiveTab(2)} />}
+      {activeTab === 1 && <WardrobeTab items={wardrobeItems} setItems={setWardrobeItems} onGoToVibe={() => setActiveTab(2)} isVip={isVip} />}
       {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} onGenerate={handleGenerate} onGoToCloset={() => setActiveTab(1)} />}
-      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} recoveryMode={generationRecoveryMode} wardrobeItems={wardrobeItems} onRegenerate={handleRegenerate} onPersistInteraction={handlePersistInteraction} onMarkItemsWorn={handleMarkItemsWorn} savedOutfits={savedOutfits} setSavedOutfits={setSavedOutfits} generationContext={lastPayload} />}
+      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} recoveryMode={generationRecoveryMode} wardrobeItems={wardrobeItems} onRegenerate={handleRegenerate} onPersistInteraction={handlePersistInteraction} onMarkItemsWorn={handleMarkItemsWorn} savedOutfits={savedOutfits} setSavedOutfits={setSavedOutfits} generationContext={lastPayload} sessionsUsedThisWeek={sessionsUsedThisWeek} isVip={isVip} />}
 
       {/* Bottom tab bar */}
       <View style={mainStyles.tabBar}>
@@ -8292,6 +8407,15 @@ const wardrobeStyles = StyleSheet.create({
     fontSize: 12,
     color: '#2C1A0E',
   },
+  // Session 16B: nudge text shown to non-VIP at 48/49/50 items.
+  // Terracotta inline-message colour (locked UI States, April 19 2026).
+  wardrobeNudge: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: 'rgba(164,74,52,0.88)',
+    marginTop: 4,
+    marginBottom: 8,
+  },
   progressBarBg: {
     width: '100%',
     height: 4,
@@ -9526,6 +9650,14 @@ const looksStyles = StyleSheet.create({
     fontSize: 14,
     color: '#2C1A0E',
     lineHeight: 21,
+  },
+  // Session 16B: session nudge text. Sits between recovery banner and outfit cards.
+  sessionNudge: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: 'rgba(164,74,52,0.88)',
+    marginBottom: 14,
+    textAlign: 'center',
   },
   spinStar: {
     fontSize: 36,
