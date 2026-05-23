@@ -2767,7 +2767,11 @@ function MoodPolaroid({ kind, item, items, w, h, top, bottom, left, right, cente
         {kind === 'acc' ? (
           <MoodAccessoryGrid items={items} />
         ) : item?.photoUri ? (
-          <Image source={{ uri: item.photoUri }} style={{ width: '92%', height: '92%' }} />
+          <Image
+            source={{ uri: item.photoUri }}
+            style={{ width: '92%', height: '92%' }}
+            resizeMode={item?.category === 'Shoes' ? 'contain' : 'cover'}
+          />
         ) : (
           <View style={{
             width: '92%',
