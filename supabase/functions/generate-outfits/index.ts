@@ -1352,6 +1352,42 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Session 16A — VIP check + 7-day session count.
+    // Two parallel queries via Promise.all. Both queries scoped by RLS to the user's own data.
+    // sessionsUsedThisWeek is the count BEFORE today's pending generation — Substep 2 adds +1
+    // after the successful INSERT lands in session_log.
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+    const userEmail = user.email || ''
+    const [vipResult, countResult] = await Promise.all([
+      userEmail
+        ? userClient.from('vip_emails').select('email').eq('email', userEmail).maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+      userClient
+        .from('session_log')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', sevenDaysAgo),
+    ])
+    if (vipResult.error) {
+      console.warn('[generate-outfits] VIP check failed:', vipResult.error.message)
+    }
+    if (countResult.error) {
+      console.warn('[generate-outfits] session count failed:', countResult.error.message)
+    }
+    const isVip = !!vipResult.data
+    const sessionsUsedThisWeek = countResult.count ?? 0
+    console.log('[generate-outfits] session check:', { isVip, sessionsUsedThisWeek })
+
+    // Gate 7 (Session 16A) — weekly session limit. VIPs bypass entirely.
+    // 400 with session_limit_reached code. App.js Session 16B will map this to a warm
+    // Clozie message in Your Looks tab. Until 16B lands, client falls back to generic copy.
+    if (!isVip && sessionsUsedThisWeek >= 12) {
+      console.log('[generate-outfits] session_limit_reached — blocked', { sessionsUsedThisWeek })
+      return jsonResponse({
+        error: 'session_limit_reached',
+        message: "You've used all 12 styling sessions this week. Your earliest session refreshes soon.",
+      }, 400)
+    }
+
     // 6.5. Apply weather/indoor safety filters before Sonnet sees the pool.
     // Pinned item is exempt. Soft-fail reverts to unfiltered if filters break essentials.
     const filteredItems = applySafetyFilters({ items, temperature, condition, occasion, indoors, pinnedItemId, neverWear: styleProfile?.neverWear ?? null })
@@ -1373,7 +1409,15 @@ Deno.serve(async (req) => {
         const mapped = validateAndMapOutfits({ aiOutfits: aiResult.outfits, items, pinned })
         if (mapped) {
           console.log('[generate-outfits] success — sonnet, 3 outfits returned')
-          return jsonResponse({ outfits: mapped, source: 'sonnet', recoveryMode }, 200)
+          try {
+            const { error: logErr } = await userClient.from('session_log').insert({ user_id: user.id })
+            if (logErr) {
+              console.warn('[generate-outfits] session_log insert failed:', logErr.message)
+            }
+          } catch (e) {
+            console.warn('[generate-outfits] session_log insert threw:', (e as Error).message)
+          }
+          return jsonResponse({ outfits: mapped, source: 'sonnet', recoveryMode, sessionsUsedThisWeek: sessionsUsedThisWeek + 1, isVip }, 200)
         }
       }
       console.log('[generate-outfits] AI path failed — falling back')
@@ -1388,12 +1432,28 @@ Deno.serve(async (req) => {
       const fallbackPool = filteredItems.length >= 5 ? filteredItems : items
       const outfits = buildSmartFallback(fallbackPool, pinned, occasion)
       console.log('[generate-outfits] success — fallback, 3 outfits returned')
-      return jsonResponse({ outfits, source: 'fallback', recoveryMode }, 200)
+      try {
+        const { error: logErr } = await userClient.from('session_log').insert({ user_id: user.id })
+        if (logErr) {
+          console.warn('[generate-outfits] session_log insert failed:', logErr.message)
+        }
+      } catch (e) {
+        console.warn('[generate-outfits] session_log insert threw:', (e as Error).message)
+      }
+      return jsonResponse({ outfits, source: 'fallback', recoveryMode, sessionsUsedThisWeek: sessionsUsedThisWeek + 1, isVip }, 200)
     } catch (e) {
       console.log('[generate-outfits] smart fallback threw — last-resort stub:', (e as Error).message)
       const outfits = buildStubOutfits(items, pinned)
       console.log('[generate-outfits] success — stub, 3 outfits returned')
-      return jsonResponse({ outfits, source: 'stub', recoveryMode }, 200)
+      try {
+        const { error: logErr } = await userClient.from('session_log').insert({ user_id: user.id })
+        if (logErr) {
+          console.warn('[generate-outfits] session_log insert failed:', logErr.message)
+        }
+      } catch (innerErr) {
+        console.warn('[generate-outfits] session_log insert threw:', (innerErr as Error).message)
+      }
+      return jsonResponse({ outfits, source: 'stub', recoveryMode, sessionsUsedThisWeek: sessionsUsedThisWeek + 1, isVip }, 200)
     }
   } catch (e) {
     console.error('[generate-outfits] unexpected error:', (e as Error).message)
