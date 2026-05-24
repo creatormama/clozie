@@ -7069,12 +7069,21 @@ function MainAppScreen({ onSignOut }) {
   };
 
   // Fire-and-forget wardrobe wear counter bumps. Updates last_worn + times_worn
-  // for each item id. Local wardrobeItems state stays stale until next reload —
-  // "Last worn: today" surfacing on My Closet cards is a follow-up polish item.
+  // in Supabase, then optimistically refreshes local wardrobeItems.lastWorn so
+  // My Closet cards surface "Last worn: today" without needing an app reload.
   const handleMarkItemsWorn = (itemIds) => {
-    markItemsWorn(itemIds).catch((err) => {
-      console.warn('[outfit_history] mark items worn failed:', err?.message);
-    });
+    markItemsWorn(itemIds)
+      .then(() => {
+        const now = new Date().toISOString();
+        setWardrobeItems((prev) =>
+          prev.map((item) =>
+            itemIds.includes(item.id) ? { ...item, lastWorn: now } : item
+          )
+        );
+      })
+      .catch((err) => {
+        console.warn('[outfit_history] mark items worn failed:', err?.message);
+      });
   };
 
   // Accept handler — saves consent to user_metadata, flips local state, resumes generation.
@@ -7119,6 +7128,7 @@ function MainAppScreen({ onSignOut }) {
   // local state stays consistent with DB and the user can retry.
   const handleClearMemory = async () => {
     await clearClozieMemory();
+    setWardrobeItems((prev) => prev.map((item) => ({ ...item, lastWorn: null })));
     setSavedOutfits([]);
     setGeneratedOutfits([]);
     setGenerationStatus('idle');
