@@ -2624,7 +2624,7 @@ const buildMoodPolaroids = (layout, items) => {
       specs = [
         { kind: 'item', item: top,    w: 130, h: 168, top: 70,    left: 22,     rot: -5 },
         { kind: 'acc',  items: accs,  w: 130, h: 130, top: 90,    right: 22,    rot:  4 },
-        { kind: 'item', item: bottom, w: 130, h: 110, bottom: 95, left: 22,     rot: -2 },
+        { kind: 'item', item: bottom, w: 130, h: 140, bottom: 95, left: 22,     rot: -2 },
         { kind: 'item', item: shoes,  w: 130, h: 110, bottom: 70, right: 22,    rot:  2 },
       ];
       break;
@@ -2641,7 +2641,7 @@ const buildMoodPolaroids = (layout, items) => {
       specs = [
         { kind: 'item', item: top,    w: 130, h: 168, top: 70,    left: 22,  rot: -5 },
         { kind: 'item', item: outer,  w: 130, h: 168, top: 90,    right: 22, rot:  4 },
-        { kind: 'item', item: bottom, w: 130, h: 110, bottom: 95, left: 22,  rot: -2 },
+        { kind: 'item', item: bottom, w: 130, h: 140, bottom: 95, left: 22,  rot: -2 },
         { kind: 'item', item: shoes,  w: 130, h: 110, bottom: 70, right: 22, rot:  2 },
       ];
       break;
@@ -2774,7 +2774,11 @@ function MoodPolaroid({ kind, item, items, w, h, top, bottom, left, right, cente
         ) : item?.photoUri ? (
           <Image
             source={{ uri: item.photoUri }}
-            style={{ width: '92%', height: '92%' }}
+            style={
+              item?.category === 'Bottoms'
+                ? { position: 'absolute', top: '4%', left: '4%', width: '92%', aspectRatio: 1 }
+                : { width: '92%', height: '92%' }
+            }
             resizeMode={item?.category === 'Shoes' ? 'contain' : 'cover'}
           />
         ) : (
