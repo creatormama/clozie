@@ -39,7 +39,7 @@ import { supabase } from './src/lib/supabase';
 import { fetchWardrobeItems, getSignedPhotoUrl, uploadWardrobePhoto, insertWardrobeItem, updateWardrobeItem, deleteWardrobePhoto, deleteWardrobeItem } from './src/lib/wardrobeItems';
 import { recognizeWardrobePhoto } from './src/lib/clozieRecognition';
 import { generateOutfits } from './src/lib/outfitGeneration';
-import { upsertOutfitInteraction, markItemsWorn, fetchSavedOutfits } from './src/lib/outfitHistory';
+import { upsertOutfitInteraction, markItemsWorn, fetchSavedOutfits, clearClozieMemory } from './src/lib/outfitHistory';
 import { filterWardrobeItems } from './src/lib/filterWardrobeItems';
 import { filterSavedOutfits } from './src/lib/filterSavedOutfits';
 
@@ -5359,7 +5359,7 @@ const subStyles = StyleSheet.create({
 });
 
 // ── Settings Screen ─────────────────────────────────────────────────────────
-function SettingsScreen({ onClose, onSignOut, onRevokeConsent }) {
+function SettingsScreen({ onClose, onSignOut, onRevokeConsent, onClearMemory }) {
   // Real user data — pulled from Supabase auth session on mount
   const [displayName, setDisplayName] = useState('');
   const [userEmail, setUserEmail] = useState('');
@@ -5502,6 +5502,8 @@ function SettingsScreen({ onClose, onSignOut, onRevokeConsent }) {
   };
 
   const [showClearMemoryModal, setShowClearMemoryModal] = useState(false);
+  const [clearFlash, setClearFlash] = useState(false);
+  const [clearError, setClearError] = useState('');
   const [showRevokeConsentModal, setShowRevokeConsentModal] = useState(false);
   const [revokeFlash, setRevokeFlash] = useState(false);
 
@@ -5513,18 +5515,39 @@ function SettingsScreen({ onClose, onSignOut, onRevokeConsent }) {
     return () => clearTimeout(t);
   }, [revokeFlash]);
 
+  // 1.5s inline "Memory cleared" flash after Yes-reset success. Cleanup pattern
+  // mirrors revokeFlash above — unmount during the timer cancels safely.
+  useEffect(() => {
+    if (!clearFlash) return;
+    const t = setTimeout(() => setClearFlash(false), 1500);
+    return () => clearTimeout(t);
+  }, [clearFlash]);
+
+  // 4s inline error auto-dismiss after a failed Clear Memory. Slightly longer
+  // than the success flash because a failure message takes longer to read.
+  useEffect(() => {
+    if (!clearError) return;
+    const t = setTimeout(() => setClearError(''), 4000);
+    return () => clearTimeout(t);
+  }, [clearError]);
+
   const handleClearMemory = () => {
     setShowClearMemoryModal(true);
   };
 
-  const confirmClearMemory = () => {
-    // Phase 2 — wire when ratings + learning notes tables exist in Supabase.
-    // Today: no real ratings/learning data is saved yet, so there is nothing to clear.
-    // When Clozie Learning is built, this function should:
-    //   1. Delete user's rows from the ratings table
-    //   2. Delete user's rows from the learning_notes table
-    //   3. Clear any pattern-detected style fields from user_metadata
+  // Session 19A — Phase 2 stub replaced with real wiring. Closes modal first
+  // for snappy feel, then awaits the parent-supplied helper. On success: 1.5s
+  // inline flash. On failure: terracotta inline error (4s auto-dismiss),
+  // "Clear" link stays visible for retry.
+  const confirmClearMemory = async () => {
     setShowClearMemoryModal(false);
+    setClearError(''); // clear any stale error before retry
+    try {
+      await onClearMemory();
+      setClearFlash(true);
+    } catch {
+      setClearError('Something went wrong — please try again.');
+    }
   };
 
   // Delete Account state
@@ -5710,14 +5733,31 @@ function SettingsScreen({ onClose, onSignOut, onRevokeConsent }) {
               <Text style={settingsStyles.cardRowLabel}>Clear Clozie's Memory</Text>
               <Text style={settingsStyles.cardRowValue}>Reset learned preferences</Text>
             </View>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={handleClearMemory}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Text style={settingsStyles.goldLink}>Clear</Text>
-            </TouchableOpacity>
+            {clearFlash ? (
+              <Text style={{ color: '#5C4A3A', fontFamily: 'Outfit_500Medium', fontSize: 14 }}>
+                Memory cleared
+              </Text>
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleClearMemory}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={settingsStyles.goldLink}>Clear</Text>
+              </TouchableOpacity>
+            )}
           </View>
+          {clearError ? (
+            <Text style={{
+              color: 'rgba(164,74,52,0.88)',
+              fontFamily: 'Outfit_400Regular',
+              fontSize: 13,
+              marginTop: 4,
+              paddingHorizontal: 4,
+            }}>
+              {clearError}
+            </Text>
+          ) : null}
 
           {/* Divider */}
           <View style={settingsStyles.divider} />
@@ -5993,7 +6033,7 @@ function SettingsScreen({ onClose, onSignOut, onRevokeConsent }) {
           <View style={savedStyles.confirmModal}>
             <Text style={savedStyles.confirmHeading}>Clear Clozie's Memory?</Text>
             <Text style={savedStyles.confirmBody}>
-              This will reset everything Clozie has learned about your taste. Your saved outfits and wardrobe stay safe.
+              This will reset everything Clozie has learned about your taste — including saved outfits and ratings. Your wardrobe items stay safe.
             </Text>
             <View style={savedStyles.confirmPrimaryRing}>
               <TouchableOpacity
@@ -7071,6 +7111,22 @@ function MainAppScreen({ onSignOut }) {
     }
   };
 
+  // Session 19A — wipes outfit_history (ratings + saved + worn dates),
+  // resets wardrobe_items wear counters, deletes session_log rows. Wardrobe
+  // items, style profile, and ai_consent_given are NOT touched. Throws on any
+  // Supabase failure so SettingsScreen can show a warm terracotta error.
+  // Local state reset is intentionally only on success — if the DB writes fail,
+  // local state stays consistent with DB and the user can retry.
+  const handleClearMemory = async () => {
+    await clearClozieMemory();
+    setSavedOutfits([]);
+    setGeneratedOutfits([]);
+    setGenerationStatus('idle');
+    setGenerationError('');
+    setSessionsUsedThisWeek(0);
+    setLastPayload(null);
+  };
+
   const tabs = [
     { label: 'My Style', icon: '✦', IconComponent: TabStarIcon },
     { label: `My Closet (${wardrobeItems.length})`, icon: '👗', IconComponent: TabHangerIcon },
@@ -7142,6 +7198,7 @@ function MainAppScreen({ onSignOut }) {
           onClose={() => setShowSettingsScreen(false)}
           onSignOut={onSignOut}
           onRevokeConsent={handleRevokeConsent}
+          onClearMemory={handleClearMemory}
         />
       </Modal>
 

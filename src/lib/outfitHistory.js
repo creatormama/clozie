@@ -170,3 +170,36 @@ export async function markItemsWorn(itemIds) {
     })
   );
 }
+
+// Clear all Clozie-learned data for the current user.
+// Three parallel writes:
+//   1. Delete every outfit_history row (ratings + saved + worn_dates all live here)
+//   2. Reset times_worn=0 + last_worn=null on every wardrobe_item (item-level wear history)
+//   3. Delete every session_log row (resets the rolling 7-day session counter — clean slate)
+// Wardrobe items themselves (photos/names/categories/colours), style profile,
+// and ai_consent_given are deliberately NOT touched.
+// Throws on any failure so the caller can show a warm Clozie error.
+export async function clearClozieMemory() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Not signed in');
+  const user = session.user;
+
+  const [historyResult, wardrobeResult, sessionResult] = await Promise.all([
+    supabase
+      .from('outfit_history')
+      .delete()
+      .eq('user_id', user.id),
+    supabase
+      .from('wardrobe_items')
+      .update({ times_worn: 0, last_worn: null })
+      .eq('user_id', user.id),
+    supabase
+      .from('session_log')
+      .delete()
+      .eq('user_id', user.id),
+  ]);
+
+  if (historyResult.error) throw historyResult.error;
+  if (wardrobeResult.error) throw wardrobeResult.error;
+  if (sessionResult.error) throw sessionResult.error;
+}
