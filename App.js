@@ -1656,6 +1656,7 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
               ]}
               activeOpacity={0.7}
               onPress={() => setSelectedCategory(label)}
+              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
             >
               <Text
                 style={[
@@ -2071,8 +2072,8 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
         <Svg width={26} height={26} viewBox="0 0 26 26">
-          <Line x1="13" y1="4" x2="13" y2="22" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
-          <Line x1="4" y1="13" x2="22" y2="13" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" />
+          <Line x1="13" y1="4" x2="13" y2="22" stroke="#2C1A0E" strokeWidth="2.5" strokeLinecap="round" />
+          <Line x1="4" y1="13" x2="22" y2="13" stroke="#2C1A0E" strokeWidth="2.5" strokeLinecap="round" />
         </Svg>
       </TouchableOpacity>
     )}
@@ -2196,6 +2197,7 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate, onGoToClo
                 <TouchableOpacity
                   activeOpacity={0.7}
                   onPress={() => toggleTemperature(temperature, i)}
+                  hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
                   style={[
                     vibeStyles.chip,
                     isSelected ? vibeStyles.chipSelected : vibeStyles.chipDefault,
@@ -2217,6 +2219,7 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate, onGoToClo
                 <TouchableOpacity
                   activeOpacity={0.7}
                   onPress={() => toggleCondition(condition, i)}
+                  hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
                   style={[
                     vibeStyles.chip,
                     isSelected ? vibeStyles.chipSelected : vibeStyles.chipDefault,
@@ -2241,6 +2244,7 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate, onGoToClo
                 <TouchableOpacity
                   activeOpacity={0.7}
                   onPress={() => toggleOccasion(occasion, i)}
+                  hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
                   style={[
                     vibeStyles.chip,
                     isSelected ? vibeStyles.chipSelected : vibeStyles.chipDefault,
@@ -2463,6 +2467,7 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate, onGoToClo
                   ]}
                   activeOpacity={0.7}
                   onPress={() => setSheetSelectedCategory(label)}
+                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
                 >
                   <Text
                     style={[
@@ -4137,6 +4142,7 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                     ]}
                     activeOpacity={0.7}
                     onPress={() => setSelectedOccasion(label)}
+                    hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
                   >
                     <Text
                       style={[
@@ -6875,7 +6881,7 @@ function MainAppScreen({ onSignOut }) {
         }
         const vip = data !== null;
         setIsVip(vip);
-        console.log('[VIP check]', { email, isVip: vip });
+        console.log('[VIP check]', { isVip: vip });
       } catch (err) {
         if (!cancelled) {
           console.warn('[VIP check] failed:', err?.message);
@@ -7811,7 +7817,7 @@ const peekStyles = StyleSheet.create({
   bodyTabText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 11,
-    color: '#FFFFFF',
+    color: '#2C1A0E',
   },
   outfitChip: {
     paddingVertical: 5,
@@ -8438,7 +8444,7 @@ const wardrobeStyles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   categoryChipTextActive: {
-    color: '#FFFFFF',
+    color: '#2C1A0E',
   },
   // Session 10B Step 5: Result count line (12px muted, only when search text non-empty)
   searchResultsCount: {
@@ -8559,7 +8565,7 @@ const wardrobeStyles = StyleSheet.create({
   emptyStateButtonText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 15,
-    color: '#FFFFFF',
+    color: '#2C1A0E',
   },
   addButton: {
     backgroundColor: '#BCC7B7',
@@ -8633,7 +8639,7 @@ const wardrobeStyles = StyleSheet.create({
   stickyVibeBarText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 15,
-    color: '#FFFFFF',
+    color: '#2C1A0E',
   },
   addPanel: {
     backgroundColor: '#FFFFFF',
@@ -8750,7 +8756,7 @@ const wardrobeStyles = StyleSheet.create({
     color: '#5C4A3A',
   },
   recognitionBarTextScanning: {
-    color: '#C87A52',
+    color: '#A44A34',
   },
   recognitionBarBadge: {
     fontFamily: 'Outfit_700Bold',
@@ -8879,7 +8885,7 @@ const wardrobeStyles = StyleSheet.create({
   },
   gridCardPlaceholderText: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 10,
+    fontSize: 11,
     color: '#A09888',
     marginTop: 6,
     letterSpacing: 0.2,
@@ -9385,14 +9391,14 @@ const vibeStyles = StyleSheet.create({
     maxWidth: '100%',
   },
   pinnedPillSparkle: {
-    color: '#C87A52',
+    color: '#A44A34',
     fontSize: 14,
     marginRight: 6,
   },
   pinnedPillText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 13,
-    color: '#C87A52',
+    color: '#A44A34',
     flexShrink: 1,
     marginRight: 8,
   },
@@ -9405,7 +9411,7 @@ const vibeStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   pinnedPillXText: {
-    color: '#C87A52',
+    color: '#A44A34',
     fontSize: 13,
     lineHeight: 13,
     fontWeight: '500',
@@ -9568,7 +9574,7 @@ const pinSheetStyles = StyleSheet.create({
   },
   gridCardPlaceholderText: {
     fontFamily: 'Outfit_400Regular',
-    fontSize: 10,
+    fontSize: 11,
     color: '#A09888',
     letterSpacing: 0.2,
     marginTop: 6,
@@ -10077,7 +10083,7 @@ const mainStyles = StyleSheet.create({
   },
   tabLabel: {
     fontFamily: 'Outfit_500Medium',
-    fontSize: 10,
+    fontSize: 11,
     letterSpacing: 0.5,
   },
   tabActiveDot: {
@@ -10135,7 +10141,7 @@ const consentStyles = StyleSheet.create({
   acceptButtonText: {
     fontFamily: 'Outfit_500Medium',
     fontSize: 15,
-    color: '#FFFFFF',
+    color: '#2C1A0E',
   },
   declineButton: {
     marginTop: 16,
