@@ -6995,6 +6995,16 @@ function MainAppScreen({ onSignOut }) {
       return;
     }
     if (generationStatus === 'loading') return; // spam-tap guard
+
+    // Capture currently-shown outfits BEFORE state resets so Sonnet can vary from them
+    // on regenerate. Empty on first Generate of a session. Edge Function omits the
+    // JUST SHOWN block when this array is empty (Session 18).
+    const currentOutfits = (generatedOutfits || []).map((o) => ({
+      name: o.name || '',
+      vibe: o.vibe || '',
+      itemIds: (o.items || []).map((i) => i?.id).filter(Boolean),
+    }));
+
     setLastPayload(payload);
     setGenerationStatus('loading');
     setGenerationError('');
@@ -7018,7 +7028,7 @@ function MainAppScreen({ onSignOut }) {
     }
 
     try {
-      const response = await generateOutfits({ ...payload, styleProfile });
+      const response = await generateOutfits({ ...payload, styleProfile, currentOutfits });
       const itemsById = new Map(wardrobeItems.map((i) => [i.id, i]));
       const resolved = (response.outfits || []).map((o) => ({
         ...o,

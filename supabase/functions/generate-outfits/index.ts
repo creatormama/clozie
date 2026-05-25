@@ -449,8 +449,9 @@ function buildFreshContent(args: {
   items: Item[]
   recoveryMode: boolean
   recentOutfits: { name: string; vibe: string; itemNames: string[] }[]
+  currentOutfits: { name: string; vibe: string; itemNames: string[] }[]
 }): string {
-  const { styleProfile, temperature, condition, occasion, indoors, brief, pinned, items, recoveryMode, recentOutfits } = args
+  const { styleProfile, temperature, condition, occasion, indoors, brief, pinned, items, recoveryMode, recentOutfits, currentOutfits } = args
 
   const styles = styleProfile?.styles?.length ? styleProfile.styles.join(', ') : 'Not specified'
   const colours = styleProfile?.colours?.length ? styleProfile.colours.join(', ') : 'Not specified'
@@ -503,9 +504,28 @@ function buildFreshContent(args: {
     ...(small ? [`* ${small}`] : []),
   ].join('\n')
 
+  // Just-shown outfits (this session) — stronger "vary from these" signal than recent history.
+  // Block omitted entirely when empty (same pattern as recentBlock).
+  const currentLines = currentOutfits
+    .map(o => {
+      if (!o.name && o.itemNames.length === 0) return null
+      const vibePart = o.vibe ? ` (${o.vibe})` : ''
+      const itemsPart = o.itemNames.length > 0 ? ` — ${o.itemNames.join(', ')}` : ''
+      return `- "${o.name || 'Untitled'}"${vibePart}${itemsPart}`
+    })
+    .filter((line): line is string => line !== null)
+  const currentBlock = currentLines.length > 0
+    ? ['JUST SHOWN this session — vary the silhouette, mood, or anchor piece:', ...currentLines].join('\n')
+    : null
+
+  // Dedup: drop any recent-history outfit whose name matches a just-shown outfit
+  // (avoids the same outfit appearing in both blocks if user previously rated it).
+  const currentNameSet = new Set(currentOutfits.map(o => o.name).filter(Boolean))
+  const dedupedRecent = recentOutfits.filter(o => !o.name || !currentNameSet.has(o.name))
+
   // 9F-D: Recent outfits block — formatted only when history has usable rows.
   // Returns null when no history so the block is omitted entirely from the user message.
-  const recentLines = recentOutfits
+  const recentLines = dedupedRecent
     .map(o => {
       if (!o.name && o.itemNames.length === 0) return null
       const vibePart = o.vibe ? ` (${o.vibe})` : ''
@@ -532,6 +552,7 @@ function buildFreshContent(args: {
     '',
     'DRESS RULE: A dress is a complete outfit. Never pair a dress with bottoms. Shoes and outerwear are fine with a dress.',
     '',
+    ...(currentBlock ? [currentBlock, ''] : []),
     ...(recentBlock ? [recentBlock, ''] : []),
     'WARDROBE POOL (sorted by preference):',
     buildCompressedPool(items),
@@ -1266,6 +1287,14 @@ Deno.serve(async (req) => {
     const pinnedItemId = typeof body.pinnedItemId === 'string' ? body.pinnedItemId : null
     const brief        = typeof body.brief        === 'string' ? body.brief        : null
     const styleProfile = body.styleProfile && typeof body.styleProfile === 'object' ? body.styleProfile : null
+    const currentOutfits = Array.isArray(body.currentOutfits)
+      ? body.currentOutfits.filter((o: any) =>
+          o && typeof o === 'object'
+          && typeof o.name === 'string'
+          && typeof o.vibe === 'string'
+          && Array.isArray(o.itemIds)
+        )
+      : []
 
     if (!temperature || !condition || !occasion) {
       return jsonResponse({ error: 'Missing temperature, condition, or occasion' }, 400)
@@ -1322,6 +1351,17 @@ Deno.serve(async (req) => {
       return { name: r.name || '', vibe: r.vibe || '', itemNames }
     })
     console.log('[generate-outfits] recent outfit history:', recentOutfits.length, 'rows')
+
+    // Just-shown outfits (sent from client on regenerate). Names resolved against
+    // the same wardrobeNameById Map as recent history — no extra DB query.
+    const resolvedCurrentOutfits = currentOutfits.map((o: any) => {
+      const itemNames = (o.itemIds as unknown[])
+        .map((id) => typeof id === 'string' ? wardrobeNameById.get(id) : undefined)
+        .filter((n): n is string => Boolean(n))
+        .slice(0, 4)
+      return { name: o.name, vibe: o.vibe, itemNames }
+    })
+    console.log('[generate-outfits] just-shown outfits:', resolvedCurrentOutfits.length, 'rows')
 
     // 4. Gate — minimum count (post-filter)
     if (items.length < 5) {
@@ -1398,7 +1438,7 @@ Deno.serve(async (req) => {
     // 7. Try Anthropic. On any failure, fall back to stub silently.
     if (anthropicKey) {
       const userContent = buildFreshContent({
-        styleProfile, temperature, condition, occasion, indoors, brief, pinned, items: filteredItems, recoveryMode, recentOutfits,
+        styleProfile, temperature, condition, occasion, indoors, brief, pinned, items: filteredItems, recoveryMode, recentOutfits, currentOutfits: resolvedCurrentOutfits,
       })
 
       const aiResult = await callAnthropic({
