@@ -3753,12 +3753,14 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                     end={{ x: 0.3, y: 0.2 }}
                     style={StyleSheet.absoluteFill}
                   />
-                  {/* Color swatches band — decorative outfit palette */}
-                  <View style={moodBoardStyles.swatchRow}>
-                    {buildMoodSwatches(moodBoardOutfit.items).map((color, i) => (
-                      <View key={i} style={[moodBoardStyles.swatch, { backgroundColor: color }]} />
-                    ))}
-                  </View>
+                  {/* Color swatches band — HIDDEN for Apple review (May 2026). Decorative palette, non-functional. To re-enable, change `false` to `true`. */}
+                  {false && (
+                    <View style={moodBoardStyles.swatchRow}>
+                      {buildMoodSwatches(moodBoardOutfit.items).map((color, i) => (
+                        <View key={i} style={[moodBoardStyles.swatch, { backgroundColor: color }]} />
+                      ))}
+                    </View>
+                  )}
 
                   {/* Polaroid composition — debug mode picks layout from switcher, otherwise auto-detect */}
                   {(() => {
