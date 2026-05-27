@@ -144,6 +144,26 @@ function rowToSavedOutfit(row) {
   };
 }
 
+// Returns outfits the user has marked worn at least once (newest-updated first).
+// Used by Your Looks "Your Week" calendar pill. Caller filters wornDates to the
+// current week (local time) and resolves itemIds against the current wardrobeItems
+// state for photos. RLS already scopes to current user — we filter worn_dates
+// client-side because Postgres JSONB equality via Supabase REST is finicky and
+// the payload is tiny at any realistic scale.
+// Reuses rowToSavedOutfit because the row shape (id, name, vibe, itemIds,
+// wornDates, etc.) is identical — that helper returns the full outfit_history
+// row regardless of which fields a given caller actually consumes.
+export async function fetchWornOutfits() {
+  const { data, error } = await supabase
+    .from('outfit_history')
+    .select('*')
+    .order('updated_at', { ascending: false, nullsFirst: false });
+  if (error) throw error;
+  return (data || [])
+    .filter((row) => Array.isArray(row.worn_dates) && row.worn_dates.length > 0)
+    .map(rowToSavedOutfit);
+}
+
 // Bump last_worn + times_worn on each wardrobe item in an outfit.
 // Best-effort: per-item failures are logged but don't throw, because a
 // partial wear-log is better than failing the whole "I wore this today" flow.

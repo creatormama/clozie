@@ -39,7 +39,7 @@ import { supabase } from './src/lib/supabase';
 import { fetchWardrobeItems, getSignedPhotoUrl, uploadWardrobePhoto, insertWardrobeItem, updateWardrobeItem, deleteWardrobePhoto, deleteWardrobeItem } from './src/lib/wardrobeItems';
 import { recognizeWardrobePhoto } from './src/lib/clozieRecognition';
 import { generateOutfits } from './src/lib/outfitGeneration';
-import { upsertOutfitInteraction, markItemsWorn, fetchSavedOutfits, clearClozieMemory } from './src/lib/outfitHistory';
+import { upsertOutfitInteraction, markItemsWorn, fetchSavedOutfits, fetchWornOutfits, clearClozieMemory } from './src/lib/outfitHistory';
 import { filterWardrobeItems } from './src/lib/filterWardrobeItems';
 import { filterSavedOutfits } from './src/lib/filterSavedOutfits';
 
@@ -1141,6 +1141,53 @@ function formatLastWorn(iso) {
   const day = d.getDate();
   return `Last worn: ${month} ${day}`;
 }
+
+// Session 20: "Your Week" calendar pill date helpers — all in LOCAL time.
+// The existing dedupe in upsertOutfitInteraction (outfitHistory.js) uses UTC slice;
+// we use LOCAL for display so users see wears bucketed by THEIR calendar day.
+// Late-night edge case (local 11:55pm vs UTC midnight) noted in CLAUDE.md Known Issues.
+function toLocalYMD(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function getMondayOfWeek(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+  const offset = day === 0 ? -6 : 1 - day; // Sun → back 6 days; others → 1 - day
+  d.setDate(d.getDate() + offset);
+  return d;
+}
+
+function buildWeekDays(monday) {
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push(d);
+  }
+  return days;
+}
+
+function formatWeekRange(monday) {
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const startMonth = monday.toLocaleString('en-US', { month: 'long' });
+  const startDay = monday.getDate();
+  const endDay = sunday.getDate();
+  if (monday.getMonth() === sunday.getMonth()) {
+    return `${startMonth} ${startDay} – ${endDay}`;
+  }
+  const endMonth = sunday.toLocaleString('en-US', { month: 'long' });
+  return `${startMonth} ${startDay} – ${endMonth} ${endDay}`;
+}
+
+// Day-of-week labels for Your Week dot row (Mon-first). Fixed array because
+// the calendar pill always starts Monday.
+const WEEK_DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 // ── Wardrobe Tab ────────────────────────────────────────────────────────────
 // Session 10B Step 4: Category chip labels for My Closet search.
@@ -2981,7 +3028,7 @@ const LOADING_MESSAGES = [
 const OCCASION_CHIPS = ['All', 'Casual Day', 'Work · Office', 'Going Out', 'Formal Event', 'Outdoor · Sport', 'Weekend Errands', 'Travel'];
 
 // ── Your Looks Tab ──────────────────────────────────────────────────────────
-function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, recoveryMode, wardrobeItems, onRegenerate, onPersistInteraction, onMarkItemsWorn, savedOutfits, setSavedOutfits, generationContext, sessionsUsedThisWeek, isVip }) {
+function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, generationError, recoveryMode, wardrobeItems, onRegenerate, onPersistInteraction, onMarkItemsWorn, savedOutfits, setSavedOutfits, wornOutfits, setWornOutfits, generationContext, sessionsUsedThisWeek, isVip }) {
   // ── DEMO_MODE: flip to `true` for visual testing (HIG audit, Mood Board / Hanger View / Saved Outfits review). Production: always `false`. ──
   const DEMO_MODE = false;
 
@@ -3017,6 +3064,16 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
   const [outfitToShare, setOutfitToShare] = useState(null);
   const [isSharing, setIsSharing] = useState(false);
   const shareShotRef = useRef(null);
+  // Session 20: Your Week bottom sheet visibility (S4). Dot row + day cards in S5/S6.
+  const [weekSheetVisible, setWeekSheetVisible] = useState(false);
+  // Session 20 S5: selected day (local YYYY-MM-DD). Reset to today on every sheet open
+  // — matches Pin Sheet's "filter resets on close" pattern, so each sheet open lands fresh.
+  const [selectedDay, setSelectedDay] = useState(() => toLocalYMD(new Date()));
+  useEffect(() => {
+    if (weekSheetVisible) {
+      setSelectedDay(toLocalYMD(new Date()));
+    }
+  }, [weekSheetVisible]);
   // ── DEBUG (temporary — remove before shipping) ───────────────────────────
   // Layout switcher state for testing all 8 Mood Board polaroid layouts
   const [debugLayout, setDebugLayout] = useState('A');
@@ -3133,12 +3190,49 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
     setTimeout(() => {
       setWornToday((prev) => ({ ...prev, [outfit.id]: false }));
     }, 2000);
+    const nowIso = new Date().toISOString();
     if (onPersistInteraction) {
-      onPersistInteraction(outfit, { appendWornDate: new Date().toISOString() });
+      onPersistInteraction(outfit, { appendWornDate: nowIso });
     }
     if (onMarkItemsWorn) {
       const itemIds = (outfit.items || []).map((i) => i?.id).filter(Boolean);
       if (itemIds.length > 0) onMarkItemsWorn(itemIds);
+    }
+    // Session 20 S8: optimistic local update so the 📅 Your Week pill + dot
+    // fills refresh without app reload. Mirrors toggleSave's pattern — full
+    // shape stamped so the S2 merge-by-id load overwrites cleanly on next
+    // reload. Same-day dedupe uses UTC slice(0,10) to match the DB-side
+    // dedupe in upsertOutfitInteraction (outfitHistory.js).
+    if (setWornOutfits) {
+      const todayUtcKey = nowIso.slice(0, 10);
+      setWornOutfits((prev) => {
+        const existing = prev.find((o) => o.id === outfit.id);
+        if (existing) {
+          const alreadyLoggedToday = (existing.wornDates || []).some(
+            (d) => typeof d === 'string' && d.slice(0, 10) === todayUtcKey
+          );
+          if (alreadyLoggedToday) return prev;
+          return prev.map((o) =>
+            o.id === outfit.id
+              ? { ...o, wornDates: [...(o.wornDates || []), nowIso] }
+              : o
+          );
+        }
+        return [{
+          ...outfit,
+          itemIds: (outfit.items || []).map((i) => i.id),
+          occasion: generationContext?.occasion ?? null,
+          temperature: generationContext?.temperature ?? null,
+          condition: generationContext?.condition ?? null,
+          indoors: generationContext?.indoors === true,
+          brief: generationContext?.brief ?? null,
+          pinnedItemId: generationContext?.pinnedItemId ?? null,
+          rating: null,
+          wornDates: [nowIso],
+          savedAt: null,
+          createdAt: nowIso,
+        }, ...prev];
+      });
     }
   };
 
@@ -3367,6 +3461,28 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
       ? '1 styling session left this week.'
       : null;
 
+  // Session 20 S6: bucket worn outfits by LOCAL date for the Your Week sheet.
+  // Per-outfit per-day dedupe handles the rare case where one outfit has
+  // multiple ISO timestamps that resolve to the same local day (UTC-dedupe
+  // late-night edge case noted in CLAUDE.md Known Issues).
+  const wornByDay = new Map();
+  for (const outfit of (wornOutfits || [])) {
+    if (!Array.isArray(outfit.wornDates)) continue;
+    const daysSeenForThisOutfit = new Set();
+    for (const iso of outfit.wornDates) {
+      if (typeof iso !== 'string') continue;
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) continue;
+      const ymd = toLocalYMD(d);
+      if (daysSeenForThisOutfit.has(ymd)) continue;
+      daysSeenForThisOutfit.add(ymd);
+      const list = wornByDay.get(ymd) || [];
+      list.push(outfit);
+      wornByDay.set(ymd, list);
+    }
+  }
+  const selectedDayOutfits = wornByDay.get(selectedDay) || [];
+
   return (
     <>
     <ScrollView
@@ -3376,17 +3492,33 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text style={looksStyles.heading}>Your Looks</Text>
-        {savedOutfits.length > 0 && (
-          <TouchableOpacity
-            style={{ minHeight: 44, paddingHorizontal: 4, justifyContent: 'center' }}
-            activeOpacity={0.7}
-            onPress={() => setShowSavedScreen(true)}
-          >
-            <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: '#A44A34' }}>
-              ❤️ Saved ({savedOutfits.length})
-            </Text>
-          </TouchableOpacity>
-        )}
+        {/* Session 20: right-side pills cluster — 📅 Your Week + ❤️ Saved.
+            Each gated on its own data so pills only appear when relevant. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {wornOutfits.length > 0 && (
+            <TouchableOpacity
+              style={{ minHeight: 44, paddingHorizontal: 4, justifyContent: 'center' }}
+              activeOpacity={0.7}
+              onPress={() => setWeekSheetVisible(true)}
+              hitSlop={{ top: 10, bottom: 10, left: 14, right: 14 }}
+              accessibilityLabel="Your Week"
+              accessibilityRole="button"
+            >
+              <Text style={{ fontSize: 16, lineHeight: 18 }}>📅</Text>
+            </TouchableOpacity>
+          )}
+          {savedOutfits.length > 0 && (
+            <TouchableOpacity
+              style={{ minHeight: 44, paddingHorizontal: 4, justifyContent: 'center' }}
+              activeOpacity={0.7}
+              onPress={() => setShowSavedScreen(true)}
+            >
+              <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 13, color: '#A44A34' }}>
+                ❤️ Saved ({savedOutfits.length})
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Empty state — shown when no outfits generated yet, OR a warm Clozie error */}
@@ -4308,6 +4440,105 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
       </Modal>
 
     </ScrollView>
+
+    {/* Session 20: Your Week bottom sheet (S4 shell only — dot row + day cards in S5/S6).
+        Reuses pinSheetStyles for modal/handle/header/close — Session 11 cross-tab precedent. */}
+    <Modal
+      transparent
+      visible={weekSheetVisible}
+      animationType="slide"
+      onRequestClose={() => setWeekSheetVisible(false)}
+    >
+      <View style={pinSheetStyles.modalRoot}>
+        <Pressable style={pinSheetStyles.backdrop} onPress={() => setWeekSheetVisible(false)} />
+        <View style={pinSheetStyles.sheet}>
+          {/* Handle bar */}
+          <View style={pinSheetStyles.handleBar} />
+
+          {/* Header row */}
+          <View style={pinSheetStyles.headerRow}>
+            <Text style={pinSheetStyles.headerTitle}>Your Week</Text>
+            <TouchableOpacity
+              style={pinSheetStyles.closeButton}
+              activeOpacity={0.7}
+              onPress={() => setWeekSheetVisible(false)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Close"
+              accessibilityRole="button"
+            >
+              <Text style={pinSheetStyles.closeButtonText}>×</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Date range subtitle */}
+          <Text style={weekSheetStyles.dateRangeSubtitle}>{formatWeekRange(getMondayOfWeek(new Date()))}</Text>
+
+          {/* Session 20 S5: Week dot row — Mon→Sun in LOCAL time. Dots all hollow at S5;
+              terracotta fills land in S6 once we derive wornByDay from wornOutfits. */}
+          <View style={weekSheetStyles.dotRow}>
+            {buildWeekDays(getMondayOfWeek(new Date())).map((dayDate, idx) => {
+              const dayYMD = toLocalYMD(dayDate);
+              const isSelected = dayYMD === selectedDay;
+              return (
+                <TouchableOpacity
+                  key={dayYMD}
+                  style={weekSheetStyles.dayColumn}
+                  activeOpacity={0.7}
+                  onPress={() => setSelectedDay(dayYMD)}
+                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${dayDate.toLocaleString('en-US', { weekday: 'long' })} ${dayDate.getDate()}`}
+                  accessibilityState={{ selected: isSelected }}
+                >
+                  <Text style={weekSheetStyles.dayLabel}>{WEEK_DAY_LABELS[idx]}</Text>
+                  <View style={[weekSheetStyles.dateNumberCircle, isSelected && weekSheetStyles.dateNumberCircleSelected]}>
+                    <Text style={weekSheetStyles.dateNumber}>{dayDate.getDate()}</Text>
+                  </View>
+                  <View style={[weekSheetStyles.dot, wornByDay.has(dayYMD) ? weekSheetStyles.dotFilled : weekSheetStyles.dotHollow]} />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Session 20 S6: Day-content cards. Renders nothing on empty days
+              (no "nothing worn" message per Grace's directive — hollow dot is enough). */}
+          <ScrollView
+            style={weekSheetStyles.dayCardsScroll}
+            contentContainerStyle={weekSheetStyles.dayCardsContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {selectedDayOutfits.length === 0 && (
+              <Text style={weekSheetStyles.dayEmptyMessage}>No outfit logged</Text>
+            )}
+            {selectedDayOutfits.map((outfit) => (
+              <View key={outfit.id} style={weekSheetStyles.dayCard}>
+                <Text style={weekSheetStyles.dayCardVibe}>{outfit.vibe}</Text>
+                <Text style={weekSheetStyles.dayCardName} numberOfLines={2}>{outfit.name}</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={weekSheetStyles.dayCardThumbsRow}
+                  contentContainerStyle={weekSheetStyles.dayCardThumbsContent}
+                >
+                  {(outfit.items || []).map((item) => (
+                    <View key={item.id} style={weekSheetStyles.dayCardThumb}>
+                      {item.photoUri ? (
+                        <Image
+                          source={{ uri: item.photoUri }}
+                          style={weekSheetStyles.dayCardThumbImage}
+                          resizeMode="cover"
+                        />
+                      ) : null}
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+
     {/* Offscreen share card — captured by react-native-view-shot when user taps Share Outfit */}
     <ShareCard outfit={outfitToShare} shotRef={shareShotRef} />
     </>
@@ -5064,6 +5295,7 @@ function SubscriptionScreen({ onClose }) {
     'Mood board for every outfit',
     'Save your favorite looks',
     'Share outfit cards',
+    'Log what you wore — track your week',
   ];
 
   return (
@@ -6794,6 +7026,10 @@ function MainAppScreen({ onSignOut }) {
   // Session 12: lifted from YourLooksTab to survive tab switches + reload (S1b loads from DB).
   // Shape: SavedOutfit[] — each entry is the full outfit object with items: WardrobeItem[].
   const [savedOutfits, setSavedOutfits] = useState([]);
+  // Session 20: outfits the user has marked worn at least once. Drives the
+  // "Your Week" calendar pill on Your Looks. Shape mirrors savedOutfits —
+  // each entry has wornDates: string[] (ISO timestamps) + items: WardrobeItem[].
+  const [wornOutfits, setWornOutfits] = useState([]);
   // AI consent state (Apple Guideline 5.1.2i) — read on mount from user_metadata.ai_consent_given.
   const [consentGiven, setConsentGiven] = useState(false);
   const [consentLoaded, setConsentLoaded] = useState(false);
@@ -6851,6 +7087,7 @@ function MainAppScreen({ onSignOut }) {
       if (event === 'SIGNED_OUT' && !cancelled) {
         setWardrobeItems([]);
         setSavedOutfits([]); // Session 12 S1b: also reset saved outfits on sign-out
+        setWornOutfits([]); // Session 20: also reset worn outfits on sign-out
       }
     });
 
@@ -6951,6 +7188,53 @@ function MainAppScreen({ onSignOut }) {
   // current wardrobeItems. Deleted wardrobe items silently drop from items.
   useEffect(() => {
     setSavedOutfits((prev) => {
+      if (!prev || prev.length === 0) return prev;
+      const byId = new Map(wardrobeItems.map((i) => [i.id, i]));
+      return prev.map((outfit) => {
+        const ids = Array.isArray(outfit.itemIds) ? outfit.itemIds : [];
+        const items = ids.map((id) => byId.get(id)).filter(Boolean);
+        return { ...outfit, items };
+      });
+    });
+  }, [wardrobeItems]);
+
+  // Session 20: Load worn outfits from outfit_history on mount.
+  // Mirrors the savedOutfits load above — fetchWornOutfits returns rows with
+  // wornDates: string[] (the snapshot of ISO wear timestamps). Items get
+  // resolved against the current wardrobeItems via wardrobeItemsRef. The
+  // hydration effect below re-resolves when wardrobeItems changes.
+  useEffect(() => {
+    let cancelled = false;
+    const loadWorn = async () => {
+      try {
+        const rows = await fetchWornOutfits();
+        if (cancelled) return;
+        const byId = new Map(wardrobeItemsRef.current.map((i) => [i.id, i]));
+        const dbHydrated = rows.map((row) => ({
+          ...row,
+          items: (row.itemIds || []).map((id) => byId.get(id)).filter(Boolean),
+        }));
+        // Merge-by-id: preserve any local-only entries added via optimistic
+        // wear update (Session 20 S8) during the brief load window. For
+        // matching IDs, DB version wins (authoritative).
+        setWornOutfits((prev) => {
+          const dbIds = new Set(dbHydrated.map((o) => o.id));
+          const localOnly = prev.filter((o) => !dbIds.has(o.id));
+          return [...localOnly, ...dbHydrated];
+        });
+      } catch (err) {
+        console.warn('[wornOutfits] load failed:', err?.message);
+      }
+    };
+    loadWorn();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Session 20: Re-hydrate worn outfit items whenever wardrobeItems changes.
+  // Same pattern as the savedOutfits re-hydration above. Deleted wardrobe
+  // items silently drop from items; edited photos surface fresh photoUri.
+  useEffect(() => {
+    setWornOutfits((prev) => {
       if (!prev || prev.length === 0) return prev;
       const byId = new Map(wardrobeItems.map((i) => [i.id, i]));
       return prev.map((outfit) => {
@@ -7152,6 +7436,7 @@ function MainAppScreen({ onSignOut }) {
     await clearClozieMemory();
     setWardrobeItems((prev) => prev.map((item) => ({ ...item, lastWorn: null })));
     setSavedOutfits([]);
+    setWornOutfits([]); // Session 20: clearClozieMemory deletes outfit_history rows, including wear logs
     setGeneratedOutfits([]);
     setGenerationStatus('idle');
     setGenerationError('');
@@ -7186,7 +7471,7 @@ function MainAppScreen({ onSignOut }) {
       {activeTab === 0 && <StyleDNATab onBuildCloset={() => setActiveTab(1)} />}
       {activeTab === 1 && <WardrobeTab items={wardrobeItems} setItems={setWardrobeItems} onGoToVibe={() => setActiveTab(2)} isVip={isVip} />}
       {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} onGenerate={handleGenerate} onGoToCloset={() => setActiveTab(1)} />}
-      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} recoveryMode={generationRecoveryMode} wardrobeItems={wardrobeItems} onRegenerate={handleRegenerate} onPersistInteraction={handlePersistInteraction} onMarkItemsWorn={handleMarkItemsWorn} savedOutfits={savedOutfits} setSavedOutfits={setSavedOutfits} generationContext={lastPayload} sessionsUsedThisWeek={sessionsUsedThisWeek} isVip={isVip} />}
+      {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} recoveryMode={generationRecoveryMode} wardrobeItems={wardrobeItems} onRegenerate={handleRegenerate} onPersistInteraction={handlePersistInteraction} onMarkItemsWorn={handleMarkItemsWorn} savedOutfits={savedOutfits} setSavedOutfits={setSavedOutfits} wornOutfits={wornOutfits} setWornOutfits={setWornOutfits} generationContext={lastPayload} sessionsUsedThisWeek={sessionsUsedThisWeek} isVip={isVip} />}
 
       {/* Bottom tab bar */}
       <View style={mainStyles.tabBar}>
@@ -9651,6 +9936,130 @@ const pinSheetStyles = StyleSheet.create({
     color: '#A09888',
     textAlign: 'center',
     marginTop: 40,
+  },
+});
+
+// Session 20: "Your Week" calendar pill — sheet-specific styles (subtitle, dot row).
+// Sheet shell (modalRoot/backdrop/sheet/handleBar/headerRow/headerTitle/closeButton/closeButtonText)
+// is reused from pinSheetStyles cross-tab (Session 11 precedent). Day-card styles land in S6.
+const weekSheetStyles = StyleSheet.create({
+  dateRangeSubtitle: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
+    paddingHorizontal: 20,
+    marginTop: 6,
+    marginBottom: 18,
+    lineHeight: 19,
+  },
+  dotRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  dayColumn: {
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+    minWidth: 36,
+  },
+  dayLabel: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 11,
+    color: '#5C4A3A',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  dateNumberCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  dateNumberCircleSelected: {
+    backgroundColor: 'rgba(188,199,183,0.30)', // sage tint — locked category-pill color
+  },
+  dateNumber: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 16,
+    color: '#2C1A0E',
+    lineHeight: 18,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  dotHollow: {
+    backgroundColor: 'rgba(44,26,14,0.15)',
+  },
+  // S6 — terracotta fill on days with wears.
+  dotFilled: {
+    backgroundColor: '#C87A52',
+  },
+  // Day-content area (S6) — mini white cards stacked vertically, scrolls if needed.
+  dayCardsScroll: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  dayCardsContent: {
+    paddingBottom: 40,
+    gap: 12,
+  },
+  dayCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  dayCardVibe: {
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 11,
+    color: '#A44A34',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  dayCardName: {
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 18,
+    color: '#2C1A0E',
+    marginBottom: 12,
+    lineHeight: 22,
+  },
+  dayCardThumbsRow: {
+    flexGrow: 0,
+  },
+  dayCardThumbsContent: {
+    gap: 8,
+  },
+  dayCardThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(188,199,183,0.18)', // soft sage tint — also serves as no-photo fallback
+  },
+  dayCardThumbImage: {
+    width: '100%',
+    height: '100%',
+  },
+  // Empty-day message — muted text centered in the content area. No card wrapper.
+  dayEmptyMessage: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#A09888',
+    textAlign: 'center',
+    paddingTop: 40,
   },
 });
 
