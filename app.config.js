@@ -21,7 +21,7 @@ export default {
         NSPrivacyAccessedAPITypes: [
           {
             NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategoryUserDefaults",
-            NSPrivacyAccessedAPIReasons: ["CA92.1"],
+            NSPrivacyAccessedAPITypeReasons: ["CA92.1"],
           },
         ],
         NSPrivacyTracking: false,
