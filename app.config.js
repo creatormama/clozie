@@ -15,6 +15,7 @@ export default {
         NSCameraUsageDescription: "Clozie uses your camera to photograph wardrobe items.",
         NSPhotoLibraryUsageDescription: "Clozie needs access to your photo library so you can add wardrobe items.",
         UIDesignRequiresCompatibility: true,
+        ITSAppUsesNonExemptEncryption: false,
       },
       privacyManifests: {
         NSPrivacyAccessedAPITypes: [
