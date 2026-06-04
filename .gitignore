@@ -8,9 +8,17 @@
 dist/
 node_modules/
 
-# iOS / Android builds
+# iOS / Android builds — CNG auto-generates these at root; never commit.
 ios/
 android/
+
+# But DO commit native source inside local Expo modules (modules/<name>/ios/, /android/).
+# Order matters: negation must come AFTER the ignore patterns above.
+!modules/**/ios/
+!modules/**/ios/**
+!modules/**/android/
+!modules/**/android/**
+
 *.jks
 *.p8
 *.p12
