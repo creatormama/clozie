@@ -1,0 +1,8 @@
+{
+  "name": "expo-background-removal",
+  "version": "0.1.0",
+  "description": "Apple Vision background removal for Clozie wardrobe photos (iOS 17+ on-device).",
+  "main": "src/BackgroundRemovalModule.ts",
+  "license": "MIT",
+  "private": true
+}
