@@ -31,6 +31,7 @@ export default {
     },
     plugins: [
       "expo-font",
+      "expo-apple-authentication",
       ["expo-splash-screen", {
         "image": "./assets/splash-clozie.png",
         "backgroundColor": "#E8E4CE",

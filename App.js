@@ -35,6 +35,7 @@ import ViewShot, { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from './src/lib/supabase';
 import { fetchWardrobeItems, getSignedPhotoUrl, uploadWardrobePhoto, insertWardrobeItem, updateWardrobeItem, deleteWardrobePhoto, deleteWardrobeItem } from './src/lib/wardrobeItems';
 import { recognizeWardrobePhoto } from './src/lib/clozieRecognition';
@@ -560,6 +561,75 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
     }
   };
 
+  // Session 22 — Real Apple Sign-In via Supabase.
+  // Apple returns fullName ONLY on first sign-in (documented behavior).
+  // We use that presence to route signup → Post-Login Welcome / login → main.
+  const handleAppleSignIn = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      if (!credential.identityToken) {
+        setError('Something went wrong — please try again');
+        return;
+      }
+
+      const { data, error: supaErr } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+      });
+
+      if (supaErr) {
+        if (isNetworkError(supaErr)) {
+          setError('Clozie needs internet to style you. Check your connection and try again.');
+        } else {
+          setError('Something went wrong — please try again');
+        }
+        return;
+      }
+
+      // Apple returns fullName ONLY on the first sign-in for this Apple ID.
+      const givenName = credential.fullName?.givenName?.trim() || '';
+      const familyName = credential.fullName?.familyName?.trim() || '';
+      const fullName = [givenName, familyName].filter(Boolean).join(' ');
+      const isFirstSignIn = Boolean(givenName || familyName);
+
+      if (isFirstSignIn && fullName) {
+        // Best-effort persist — never block sign-in if this fails.
+        try {
+          await supabase.auth.updateUser({ data: { full_name: fullName } });
+        } catch (e) {
+          console.warn('[Apple Sign-In] failed to persist full_name:', e?.message);
+        }
+      }
+
+      const userEmail = credential.email || data?.user?.email || '';
+      onDone({
+        name: fullName || undefined,
+        email: userEmail,
+        mode: isFirstSignIn ? 'signup' : 'login',
+      });
+    } catch (err) {
+      // User cancelled the native sheet — silent.
+      if (err?.code === 'ERR_REQUEST_CANCELED') {
+        return;
+      }
+      if (isNetworkError(err)) {
+        setError('Clozie needs internet to style you. Check your connection and try again.');
+      } else {
+        setError('Something went wrong — please try again');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Heading text per mode
   const headingLabel = isForgot
     ? '✦ RESET YOUR PASSWORD ✦'
@@ -633,20 +703,18 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
                 </TouchableOpacity>
                 )}
 
-                {/* Continue with Apple */}
-                <TouchableOpacity
-                  style={authStyles.socialButton}
-                  activeOpacity={0.7}
-                  onPress={() => onDone({ email: 'apple@user.com', name: 'Apple User', mode: isLogin ? 'login' : 'signup' })}
-                >
-                  <Svg width={20} height={20} viewBox="0 0 24 24">
-                    <Path
-                      fill="#2C1A0E"
-                      d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"
+                {/* Continue with Apple — Session 22 (2026-06-03): real Sign In with Apple via expo-apple-authentication + Supabase. iOS only; renders nothing on Android. */}
+                {Platform.OS === 'ios' && (
+                  <View style={{ opacity: loading ? 0.6 : 1, marginBottom: 10 }} pointerEvents={loading ? 'none' : 'auto'}>
+                    <AppleAuthentication.AppleAuthenticationButton
+                      buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                      cornerRadius={12}
+                      style={{ width: '100%', height: 52 }}
+                      onPress={handleAppleSignIn}
                     />
-                  </Svg>
-                  <Text style={authStyles.socialText}>Continue with Apple</Text>
-                </TouchableOpacity>
+                  </View>
+                )}
 
                 {/* OR divider */}
                 <View style={authStyles.dividerRow}>
