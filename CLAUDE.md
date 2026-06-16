@@ -7,6 +7,24 @@ HOW TO USE: Drop this file into the root of your clozie-native project folder. C
 
 READ THIS ENTIRE FILE before doing anything. No exceptions.
 
+---
+
+# CURRENT BUILD STATE — UPDATE THIS SECTION WHEN STATE CHANGES
+
+Last verified: 2026-06-15.
+
+- Live App Store submission: Clozie v1.0.0 Build 12 (commit `9d617db`), in Apple review since 2026-06-04.
+- Latest TestFlight standalone: Build 12.
+- Production pointer: branch `production` (tracking `origin/production`), currently at `9d617db`.
+- Immutable build tag: `v1.0.0-build12-appstore-live` (annotated, pinned to `9d617db` forever).
+- Going-forward build convention: every App Store build gets (a) an annotated tag `vX.Y.Z-buildN-appstore-live` pinned to that commit forever, AND (b) `production` fast-forwarded to point at that commit. Tags never move; `production` moves only with each new shipped build.
+- Main branch (THIS repo, `creatormama/clozie.git`): stale at `062d15b` (March 30 Phase 1 snapshot, 107 commits behind testing). Nothing deploys off it. Safe to leave alone — decision on whether to fast-forward main to Build 12 deferred.
+- Edge Function `generate-outfits` SYSTEM_PROMPT cache: 2,510 tokens (verified via Supabase Logs `cache_read_input_tokens` round-trip). 462 tokens of headroom above the 2,048 caching threshold.
+- Active Edge Functions: `generate-outfits`, `recognize-photo`, `delete-user`. All deploy via Supabase CLI from disk only — see EDGE FUNCTION DEPLOY POLICY.
+- Current Expo SDK: 54. Do NOT run `npm audit fix` against this SDK — see THINGS TRIED THAT DID NOT WORK.
+
+This is the load-bearing snapshot of "where Clozie stands right now." When a state fact changes (new build ships, Edge Function deploys, cache token count moves, Expo SDK upgrades), update THIS section. Session-by-session narrative lives elsewhere.
+
 June 14 2026 — Build 12 preservation wired (annotated tag + production branch + permanent restore point convention). ZERO code changes this session — tracked-file state byte-identical to start of session. Established that Build 12 (the version Apple has in review, App Store Connect shows 1.0.0 (12)) was built from commit `9d617db` — verified via expo.dev builds list, expo.dev build detail page, AND App Store Connect (Grace confirmed all three independently). `9d617db` is the "Session 24A SHELVED" commit (June 4 2026) — documentation-only commit on top of `5075b48` (Session 22 / Apple Sign-In) that adds 3 lines to CLAUDE.md recording the background-removal shelving. App code at `9d617db` is byte-identical to `5075b48`. Reality-check at session start corrected a long-standing CLAUDE.md conflation: the "NEVER TOUCH main" rule was always about the SEPARATE `creatormama/clozie-website` repo (Vercel-deployed marketing site + reset-password page) — THIS repo (`creatormama/clozie.git`) has nothing deploying off its main. Local main = `062d15b` dated 2026-03-30 ("Main App Shell with 4 bottom tabs") — stale Phase 1 snapshot, 107 commits BEHIND testing, 2.5 months untouched, no service watching it. Confirmed safe to add new refs to this repo. Four-command preservation pass on testing branch (each verified between steps, no force-push, no history rewrites, only additive operations): (1) `git tag -a v1.0.0-build12-appstore-live 9d617db -m "First live App Store build — Clozie v1.0.0 (Build 12). Submitted to Apple via TestFlight + App Store on 2026-06-04. App code byte-identical to Session 22 / commit 5075b48 (Apple Sign-In wired)."` — annotated tag (real git object with author + date + message, distinct from lightweight tag). Tag object hash `512dbd22741d8c1b8096afe62d9f143143bf4950`; dereferences to commit `9d617db12baa5aef7f3c3654d83edba4ef52bed8`. (2) `git branch production 9d617db` — new local branch at Build 12 commit, no checkout (stayed on testing throughout). (3) `git push origin v1.0.0-build12-appstore-live` — tag uploaded to GitHub. (4) `git push -u origin production` — branch uploaded with upstream tracking (`origin/production` created, local production now tracks it). Final state on origin: tag visible at https://github.com/creatormama/clozie/tags; production branch visible at https://github.com/creatormama/clozie/branches; tag, production, testing, and HEAD all point at the same commit (`9d617db`); main untouched at `062d15b` (March 30 snapshot); session-24a-shelved untouched at `2084032`. Working tree zero tracked-file changes. Still on testing branch at session end. Going-forward convention LOCKED: tag every shipped App Store build as `vX.Y.Z-buildN-appstore-live` (annotated, pinned permanently to the exact commit Apple has). Tags are immutable restore points — they stay nailed to their commit forever, even when `production` moves later. `production` is the moving "this is what's live with users right now" pointer — fast-forward it to the new build's commit when each new App Store build ships, then tag the same commit with the next `vX.Y.Z-buildN-appstore-live`. Defense-in-depth: tag protects the exact commit forever; branch protects the semantic meaning ("production"); GitHub branch protection rules can attach to `production` (Settings → Branches → require PR, disallow force-push) for platform-level guards. main UNCHANGED this session — decision on whether to fast-forward main to Build 12 (vs leave it as the March 30 Phase 1 snapshot) DEFERRED. Edge Functions NOT touched, SYSTEM_PROMPT NOT touched, cache stays at 2,510 tokens, zero CLI deploys, zero new dependencies, zero schema changes, no new EAS Build — Build 12 remains the active App Store submission, still in Apple review at session end.
 
 June 4 2026 — Session 24A SHELVED + testing reverted to Build 7 state. Apple Vision background removal (local Expo native module + VIP-gated test modal) proven unworkable on EAS Build for this project across four diagnostic builds (Build 8 missing package.json → Build 9 missing root file: dep → Build 10 install-links symlink → Build 11 fix). Each build cleanly compiled and installed but produced `requireOptionalNativeModule` returning null at runtime — pod was never linked. Root cause: EAS Build's `use_expo_modules!` Podfile macro does not reliably autolink locally-scaffolded Expo modules under `modules/` even with package.json + root file: dep + install-links=true. Decision: shelve the work entirely, ship the Free Plan without background removal, revisit post-launch (Phase 6+ as originally planned alongside PhotoRoom). Testing branch reset to `5075b48` (Session 22 Apple Sign-In commit — the exact commit Build 7 was built from, last known-working TestFlight standalone). Reset is byte-identical to Build 7 state. The 5 Session 24A commits (33dfd8a, 1ece772, de01cdb, 9fd0313, 2084032) retained in git history via the permanent branch `session-24a-shelved` for possible post-launch revisit — recoverable via `git checkout session-24a-shelved -- modules/expo-background-removal/` or `git cherry-pick session-24a-shelved~4..session-24a-shelved`. Not pushed to origin (origin/testing was already at 5075b48; Session 24A commits only ever existed locally). App.js, .gitignore, package.json, package-lock.json all reverted to 5075b48 content; modules/expo-background-removal/ directory and .npmrc removed from working tree; `npm install` removed the 1 file: dep cleanly (vulnerability count 15, matches Session 22 state). main untouched. Edge Functions NOT touched, SYSTEM_PROMPT NOT touched, cache stays at 2,510 tokens, zero CLI deploys, zero new dependencies. No new EAS build this session — Build 7 remains the active TestFlight standalone.
@@ -261,10 +279,10 @@ Rebuild first. Grace approves. Then and only then — add agreed features.
 
 ALL native app building happens on a testing branch. Never on main.
 
-- Main branch = frozen web app at clozie.vercel.app — NEVER touch it
+- Main branch (THIS repo, `creatormama/clozie.git`) = stale March 2026 Phase 1 snapshot at `062d15b`, nothing watching it. The Vercel-deployed web app at clozie.vercel.app is a SEPARATE repo (`creatormama/clozie-website`) — never touch THAT repo's main. Live App Store builds live on the `production` branch in THIS repo (currently Build 12 at `9d617db`).
 - Native app is built on a separate testing branch from day one
-- When a screen is confirmed working on iPhone — merge to main. Not before.
-- If something breaks on testing branch — revert immediately. Main is always safe.
+- When an App Store build ships from testing — tag that commit `vX.Y.Z-buildN-appstore-live` (annotated tag, immutable forever) and fast-forward `production` to point at it. Main stays put at the March 2026 snapshot.
+- If something breaks on testing branch — revert immediately. The build tag and `production` branch are the immutable safety nets; nothing on testing can damage them.
 - This is set up by Claude Code on day one — Grace does not need to do this manually
 
 ---
@@ -275,7 +293,9 @@ NON-NEGOTIABLE. NO EXCEPTIONS.
 
 ALL Supabase Edge Function deploys go via the Supabase CLI from local disk. Never paste into the Supabase dashboard editor.
 
-Command: `supabase functions deploy <function-name> --project-ref sbiwuqjnwjgjazxlyfhb --use-api --yes`
+Command: `supabase functions deploy <function-name> --project-ref sbiwuqjnwjgjazxlyfhb --use-api`
+
+Do NOT add `--yes` — Session 7b-6 isolated it as the cause of a silent first-deploy failure.
 
 Reason — Session 7b-6 (May 11-12, 2026) revealed two clipboard-corruption bugs that silently broke every prior dashboard-paste deploy since at least 7b-4:
 
@@ -295,10 +315,19 @@ Both pipelines silently corrupted bytes. The deployed function would compile and
 1. Edit `index.ts` directly (preferred), OR edit README.md and re-extract typescript via Python binary I/O
 2. Verify byte-perfect: em-dash count, middot count, total bytes match expected canonical reference
 3. Authenticate: PAT stored in macOS Keychain as `supabase-pat-clozie` (created 2026-05-12, scoped to `/usr/bin/security` only via `-T` flag — no auth dialog on read). Read via: `SUPABASE_ACCESS_TOKEN=$(security find-generic-password -s 'supabase-pat-clozie' -w)`. To rotate: revoke at https://supabase.com/dashboard/account/tokens, generate new PAT, then run `security add-generic-password -U -s "supabase-pat-clozie" -a "$USER" -w "<new-PAT>" -T /usr/bin/security` (the `-U` flag updates the existing entry).
-4. Deploy: `supabase functions deploy <function-name> --project-ref sbiwuqjnwjgjazxlyfhb --use-api --yes`
+4. Deploy: `supabase functions deploy <function-name> --project-ref sbiwuqjnwjgjazxlyfhb --use-api`
 5. Verify on iPhone — generate, check Supabase logs for cache_creation/cache_read tokens
 
 The Supabase dashboard editor remains fine for VIEWING deployed code. NEVER use it for deploying.
+
+## Cache discipline
+
+The `generate-outfits` Edge Function uses Anthropic prompt caching on its SYSTEM_PROMPT. This pays for itself ~4–4.5× on every cached call within the 5-minute TTL window. The rules to keep it working:
+
+- SYSTEM_PROMPT must stay ABOVE Anthropic's 2,048-token caching threshold. Below 2,048, `cache_control` is silently ignored and every call hits the prompt uncached at full price (the bug Session 7b-4 caught). Current token count is in CURRENT BUILD STATE — never let it drop below 2,048.
+- Any edit to SYSTEM_PROMPT invalidates the existing cache. The next call writes a new cache entry (one-time ~$0.009). Subsequent calls within the 5-min TTL read at the cached price.
+- After every deploy that touches SYSTEM_PROMPT, verify cache health on iPhone: Call 1 should show `cache_creation_input_tokens` matching new prompt size; Call 2 within 5 min should show `cache_read_input_tokens` with the same number (round-trip proof). Check Supabase Logs (Edge Functions → Logs).
+- Supabase dashboard "Code" tab is a STALE EDITOR VIEW, not a live runtime mirror. After a CLI deploy completes successfully, the Code tab may continue showing OLD code — Cmd+F for newly-added constants returns 0/0 even though those constants ARE running at the edge. iPhone behavior + Supabase Logs are the only source of truth. Never trust the Code tab for deploy verification.
 
 ---
 
