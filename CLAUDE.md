@@ -129,7 +129,9 @@ They get Pro the moment they log in. Never delete. Never change. Never question.
 - stefka992001@gmail.com (friend)
 - jacek9901@gmail.com (friend)
 
-VIP INVESTIGATION COMPLETE (May 5, 2026): Native app confirmed clean — zero hardcoded VIP emails in App.js, src/lib/supabase.js, or Edge Function. No VIP/bypass logic exists yet. VIP table creation, VIP check on login, and VIP bypass wiring are all deferred to the session that builds limits and caps (Session 9). The 4 VIP emails remain unchanged.
+VIP INFRASTRUCTURE COMPLETE (Session 16A/B, 2026-05-23): the `vip_emails` Supabase table exists with RLS; the runtime VIP check fires on every auth event (see pattern below); the bypass paths are wired (wardrobe cap, session limit). VIP emails are NOT hardcoded in client code, web app, or Edge Functions. The 4 VIP emails remain unchanged.
+
+**Runtime VIP check pattern (live since Session 16A/B, 2026-05-23):** the `vip_emails` table is queried on every auth event (mount, SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED) via `.select('email').eq('email', userEmail).maybeSingle()` — a row returned = VIP, null = non-VIP. RLS scopes the SELECT to the user's own email so no enumeration is possible. Fail-safe to non-VIP on any query error. No cross-session caching — fresh check every login.
 
 ---
 
@@ -921,6 +923,20 @@ Every step must be LOW risk. Every step must be tested and confirmed by Grace be
 
 ---
 
+# CODING PATTERNS — APPLY THESE WHEN WRITING CODE
+
+Established patterns to follow when writing App.js, src/lib/*, or Edge Functions. Each is the result of a learned-the-hard-way session lesson — deviate only with a specific reason.
+
+## Use `supabase.auth.getSession()`, NOT `supabase.auth.getUser()`, when offline-safety matters
+
+`getUser()` makes a network call to verify the JWT against the Supabase auth server — offline it returns `{ data: { user: null }, error: AuthError('Network request failed') }`, which looks like the user is signed out and misleads downstream code into auth-flavoured error messages. `getSession()` reads the cached session from AsyncStorage with no network call, returns immediately, refreshes the access token only when online. Use it in any flow that needs to work offline (wardrobe add/edit/delete, photo upload, VIP check, generate error paths). Established Session 14B (2026-05-21). Already wired in `src/lib/wardrobeItems.js`, `src/lib/outfitHistory.js`, and the MainAppScreen VIP-check useEffect.
+
+## Per-user state goes in `auth.user_metadata`, NOT in a new Supabase table
+
+Small per-user state (full_name, `ai_consent_given`, style preferences, counters like `consecutive_negative_sessions`) lives in `auth.user_metadata`. Read via `session.user.user_metadata` from `getSession()`. Write via `supabase.auth.updateUser({ data: { ... } })` — merges with existing keys, doesn't replace. Zero Supabase dashboard work; RLS implicit; Edge Functions get it for free in their existing `getUser(token)` call. The skeleton `profiles` table in Supabase is intentionally unused — do NOT resurrect it. Only create a new Supabase table when data is genuinely cross-user-queryable OR grows unbounded per user (`wardrobe_items`, `outfit_history`, `session_log`, `vip_emails`). Established Sessions 7b-0, 8, 16B, 19A.
+
+---
+
 # UI STATES — LOCKED APRIL 19 2026
 
 Error colors: errors do NOT use red or orange. Error headings: #2C1A0E espresso. Error body text: #5C4A3A. Inline error messages: #C87A52 terracotta at 88% opacity. Errors feel like gentle Clozie guidance, not alarm bells.
@@ -1084,6 +1100,8 @@ Seasonal Wardrobe Report moved to Phase 4+ as a Pro feature. No spec needed befo
 - Button changes to '✓ Worn today' for a few seconds then returns to normal
 - On every item card in My Closet tab: shows 'Last worn: [date]' or 'Never worn'
 - This data feeds: Clear Out (flags items not worn in 6+ months) and Trip Planner and Seasonal Report
+- Data model: `wardrobe_items.last_worn` (ISO timestamp) + `times_worn` (integer counter) bumped by `markItemsWorn(itemIds)` in `src/lib/outfitHistory.js`. Outfit-level worn history lives separately in `outfit_history.worn_dates` (ISO array — Session 20 Your Week pill reads this). NOT a new table — both fields are on the existing `wardrobe_items` row from Session 6A.
+- Lazy persistence (Session 9A architectural choice): `outfit_history` rows are inserted only on first user interaction with that outfit (rate / save / mark-worn) — outfits the user sees and ignores are NEVER persisted. This affects future analytics (Clear Out, Trip Planner, any Pro-tier "your style trends" feature) — they can only ever see engaged outfits, not the full universe Clozie has shown. Trade-off: cheap storage (no row bloat from non-engagement) at the cost of incomplete coverage.
 
 ## Clozie Photo Recognition
 
