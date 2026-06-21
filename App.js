@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
+  AppState,
   Dimensions,
   ScrollView,
   TextInput,
@@ -7075,8 +7076,8 @@ function ConsentModal({ visible, onAccept, onDecline }) {
 }
 
 // ── Main App Screen — 4 bottom tabs ─────────────────────────────────────────
-function MainAppScreen({ onSignOut }) {
-  const [activeTab, setActiveTab] = useState(0);
+function MainAppScreen({ onSignOut, initialTab = 0 }) {
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [wardrobeItems, setWardrobeItems] = useState([]);
   // Generation status drives Your Looks: 'idle' | 'loading' | 'success' | 'error'
   const [generationStatus, setGenerationStatus] = useState('idle');
@@ -7599,8 +7600,15 @@ function MainAppScreen({ onSignOut }) {
 
 // ── Main App — navigation ────────────────────────────────────────────────────
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState('splash');
+  // Step 1 (Session 26): 'checking' covers the brief moment we ask Supabase
+  // if there's an existing session in AsyncStorage. Resolves to 'main' if
+  // signed in, 'splash' if not (which then flows splash → welcome → auth).
+  const [currentScreen, setCurrentScreen] = useState('checking');
   const [authMode, setAuthMode] = useState('signup'); // 'signup', 'login', or 'forgot'
+  // Step 4 (Session 26): which tab MainAppScreen lands on. Set explicitly by
+  // each entry point before flipping currentScreen to 'main'. Auto-resume +
+  // Sign In → 1 (My Closet). Signup → PostLogin → main → 0 (My Style).
+  const [mainInitialTab, setMainInitialTab] = useState(0);
 
   const [fontsLoaded] = useFonts({
     PlayfairDisplay_400Regular,
@@ -7619,7 +7627,49 @@ export default function App() {
     }
   }, [fontsLoaded]);
 
+  // Step 1 (Session 26): on cold launch, check AsyncStorage for an existing
+  // Supabase session. If valid, skip splash/welcome/auth and go straight to
+  // main. If no session, fall through to the existing splash → welcome flow.
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      if (data?.session) {
+        setMainInitialTab(1); // returning user → My Closet
+        setCurrentScreen('main');
+      } else {
+        setCurrentScreen('splash');
+      }
+    }).catch(() => {
+      if (!cancelled) setCurrentScreen('splash');
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Step 6 (Session 26): keep the Supabase auto-refresh timer in sync with
+  // foreground/background state. iOS throttles JS timers during deep sleep,
+  // so the default auto-refresh can silently miss a token refresh while
+  // backgrounded. On 'active' we (re)start it — startAutoRefresh attempts a
+  // refresh immediately if the token is stale. On background we stop it
+  // cleanly. Canonical Supabase RN pattern.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        supabase.auth.startAutoRefresh();
+      } else {
+        supabase.auth.stopAutoRefresh();
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   if (!fontsLoaded) {
+    return null;
+  }
+
+  // Step 1 (Session 26): brief moment while getSession() resolves. Render
+  // nothing — the native splash from app.config.js (Session 19D) stays up.
+  if (currentScreen === 'checking') {
     return null;
   }
 
@@ -7649,12 +7699,13 @@ export default function App() {
       {currentScreen === 'postlogin' && (
         <PostLoginWelcomeScreen
           onStart={() => {
+            setMainInitialTab(0); // new user post-signup → My Style
             setCurrentScreen('main');
           }}
         />
       )}
       {currentScreen === 'main' && (
-        <MainAppScreen onSignOut={() => setCurrentScreen('welcome')} />
+        <MainAppScreen onSignOut={() => setCurrentScreen('welcome')} initialTab={mainInitialTab} />
       )}
       {currentScreen === 'auth' && (
         <AuthScreen
@@ -7666,6 +7717,7 @@ export default function App() {
               setCurrentScreen('postlogin');
             } else {
               // Returning users skip straight to main app
+              setMainInitialTab(1); // returning user signing in → My Closet
               setCurrentScreen('main');
             }
           }}
