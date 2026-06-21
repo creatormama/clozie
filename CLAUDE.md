@@ -36,6 +36,24 @@ Original: March 24 2026 — REBUILD RULE and testing branch rule added.
 
 ---
 
+# DOCUMENTATION LAYERS — LOCKED 2026-06-21
+
+Three layers, each with one job. Future sessions follow this contract.
+
+- **CLAUDE.md** — lean living document. Standing rules, locked decisions, design system, env vars, VIPs, language rule, edge function deploy policy, CURRENT BUILD STATE snapshot, active KNOWN ISSUES. Auto-loaded at session start. Trim continuously; never let dated session prose accumulate here.
+- **CLAUDE_ARCHIVE.md** — historical session prose lifted out of CLAUDE.md during slim-down passes. Newest-first. Not auto-loaded; read on demand.
+- **SESSION_NOTES.md** — rolling, append-only session log. Newest entry at top. Each session appends ONE entry using the locked structure (Branch / Commits / Edge Function deploys / Cache token count / Goals / What changed / Tests / UNVERIFIED / Notes). Not auto-loaded; read on demand.
+
+**Desktop copy convention.** The repo file is ALWAYS named exactly `SESSION_NOTES.md` (one rolling file, never renamed). At the end of every session, also drop a COPY on Grace's Desktop with a UNIQUE DATED filename so uploads can be told apart:
+
+`SESSION_NOTES_Update[N]_Session[M]_[YYYY-MM-DD].md`
+
+Example: `SESSION_NOTES_Update1_Session2_2026-07-04.md`. The Desktop copy is reference-only — it lives outside the repo and is never committed. Update 1 Session 1's Desktop copy (2026-06-21) was dropped before this rule was formalized and is intentionally left as the plain `SESSION_NOTES.md`; the dated convention applies from Update 1 Session 2 onward.
+
+Session numbering format is `Update[N]_Session[M]` matching the App Store lifecycle described in CURRENT BUILD STATE.
+
+---
+
 # WHO I AM
 
 I am Grace — non-technical founder of Clozie.
