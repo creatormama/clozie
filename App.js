@@ -1305,6 +1305,11 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
   // One-shot per open — flag resets when panel closes so the next open scrolls fresh.
   const scrollRef = useRef(null);
   const hasScrolledForPanelRef = useRef(false);
+  // Update 1 — Session 2: capture panel Y from onLayout so handleEditItem can scroll
+  // back to the panel reliably when a second pencil is tapped while the panel is
+  // already open (onLayout doesn't always re-fire if the new item produces the
+  // same panel height).
+  const panelYRef = useRef(null);
   useEffect(() => {
     if (!showAddPanel) hasScrolledForPanelRef.current = false;
   }, [showAddPanel]);
@@ -1385,6 +1390,17 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
     setRecognitionStatus(null);
     setAutoFilledFields({});
     setShowAddPanel(true);
+    // Update 1 — Session 2: if the panel was ALREADY open when this pencil was
+    // tapped, scroll back to the captured panel Y so the re-targeted panel is
+    // visible. showAddPanel here is the pre-render closure value (React state
+    // setters are async), so this branch only runs for "second pencil while
+    // panel is already open." First-open is still covered by the existing
+    // one-shot scroll inside the panel's onLayout.
+    if (showAddPanel && panelYRef.current != null && scrollRef.current) {
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({ y: Math.max(0, panelYRef.current - 12), animated: true });
+      });
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -1937,6 +1953,7 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
         <View
           style={wardrobeStyles.addPanel}
           onLayout={(e) => {
+            panelYRef.current = e.nativeEvent.layout.y;
             if (showAddPanel && !hasScrolledForPanelRef.current && scrollRef.current) {
               hasScrolledForPanelRef.current = true;
               const { y } = e.nativeEvent.layout;

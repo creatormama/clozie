@@ -10,6 +10,57 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 1 — Session 2 — 2026-06-22 — My Closet "second pencil while open" scroll fix
+
+**Branch:** testing (HEAD at session start: `0c1d2c0`)
+**Commit(s):** to be created at session end, single commit on testing
+**Edge Function deploys:** none
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched)
+**App Store impact:** none yet — work-in-progress toward Build 13
+
+### Goals
+- Fix the "stranded edit panel" symptom: when the Add/Edit panel was already open in My Closet and the user tapped a DIFFERENT pencil, the panel silently re-targeted to the new item off-screen and did NOT scroll into view. Looked like the app was broken.
+- Two related symptoms (status-bar-tap-scrolls-to-top without closing; close strands list at the bottom; silent overwrite of unsaved typing on second pencil) deliberately NOT fixed this session — logged as open problems for future sessions.
+
+### What changed (App.js only — no other files touched)
+
+Three surgical edits inside WardrobeTab.
+
+**Step 1 — new ref.** Added `const panelYRef = useRef(null);` immediately after the existing `scrollRef` + `hasScrolledForPanelRef` block (App.js around line 1311), with a comment explaining intent. Dead code until Step 3.
+
+**Step 2 — capture panel Y on every onLayout.** Added `panelYRef.current = e.nativeEvent.layout.y;` as the first line inside the panel wrapper's existing `onLayout` (App.js around line 1939), OUTSIDE the existing `if (showAddPanel && !hasScrolledForPanelRef.current && scrollRef.current)` block. The existing one-shot first-open scroll is byte-identical; only the unconditional ref-capture is new.
+
+**Step 3 — use captured Y in handleEditItem.** Appended a 7-line gated block at the end of `handleEditItem` (App.js around line 1377), after `setShowAddPanel(true)`:
+
+    if (showAddPanel && panelYRef.current != null && scrollRef.current) {
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({ y: Math.max(0, panelYRef.current - 12), animated: true });
+      });
+    }
+
+`showAddPanel` in this gate is the pre-render closure value (React state setters are async), so the branch fires only on "second pencil while panel is already open." First-open is still handled by the existing one-shot inside `onLayout`. `requestAnimationFrame` ensures the scroll runs after React commits the new field values.
+
+### Tests — all live on iPhone in Expo Go
+
+- First pencil tap from cold → panel auto-scrolls into view (existing behavior unchanged). ✅ PASSED.
+- Open panel on item A → tap pencil on item B → panel scrolls back into view, fields update. ✅ PASSED.
+- Both items have photos AND similar-length notes (the case where the cheaper "reset the existing guard" approach would have failed because onLayout doesn't re-fire when panel height is identical) → still scrolls. ✅ PASSED.
+- Close via X → re-open via floating + → first-open auto-scroll still works. ✅ PASSED.
+- Close via Cancel → re-open via pencil → first-open auto-scroll still works. ✅ PASSED.
+
+### UNVERIFIED
+
+None this session. Everything was iPhone-testable in Expo Go.
+
+### Notes / decisions
+
+- Considered the smaller "Option A" fix (reset `hasScrolledForPanelRef.current = false` in `handleEditItem` so the existing onLayout one-shot re-fires). Rejected after closer reading: `onLayout` only re-fires when the panel's measured height changes between the two items. Two items both with photos and similar-length notes produce identical panel height → onLayout doesn't re-fire → no scroll. A sometimes-works UI fix is worse than no fix. Capture-and-scroll-directly fires every time.
+- Did NOT convert the inline panel to a real Modal. That is the structural fix that would also kill the status-bar-tap-to-top symptom AND the close-strands-the-list-at-the-bottom symptom in one pass. Logged as a new KNOWN ISSUES entry in CLAUDE.md for a dedicated future session — too much surface area to bundle here.
+- Did NOT guard against silent overwrite of unsaved typing when a second pencil is tapped. Logged as a new KNOWN ISSUES entry in CLAUDE.md — planned as the next session.
+- No new dependencies, no Edge Function deploys, no SYSTEM_PROMPT touch, no Supabase schema changes. Pure client-side fix.
+
+---
+
 ## Update 1 — Session 1 — 2026-06-21 — Stay Logged In + Land on My Closet
 
 **Branch:** testing (HEAD at session start: `f2d97e5`)
