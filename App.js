@@ -45,6 +45,13 @@ import { upsertOutfitInteraction, markItemsWorn, fetchSavedOutfits, fetchWornOut
 import { filterWardrobeItems } from './src/lib/filterWardrobeItems';
 import { filterSavedOutfits } from './src/lib/filterSavedOutfits';
 
+// Dynamic Type global cap — limits iOS Larger Text scaling to 1.3× app-wide.
+// Tighter caps on big headings live inline at Welcome + Splash.
+Text.defaultProps = Text.defaultProps || {};
+Text.defaultProps.maxFontSizeMultiplier = 1.3;
+TextInput.defaultProps = TextInput.defaultProps || {};
+TextInput.defaultProps.maxFontSizeMultiplier = 1.3;
+
 // ── Design tokens — sacred, never change ─────────────────────────────────────
 const G = '#C9A96E';       // gold accent
 const BG = '#0D0C0A';      // background
@@ -132,12 +139,12 @@ function SplashScreenView({ onFinished }) {
       <StatusBar style="light" />
       <Animated.View style={{ opacity: logoFade }}>
         <View style={styles.splashLogo}>
-          <Text style={styles.splashLogoClo}>Clo</Text>
-          <Text style={styles.splashLogoZie}>zie</Text>
+          <Text style={styles.splashLogoClo} maxFontSizeMultiplier={1.1}>Clo</Text>
+          <Text style={styles.splashLogoZie} maxFontSizeMultiplier={1.1}>zie</Text>
         </View>
       </Animated.View>
       <Animated.View style={{ opacity: Animated.multiply(labelFade, labelPulse) }}>
-        <Text style={styles.splashLabel}>✦ YOUR PERSONAL STYLIST ✦</Text>
+        <Text style={styles.splashLabel} maxFontSizeMultiplier={1.15}>✦ YOUR PERSONAL STYLIST ✦</Text>
       </Animated.View>
     </View>
   );
@@ -179,14 +186,14 @@ function WelcomeScreen({ onNext, onSignIn }) {
 
         <View style={welcomeStyles.logoBlock} pointerEvents="none">
           <Text style={welcomeStyles.logoRow}>
-            <Text style={welcomeStyles.logoClo}>Clo</Text>
-            <Text style={welcomeStyles.logoZie}>zie</Text>
+            <Text style={welcomeStyles.logoClo} maxFontSizeMultiplier={1.1}>Clo</Text>
+            <Text style={welcomeStyles.logoZie} maxFontSizeMultiplier={1.1}>zie</Text>
           </Text>
-          <Text style={welcomeStyles.eyebrow}>YOUR PERSONAL STYLIST</Text>
+          <Text style={welcomeStyles.eyebrow} maxFontSizeMultiplier={1.15}>YOUR PERSONAL STYLIST</Text>
         </View>
 
         <View style={welcomeStyles.bottomBlock}>
-          <Text style={welcomeStyles.tagline}>
+          <Text style={welcomeStyles.tagline} maxFontSizeMultiplier={1.15}>
             Everyone says I have nothing to wear.{'\n'}Clozie solves that in 30 seconds.
           </Text>
 

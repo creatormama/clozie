@@ -11,7 +11,7 @@ READ THIS ENTIRE FILE before doing anything. No exceptions.
 
 # CURRENT BUILD STATE — UPDATE THIS SECTION WHEN STATE CHANGES
 
-Last verified: 2026-06-22.
+Last verified: 2026-06-23.
 
 **LIVE / FROZEN: Clozie v1.0.0 (Build 12)** — commit `9d617db`, tagged `v1.0.0-build12-appstore-live`, branch `production`. Submitted to Apple 2026-06-04, in Apple review. **Build 12 does not move.** Tags are immutable; `production` only fast-forwards when a new build is Apple-approved and replaces it. The `v1.0.0-build12-appstore-live` tag is the permanent restore point for Build 12 forever.
 
@@ -28,6 +28,7 @@ Standing facts:
 - Edge Function `generate-outfits` SYSTEM_PROMPT cache: 2,510 tokens (verified via Supabase Logs `cache_read_input_tokens` round-trip). 462 tokens of headroom above the 2,048 caching threshold.
 - Active Edge Functions: `generate-outfits`, `recognize-photo`, `delete-user`. All deploy via Supabase CLI from disk only — see EDGE FUNCTION DEPLOY POLICY.
 - Current Expo SDK: 54. Do NOT run `npm audit fix` against this SDK — see THINGS TRIED THAT DID NOT WORK.
+- Dynamic Type cap live (Update 1 — Session 3): Text/TextInput global cap at `maxFontSizeMultiplier = 1.3`; explicit `maxFontSizeMultiplier={1.1}` on Welcome + Splash big DM Serif headings; `maxFontSizeMultiplier={1.15}` on Welcome eyebrow + tagline + Splash label. MITIGATION only — Welcome safe-area debt (fixed `top:80` / `bottom:60`) is unchanged and stays on the deferred-layout list.
 
 This is the load-bearing snapshot of "where Clozie stands right now." When a state fact changes (new build ships, Edge Function deploys, cache token count moves, Expo SDK upgrades), update THIS section. Session-by-session narrative for all legacy sessions through Build 12 lives below in this file + CLAUDE_ARCHIVE.md. From Update 1 onward, session narrative lives in SESSION_NOTES.md.
 
@@ -367,7 +368,7 @@ Welcome screen has been redesigned. Full bleed portrait photo, top and bottom gr
 - No 3 bottom icons — removed completely
 - Welcome screen ONLY gets subtle radial gold glow in center
 - All other screens — plain solid dark background, NO glow, NO pattern
-- ⚠️ Safe area debt: logoBlock top:80 and bottomBlock bottom:60 use fixed values — fix with useSafeAreaInsets when changing Welcome screen photo.
+- ⚠️ Safe area debt: logoBlock top:80 and bottomBlock bottom:60 use fixed values — fix with useSafeAreaInsets when changing Welcome screen photo. The Dynamic Type cap (Update 1 — Session 3, 2026-06-23) MITIGATES the symptom at large text sizes; it is NOT a fix for the underlying safe-area debt and the layout still needs the responsive-layout session.
 
 Flow: Welcome → taps Next → Peek Inside → taps Start Styling → Sign Up
 Login link → Login screen directly.
@@ -398,7 +399,7 @@ Espresso #2C1A0E ← arrow. Top left, 44px tap target, every non-tab screen.
 - Italic tagline: "Everyone says I have nothing to wear. Clozie solves that in 30 seconds."
 - Gold pill button: "Next →"
 - "Already have an account? Sign in"
-- ⚠️ Safe area debt: logoBlock top:80 and bottomBlock bottom:60 use fixed values — fix with useSafeAreaInsets when changing Welcome screen photo.
+- ⚠️ Safe area debt: logoBlock top:80 and bottomBlock bottom:60 use fixed values — fix with useSafeAreaInsets when changing Welcome screen photo. The Dynamic Type cap (Update 1 — Session 3, 2026-06-23) MITIGATES the symptom at large text sizes; it is NOT a fix for the underlying safe-area debt and the layout still needs the responsive-layout session.
 
 ## Peek Inside Screen (How It Works)
 
@@ -841,6 +842,7 @@ Rough edges that don't block current work but should be cleaned up before Phase 
 - Apple Sign-In end-to-end auth flow UNVERIFIED on TestFlight. Wired in Session 22 (2026-06-03) but Expo Go lacks the iOS Sign In with Apple entitlement, so the native sheet only errors out in dev. First real test happens on TestFlight Build 13. Re-flagged Update 1 — Session 1 alongside the long-sleep retest. See SESSION_NOTES.md Update 1 — Session 1.
 - My Closet Add/Edit panel still lives INLINE inside the closet ScrollView, not as a real Modal. Update 1 — Session 2 (2026-06-22) removed the worst symptom (second pencil while panel is open now scrolls back into view via a captured panel Y) but the structural root cause is unchanged. Two residual symptoms remain inherent to the inline structure: (a) tapping near the X close button can clip the iOS status bar and trigger iOS's built-in scroll-to-top without closing the panel, (b) closing the panel does NOT restore the scroll position the user was at before opening — list stays parked where the auto-scroll landed it. Real fix is converting the panel to a `<Modal>` overlay, which would eliminate both residual symptoms AND the silent-overwrite issue (next entry) in one structural change. Deferred because the panel is ~200 lines with photo upload, recognition bar, category picker, KeyboardAvoidingView behavior, and four close paths — needs its own session with full iPhone regression across add-item + edit-item + photo recognition + offline. Surfaced Update 1 — Session 2 (2026-06-22). See SESSION_NOTES.md Update 1 — Session 2.
 - My Closet — tapping a second pencil while the Add/Edit panel is already open silently OVERWRITES any unsaved typing in the open panel. No confirmation, no warning. `handleEditItem` at App.js:1377 has no guard — it unconditionally repopulates all field state (`setNewItemName`, `setNewItemCategory`, `setNewItemColour`, `setNewItemNotes`, `setPhotoUri`) with the new item's data even if the user just typed an unsaved edit on item A. Update 1 — Session 2 (2026-06-22) made the re-targeted panel visible (it used to be off-screen), which makes this data-loss risk more discoverable. Candidate fixes for the next session: (a) guard with a "Discard unsaved changes?" confirm modal when any field has been edited from the original item's value, or (b) just block the second pencil tap with a brief toast when the panel is dirty. Surfaced Update 1 — Session 2 (2026-06-22). Planned as the next session per Grace's call.
+- Dynamic Type cap (Update 1 — Session 3, 2026-06-23) is a MITIGATION, not a fix. The cap limits how far iOS Larger Text can scale fonts in Clozie (global Text/TextInput at 1.3×, Welcome + Splash big DM Serif headings at 1.1×, Welcome eyebrow/tagline + Splash label at 1.15×). It prevents the worst layout breakage on Welcome and Splash at the largest accessibility text sizes — pre-cap the 64pt Welcome logo hit the notch and the tagline collided with the woman's photo. But the underlying root cause — fixed-pixel positioning that ignores the safe area (Welcome `logoBlock top:80` and `bottomBlock bottom:60` at App.js:7925 / 7953) — is unchanged. At the cap the logo is still bigger than at 1.0× and `top:80` still ignores the notch. The full responsive-layout rework remains DEFERRED to a dedicated session; until then, do NOT treat the cap as "Welcome is fixed for Dynamic Type." The cap also does not protect any future fixed-pixel layout that gets added — every new layout still needs to be designed for the 1.3× / 1.15× / 1.1× growth bands. UNVERIFIED on TestFlight standalone (Build 13) — the documented Fabric AX-size weakness in RN's `maxFontSizeMultiplier` would surface on standalone first if at all; flag if a future tester reports text growing past the cap on a maxed slider.
 
 ---
 

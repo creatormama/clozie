@@ -10,6 +10,75 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 1 — Session 3 — 2026-06-23 — Dynamic Type cap (iOS Larger Text)
+
+**Branch:** testing (HEAD at session start: `94bde91`)
+**Commit(s):** to be created at session end, single commit on testing
+**Edge Function deploys:** none
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched)
+**App Store impact:** none yet — work-in-progress toward Build 13
+
+### Goals
+- Cap how far iOS Dynamic Type can scale Clozie's fonts at the largest accessibility text sizes, so the Welcome and Splash layouts stop breaking when the slider is maxed (pre-fix the 64pt logo hit the notch and the tagline collided with the photo).
+- **Scope: cap only.** Full responsive-layout rework (replacing fixed `top:80` / `bottom:60` with `useSafeAreaInsets`) explicitly DEFERRED to a dedicated future session. The cap is a MITIGATION, not a fix.
+
+### Architecture context (one-paragraph preamble)
+
+Expo SDK 54.0.35 + RN 0.81.5 + React 19.1.0. No `newArchEnabled: false` override anywhere → this build runs the New Architecture (Fabric). RN's `maxFontSizeMultiplier` has had a documented weakness on Fabric at the extreme accessibility sizes (AX1-AX5), so the plan was deliberately defensive from the start: one global default PLUS explicit per-component overrides on the biggest headings in the same session. Pre-session repo-wide grep for `maxFontSizeMultiplier`, `allowFontScaling`, `Text.defaultProps` returned zero matches — every Text was scaling unlimited.
+
+### What changed (App.js only — 9 cap sites added; no styles, no layout, no new files, no new dependencies)
+
+**Step 1 — global cap on Text + TextInput.** 8 lines inserted at module scope at App.js:48–55, immediately after the imports and before the design-tokens block:
+
+    // Dynamic Type global cap — limits iOS Larger Text scaling to 1.3× app-wide.
+    // Tighter caps on big headings live inline at Welcome + Splash.
+    Text.defaultProps = Text.defaultProps || {};
+    Text.defaultProps.maxFontSizeMultiplier = 1.3;
+    TextInput.defaultProps = TextInput.defaultProps || {};
+    TextInput.defaultProps.maxFontSizeMultiplier = 1.3;
+
+Module scope so it runs once at load, not on every render. No-op at the default text slider position (multiplier 1.0).
+
+**Step 2 — Welcome explicit caps.** Four single-prop additions in WelcomeScreen JSX:
+- App.js:189 — `logoClo` → `maxFontSizeMultiplier={1.1}`
+- App.js:190 — `logoZie` → `maxFontSizeMultiplier={1.1}`
+- App.js:192 — `eyebrow` → `maxFontSizeMultiplier={1.15}`
+- App.js:196 — `tagline` → `maxFontSizeMultiplier={1.15}`
+
+64pt × 1.1 = ~70pt at max slider, clears the notch. 18pt × 1.15 = ~20.7pt within the 26pt fixed `lineHeight` of the tagline, no vertical clipping.
+
+**Step 3 — Splash explicit caps.** Three single-prop additions in SplashScreenView JSX:
+- App.js:142 — `splashLogoClo` → `maxFontSizeMultiplier={1.1}` (72pt DM Serif "Clo")
+- App.js:143 — `splashLogoZie` → `maxFontSizeMultiplier={1.1}` (72pt italic "zie")
+- App.js:147 — `splashLabel` → `maxFontSizeMultiplier={1.15}` ("✦ YOUR PERSONAL STYLIST ✦")
+
+72pt × 1.1 = ~79pt fits comfortably inside the existing 92pt `lineHeight` box.
+
+**Native splash PNG unaffected.** The native splash configured in `app.config.js` (Session 19D — `expo-splash-screen` plugin) is a static image and does not respond to Dynamic Type at all. Only the React `<SplashScreenView>` (1.8s window after the native splash) needed the cap.
+
+**Locked starting values, no tightening needed.** Pre-session call was "we tighten by 0.05 after iPhone test if anything collides." Nothing collided; numbers held.
+
+### Tests — all live on iPhone in Expo Go, both normal text size AND slider all the way RIGHT, with Expo Go fully closed between cold-launch tests
+
+- **Step 1 (global cap)** — normal size: zero visual change across Welcome, My Closet, Today's Vibe, Your Looks. Max slider: body/UI text "slightly enlarged, big enough to read, nothing huge, nothing broke." ✅ PASSED.
+- **Step 2 (Welcome caps)** — normal size: Welcome byte-identical. Max slider: logo clears the notch, eyebrow sits clean under it, tagline fits two lines with no clipping. Closet, Hanger View, Mood Board confirmed good at both sizes. ✅ PASSED.
+- **Step 3 (Splash caps)** — normal size: splash + Welcome unchanged. Max slider: splash logo clears the top with headroom + label on one line; Welcome holds; Peek Inside (no explicit cap, on global 1.3) enlarges cleanly with no clipping. ✅ PASSED.
+- **Final pass** — Welcome, Peek Inside, Your Looks all unchanged at normal size. Nothing shrank, nothing shifted. ✅ PASSED.
+
+### UNVERIFIED
+
+- Cap behavior on a TestFlight standalone (Build 13). Expo Go and standalone share the Fabric runtime, but the documented AX-size weakness would most likely surface on standalone first. If a future tester reports text growing past the cap on a maxed slider, revisit per-component caps on the offender.
+
+### Notes / decisions
+
+- **MITIGATION, not a fix. Recorded explicitly in CLAUDE.md.** The cap stops the worst symptom (logo into notch, tagline into photo) at max slider but does NOT fix the underlying root cause — Welcome's `logoBlock top:80` and `bottomBlock bottom:60` (App.js:7925, 7953) are fixed-pixel positions that ignore the safe area. At the cap the logo is still bigger than at 1.0× and `top:80` still ignores the notch. The full responsive-layout rework stays DEFERRED to a dedicated future session. CLAUDE.md `WELCOME SCREEN LAYOUT` section updated to acknowledge the cap; a new KNOWN ISSUES entry was added so future-me cannot misread this as "Welcome is Dynamic Type clean."
+- The cap also does NOT protect any FUTURE fixed-pixel layout. Every new layout still needs to be designed for the 1.3× / 1.15× / 1.1× growth bands.
+- Did NOT use `allowFontScaling={false}` anywhere (explicitly out of scope; would have killed accessibility).
+- Did NOT touch the Session 2 scroll fix, the Session 10A My Closet redesign, the debug button, the layout switcher, or DEBUG_LAYOUTS.
+- No Edge Function deploys, no SYSTEM_PROMPT touch, no eas.json change, no app.config.js change, no Supabase schema change, no new dependencies. Pure client-side render-behavior change.
+
+---
+
 ## Update 1 — Session 2 — 2026-06-22 — My Closet "second pencil while open" scroll fix
 
 **Branch:** testing (HEAD at session start: `0c1d2c0`)
