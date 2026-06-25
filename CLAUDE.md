@@ -11,7 +11,7 @@ READ THIS ENTIRE FILE before doing anything. No exceptions.
 
 # CURRENT BUILD STATE — UPDATE THIS SECTION WHEN STATE CHANGES
 
-Last verified: 2026-06-23.
+Last verified: 2026-06-24.
 
 **LIVE / FROZEN: Clozie v1.0.0 (Build 12)** — commit `9d617db`, tagged `v1.0.0-build12-appstore-live`, branch `production`. Submitted to Apple 2026-06-04, in Apple review. **Build 12 does not move.** Tags are immutable; `production` only fast-forwards when a new build is Apple-approved and replaces it. The `v1.0.0-build12-appstore-live` tag is the permanent restore point for Build 12 forever.
 
@@ -29,6 +29,7 @@ Standing facts:
 - Active Edge Functions: `generate-outfits`, `recognize-photo`, `delete-user`. All deploy via Supabase CLI from disk only — see EDGE FUNCTION DEPLOY POLICY.
 - Current Expo SDK: 54. Do NOT run `npm audit fix` against this SDK — see THINGS TRIED THAT DID NOT WORK.
 - Dynamic Type cap live (Update 1 — Session 3): Text/TextInput global cap at `maxFontSizeMultiplier = 1.3`; explicit `maxFontSizeMultiplier={1.1}` on Welcome + Splash big DM Serif headings; `maxFontSizeMultiplier={1.15}` on Welcome eyebrow + tagline + Splash label. MITIGATION only — Welcome safe-area debt (fixed `top:80` / `bottom:60`) is unchanged and stays on the deferred-layout list.
+- Indoor Toggle silent-weather fix live (Update 1 — Session 4): when `indoors === true` in the `generate-outfits` Edge Function, the weather signal goes silent before the prompt is built — weather data line renders as `Weather: Indoors — climate not a factor`, `buildWeatherHint` returns `null`, and weather safety filters C1 Cold / Cool-Cold open-footwear / C2 Hot / Hot-Warm heavy-outerwear name-pattern / C3 Rainy / C4 Snowy all skip. Occasion layering + Brief untouched, so blazers / suits / cardigans / sweaters / cover-ups survive. C5 Indoor warmth filter + Indoor name-pattern filter retained as belt-and-suspenders. SYSTEM_PROMPT untouched; cache stayed at 2,510 tokens. Closes the "Rubber Rain Anorak indoors" bug surfaced post-Build 12.
 
 This is the load-bearing snapshot of "where Clozie stands right now." When a state fact changes (new build ships, Edge Function deploys, cache token count moves, Expo SDK upgrades), update THIS section. Session-by-session narrative for all legacy sessions through Build 12 lives below in this file + CLAUDE_ARCHIVE.md. From Update 1 onward, session narrative lives in SESSION_NOTES.md.
 
@@ -337,7 +338,7 @@ Both pipelines silently corrupted bytes. The deployed function would compile and
 
 1. Edit `index.ts` directly (preferred), OR edit README.md and re-extract typescript via Python binary I/O
 2. Verify byte-perfect: em-dash count, middot count, total bytes match expected canonical reference
-3. Authenticate: PAT stored in macOS Keychain as `supabase-pat-clozie` (created 2026-05-12, scoped to `/usr/bin/security` only via `-T` flag — no auth dialog on read). Read via: `SUPABASE_ACCESS_TOKEN=$(security find-generic-password -s 'supabase-pat-clozie' -w)`. To rotate: revoke at https://supabase.com/dashboard/account/tokens, generate new PAT, then run `security add-generic-password -U -s "supabase-pat-clozie" -a "$USER" -w "<new-PAT>" -T /usr/bin/security` (the `-U` flag updates the existing entry).
+3. Authenticate: PAT stored in macOS Keychain as `supabase-pat-clozie` (created 2026-05-12, scoped to `/usr/bin/security` only via `-T` flag — no auth dialog on read). Read via: `SUPABASE_ACCESS_TOKEN=$(security find-generic-password -s 'supabase-pat-clozie' -w)`. To rotate: revoke at https://supabase.com/dashboard/account/tokens, generate new PAT, then run `security add-generic-password -U -s "supabase-pat-clozie" -a "$USER" -w "<new-PAT>" -T /usr/bin/security` (the `-U` flag updates the existing entry). Last rotated 2026-06-24 (Update 1 — Session 4) — new Supabase-side token named `clozie-cli-2026-06-24`, expires 2026-12-19.
 4. Deploy: `supabase functions deploy <function-name> --project-ref sbiwuqjnwjgjazxlyfhb --use-api`
 5. Verify on iPhone — generate, check Supabase logs for cache_creation/cache_read tokens
 

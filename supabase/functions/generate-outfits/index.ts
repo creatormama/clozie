@@ -488,7 +488,11 @@ function buildFreshContent(args: {
     ? 'She chose these pieces intentionally. Find the strongest combinations.'
     : ''
 
-  const weatherHint = buildWeatherHint(temperature, condition)
+  // Indoor toggle ON: silence the weather signal so Sonnet styles purely for the
+  // Occasion + Brief. Prevents rain anoraks / heavy parkas appearing on an
+  // indoor day just because outside is Cold or Rainy. Brief overrides via the
+  // Brief: line below (e.g. "office is freezing, bring a sweater" still reaches Sonnet).
+  const weatherHint = indoors ? null : buildWeatherHint(temperature, condition)
 
   // 9F-C: Recovery directive — fires when circuit breaker is tripped (>=2 all-Nope sessions).
   // Surfaced as the second styling line so Sonnet weights it heavily, right after identity.
@@ -541,7 +545,7 @@ function buildFreshContent(args: {
     `Style she loves: ${styles}`,
     `Colors she loves: ${colours}`,
     `Dislikes: ${dislikes}`,
-    `Weather: ${temperature}, ${condition}`,
+    indoors ? 'Weather: Indoors — climate not a factor' : `Weather: ${temperature}, ${condition}`,
     `Occasion: ${occasion}`,
     `Indoor: ${indoors ? 'Yes' : 'No'}`,
     `Brief: ${brief && brief.trim() ? brief.trim() : 'None'}`,
@@ -975,7 +979,8 @@ function applySafetyFilters(args: {
   let filtered = [...items]
 
   // C1 — Cold: drop Light/None warmth from Tops and Dresses (unless pinned).
-  if (temperature === 'Cold') {
+  // Skipped when Indoor toggle is ON — climate is silent on the indoor path.
+  if (!indoors && temperature === 'Cold') {
     const before = filtered.length
     filtered = filtered.filter(i => {
       if (i.id === pinnedItemId) return true
@@ -990,7 +995,8 @@ function applySafetyFilters(args: {
 
   // Cool/Cold — drop open-toe and exposed-foot shoes by name pattern (unless pinned).
   // Footwear-only — sleeveless tops are unaffected (they can go under layers).
-  if (temperature === 'Cool' || temperature === 'Cold') {
+  // Skipped when Indoor toggle is ON — climate is silent on the indoor path.
+  if (!indoors && (temperature === 'Cool' || temperature === 'Cold')) {
     const before = filtered.length
     filtered = filtered.filter(i => {
       if (i.id === pinnedItemId) return true
@@ -1004,7 +1010,8 @@ function applySafetyFilters(args: {
   }
 
   // C2 — Hot: drop Heavy warmth from all categories (unless pinned).
-  if (temperature === 'Hot') {
+  // Skipped when Indoor toggle is ON — climate is silent on the indoor path.
+  if (!indoors && temperature === 'Hot') {
     const before = filtered.length
     filtered = filtered.filter(i => {
       if (i.id === pinnedItemId) return true
@@ -1019,7 +1026,8 @@ function applySafetyFilters(args: {
   // Hot/Warm — drop heavy outerwear by name pattern (unless pinned).
   // Name-pattern based, active today regardless of warmth column.
   // Companion to C2 which is warmth-column based (dormant until warmth UI lands).
-  if (temperature === 'Hot' || temperature === 'Warm') {
+  // Skipped when Indoor toggle is ON — climate is silent on the indoor path.
+  if (!indoors && (temperature === 'Hot' || temperature === 'Warm')) {
     const before = filtered.length
     filtered = filtered.filter(i => {
       if (i.id === pinnedItemId) return true
@@ -1035,7 +1043,8 @@ function applySafetyFilters(args: {
   // C3 — Rainy: drop suede items and open-toe shoes (unless pinned).
   // Detection by name pattern (case-insensitive). Suede applies across all categories
   // because suede bags/jackets/skirts also get ruined in rain.
-  if (condition === 'Rainy') {
+  // Skipped when Indoor toggle is ON — climate is silent on the indoor path.
+  if (!indoors && condition === 'Rainy') {
     const before = filtered.length
     filtered = filtered.filter(i => {
       if (i.id === pinnedItemId) return true
@@ -1053,7 +1062,8 @@ function applySafetyFilters(args: {
   // Snow is the one weather where heels are filtered — slip risk + salt damage are
   // safety/destruction concerns, not taste. Word-boundary regex on heel/pump avoids
   // false positives like "wheel" or "pumpkin".
-  if (condition === 'Snowy') {
+  // Skipped when Indoor toggle is ON — climate is silent on the indoor path.
+  if (!indoors && condition === 'Snowy') {
     const before = filtered.length
     filtered = filtered.filter(i => {
       if (i.id === pinnedItemId) return true

@@ -10,6 +10,72 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 1 — Session 4 — 2026-06-24 — Indoor toggle silent-weather fix (Anorak bug)
+
+**Branch:** testing (HEAD at session start: `73a4419`)
+**Commit(s):** to be created at session end, single commit on testing
+**Edge Function deploys:** 1 (`generate-outfits` via CLI `--use-api`, no `--yes` flag)
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched)
+**App Store impact:** LIVE — same `generate-outfits` Edge Function is called by Build 12 in production. The deploy reached live App Store users immediately. Outdoor path was provably verified byte-identical via Regression Tests A/B/C before sign-off.
+
+### Goals
+- Close the "Rubber Rain Anorak indoors" bug: with Indoor toggle ON, Sonnet was still picking weather gear (e.g. a rubber rain anorak) because the weather signal was still reaching the prompt. The `HEAVY_OUTERWEAR` name-pattern filter that's supposed to catch heavy outerwear was missing the word `anorak` — fragile name-list whack-a-mole.
+- Replace the fragile name-list defense (for the indoor case only) with a root-cause fix: silence the weather signal entirely when `indoors === true`. Sonnet then styles purely for Occasion + Brief.
+- Outdoor path (`indoors === false`) must be byte-identical to before.
+
+### What changed (`supabase/functions/generate-outfits/index.ts` only — 8 surgical edits gated behind `indoors === true`; +18 / -8 lines, net +10)
+
+**In `buildFreshContent`:**
+- Line 491 — `weatherHint` is now `null` when `indoors === true` (skips `buildWeatherHint`; removes the STYLING NOTES weather bullet on the indoor path). Otherwise calls `buildWeatherHint(temperature, condition)` as before.
+- Line 545 — Weather data line renders as `'Weather: Indoors — climate not a factor'` when `indoors === true`, otherwise byte-identical `` `Weather: ${temperature}, ${condition}` ``.
+
+**In `applySafetyFilters` — six weather filters now gated `!indoors`:**
+- C1 Cold (drops Light/None-warmth Tops/Dresses)
+- Cool/Cold open-footwear name-pattern (drops sandals / flip-flops / etc.)
+- C2 Hot (drops Heavy warmth tag across all categories)
+- Hot/Warm heavy-outerwear name-pattern (drops parkas / puffers / etc.)
+- C3 Rainy (drops suede / open-toe shoes)
+- C4 Snowy (drops suede / espadrille / heels / etc.)
+
+Each guard added as `if (!indoors && <original condition>) { ... }` — smallest possible diff, preserves existing structure. Comment added above each: `Skipped when Indoor toggle is ON — climate is silent on the indoor path.`
+
+**Kept as belt-and-suspenders (deliberately untouched):**
+- C5 Indoor warmth filter (index.ts:1086) — still fires on `indoors === true`, drops Heavy-warmth Outerwear. Dormant today (warmth column NULL per Known Issue), ready when it lights up.
+- Indoor name-pattern filter (index.ts:1102) — still fires on `indoors === true`, drops Outerwear items matching `HEAVY_OUTERWEAR` regex.
+
+Neither is load-bearing now — silencing weather is the primary defense — but both cost nothing at runtime and provide layered defense against any future Sonnet prompt-rule slippage.
+
+**Not touched:** SYSTEM_PROMPT, App.js, eas.json, app.config.js, Supabase schema, all Occasion filters (heels for active occasions / sneakers for Formal / open-footwear for Outdoor·Sport / fancy-dress / skirt), dislikes filter, the `Indoor: Yes/No` line at index.ts:546, the `Brief:` line at index.ts:547. Brief reaches Sonnet on every call regardless of toggle, so "office is freezing, bring a sweater" still overrides indoor silence.
+
+**Byte audit before deploy:** em-dashes 137 (clean UTF-8 `0xE2 0x80 0x94`), middots 18 (clean UTF-8 `0xC2 0xB7`), zero mojibake sequences. One new em-dash in user-facing copy (`'Weather: Indoors — climate not a factor'`); six new em-dashes inside the new "Skipped when Indoor toggle is ON" comments.
+
+### Mid-session: Supabase PAT rotation
+
+First deploy attempt returned `401 Unauthorized`. PAT in Keychain (44 chars, correct `sbp_` prefix) was structurally fine, but Supabase had revoked or expired it on their side. Grace generated a fresh PAT via dashboard (https://supabase.com/dashboard/account/tokens), Supabase-side name `clozie-cli-2026-06-24`, expires 2026-12-19. Keychain entry `supabase-pat-clozie` updated in place via `security add-generic-password -U -s "supabase-pat-clozie" -a "$USER" -w "<new-PAT>" -T /usr/bin/security`. Redeploy succeeded. CLAUDE.md PAT rotation block updated with the rotation date and new token expiry as a standing fact.
+
+### Tests — all PASSED on iPhone + Supabase Logs
+
+1. Indoor ON + Rainy + Going Out → no anorak / no rubber rain anything in any of the 3 outfits. ✅
+2. Indoor ON + Cold + Casual Day → no parka / puffer / heavy coat forced. ✅
+3. **Seatbelt 1** — Indoor ON + Work · Office / Formal Event → blazer or suit jacket still appears. ✅
+4. **Seatbelt 2** — Indoor ON + Brief = "office is cold, bring a sweater" → sweater / cover-up appears (Brief overrides indoor silence). ✅
+5. **Regression A** — Indoor OFF + Rainy → behaves byte-identical to pre-fix (suede / sandals filtered, weather bullet present, Weather data line present). ✅
+6. **Regression B** — Indoor OFF + Snowy → heels and unsafe-for-snow shoes filtered as before. ✅
+7. **Regression C** — Indoor OFF + Warm + Sunny → normal outfits, no anomalies. ✅
+8. **Cache check** — Supabase Logs showed `cache_read_input_tokens: 2510` on a second generation within 5 minutes (round-trip proof; SYSTEM_PROMPT untouched). ✅
+
+### UNVERIFIED
+- None. All seven scenarios verified directly on iPhone calling the live Edge Function. Cache integrity confirmed in Supabase Logs.
+
+### Notes / decisions
+- **Honest caveat acknowledged at planning time:** silencing weather makes the anorak indoors *extremely unlikely*, not *mathematically impossible*. Sonnet could still pick a rain anorak for purely aesthetic reasons on a Going Out occasion. Without a weather signal pushing it, probability collapses; with the belt-and-suspenders filters still active, even further. Accepted knowingly in the brief.
+- **Deploy shape decision:** single focused deploy chosen over splitting into two (filter-guards first, then user-message changes). The three changes only make sense together — a partial deploy would have left the fix half-done. One revert path, one test pass.
+- **Keep-the-name-list decision:** Grace had no preference; defaulted to keep the redundant Indoor name-pattern filter (and dormant C5 warmth filter) as belt-and-suspenders. If after a few days of TestFlight the name-list proves redundant, prune in a separate one-line session — don't bundle with the fix.
+- **Live blast radius:** this Edge Function is the same function called by Build 12 in the App Store. Deploy reached LIVE App Store users immediately. Outdoor behavior (Indoor OFF) was verified byte-identical via Regression Tests A/B/C before sign-off.
+- **No App.js change. No SYSTEM_PROMPT change. No `eas.json` / `app.config.js` / Supabase schema change. No new dependencies. No `npm audit fix`. `session-24a-shelved` not restored.**
+
+---
+
 ## Update 1 — Session 3 — 2026-06-23 — Dynamic Type cap (iOS Larger Text)
 
 **Branch:** testing (HEAD at session start: `94bde91`)
