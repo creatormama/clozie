@@ -73,6 +73,94 @@ const COLOR_NEUTRAL = /\b(black|white|cream|ivory|beige|camel|grey|gray|charcoal
 const COLOR_EARTH   = /\b(brown|tan|rust|terracotta|olive|khaki|chocolate|cognac|caramel|sand|taupe)\b/i
 const COLOR_NAVY    = /\b(navy|midnight)\b/i
 
+// === Session 5 (Update 1): Color family taxonomy ===
+// Dormant in Session 5: nothing in this Edge Function calls these helpers
+// today. Foundation for Session 6 (Brief color matching) and future color
+// learning.
+//
+// NAMING: deliberately distinct from the local colorFamily(item) inside
+// buildSmartFallback below. That one is load-bearing for smart fallback
+// and stays untouched.
+//
+// SESSION 6 INPUT CONTRACT: feed colorFamilyForText the COLOUR field only,
+// NOT (name + colour). Item names contain fabric/style words (Linen Shirt,
+// Denim Jacket) that would produce false hits.
+
+type ColorFamily =
+  | 'white' | 'beige-tan' | 'brown' | 'grey' | 'black' | 'metallic'
+  | 'blue' | 'green' | 'red' | 'pink' | 'purple' | 'yellow' | 'orange'
+
+const COLOR_FAMILIES: Record<ColorFamily, string[]> = {
+  'white':     ['white', 'ivory', 'cream', 'eggshell', 'pearl', 'snow', 'vanilla', 'off-white', 'winter white'],
+  'beige-tan': ['beige', 'tan', 'camel', 'sand', 'stone', 'oatmeal', 'taupe', 'nude', 'khaki', 'latte', 'wheat', 'champagne'],
+  'brown':     ['brown', 'chocolate', 'cognac', 'espresso', 'mocha', 'chestnut', 'coffee', 'copper', 'walnut', 'mahogany', 'tobacco', 'hazelnut'],
+  'grey':      ['grey', 'gray', 'charcoal', 'slate', 'ash', 'heather', 'dove', 'smoke', 'silver-grey'],
+  'black':     ['black', 'jet', 'onyx', 'ebony', 'noir', 'pitch'],
+  'metallic':  ['gold', 'silver', 'bronze', 'metallic', 'pewter', 'gunmetal', 'chrome', 'platinum', 'rose gold', 'champagne gold'],
+  'blue':      ['blue', 'navy', 'cobalt', 'indigo', 'denim', 'sky', 'periwinkle', 'royal', 'teal', 'turquoise', 'aqua', 'cornflower', 'cerulean', 'sky blue', 'powder blue', 'navy blue', 'slate blue', 'cobalt blue', 'dusty blue', 'steel blue', 'midnight blue'],
+  'green':     ['green', 'olive', 'sage', 'forest', 'emerald', 'mint', 'hunter', 'lime', 'kelly', 'seafoam', 'pistachio', 'pine', 'moss', 'army', 'chartreuse', 'forest green', 'hunter green', 'kelly green', 'olive green', 'sage green', 'army green', 'lime green', 'emerald green'],
+  'red':       ['red', 'burgundy', 'maroon', 'wine', 'crimson', 'scarlet', 'brick', 'cherry', 'cardinal', 'oxblood', 'ruby'],
+  'pink':      ['pink', 'blush', 'rose', 'fuchsia', 'magenta', 'salmon', 'coral pink', 'hot pink', 'dusty pink', 'baby pink'],
+  'purple':    ['purple', 'plum', 'lavender', 'lilac', 'violet', 'eggplant', 'mauve', 'aubergine', 'amethyst', 'grape'],
+  'yellow':    ['yellow', 'mustard', 'ochre', 'lemon', 'butter', 'honey'],
+  'orange':    ['orange', 'peach', 'apricot', 'tangerine', 'coral', 'terracotta', 'rust', 'burnt orange'],
+}
+
+const COLOR_FAMILY_TEMPERATURE: Record<ColorFamily, 'warm' | 'cool' | 'neutral'> = {
+  'white': 'neutral', 'beige-tan': 'warm', 'brown': 'warm', 'grey': 'cool',
+  'black': 'neutral', 'metallic': 'neutral', 'blue': 'cool', 'green': 'cool',
+  'red': 'warm', 'pink': 'warm', 'purple': 'cool', 'yellow': 'warm', 'orange': 'warm',
+}
+
+// "pastels" and "bold colors" are saturation concepts, not family lists
+// (no clean family mapping). Session 6 will need a separate mechanism.
+const COLOR_CATEGORY_WORDS: Record<string, ColorFamily[]> = {
+  'warm tones':    ['beige-tan', 'brown', 'red', 'pink', 'yellow', 'orange'],
+  'cool tones':    ['blue', 'green', 'purple', 'grey'],
+  'neutrals':      ['white', 'beige-tan', 'grey', 'black', 'brown'],
+  'black & white': ['black', 'white'],
+  'monochrome':    ['black', 'white', 'grey'],
+  'earth tones':   ['brown', 'beige-tan', 'green', 'orange', 'yellow'],
+  'jewel tones':   ['purple', 'green', 'blue', 'red'],
+}
+
+// Precomputed at module load. Sort by key length DESC so longest match wins
+// (rose gold beats rose, powder blue beats blue, silver-grey beats silver).
+const COLOR_LOOKUP_PATTERNS: { regex: RegExp; family: ColorFamily; keyLength: number }[] = (() => {
+  const out: { regex: RegExp; family: ColorFamily; keyLength: number }[] = []
+  for (const family of Object.keys(COLOR_FAMILIES) as ColorFamily[]) {
+    for (const key of COLOR_FAMILIES[family]) {
+      const lower = key.toLowerCase()
+      const escaped = lower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      out.push({ regex: new RegExp(`\\b${escaped}\\b`, 'i'), family, keyLength: lower.length })
+    }
+  }
+  out.sort((a, b) => b.keyLength - a.keyLength)
+  return out
+})()
+
+// Look up a single color name. Returns the family or null if no color word
+// matches. Whole-word matching via \b so "tan" doesn't hit "tank top".
+// Longest-match-first so "rose gold" -> metallic (not "rose" -> pink).
+// Case-insensitive; trims input.
+function colorFamilyForText(text: string): ColorFamily | null {
+  if (!text) return null
+  const haystack = text.toLowerCase().trim()
+  if (!haystack) return null
+  for (const { regex, family } of COLOR_LOOKUP_PATTERNS) {
+    if (regex.test(haystack)) return family
+  }
+  return null
+}
+
+// Look up a category phrase. Returns the list of families or null if unknown.
+// Case-insensitive; trims input. "pastels" / "bold colors" return null.
+function colorFamiliesForCategoryWord(text: string): ColorFamily[] | null {
+  if (!text) return null
+  const key = text.toLowerCase().trim()
+  return COLOR_CATEGORY_WORDS[key] ?? null
+}
+
 // Editorial name pools by occasion. Picked at random, no repeats within one generation.
 // Keys match the exact middot strings the client sends (App.js:221, App.js:1726).
 // Unrecognized occasions fall back to the 'Casual Day' pool.
