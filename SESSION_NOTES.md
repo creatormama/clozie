@@ -10,6 +10,55 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 1 — Session 5 — 2026-06-25 — Dormant color-family map (foundation for Session 6)
+
+**Branch:** testing (HEAD at session start: `e7dae0b`, after Session 5 commit: `7d997a7`)
+**Commit(s):** `7d997a7` on testing, pushed to origin/testing only. Main / production / tags untouched.
+**Edge Function deploys:** 0 — dormant code; nothing in the function calls the new helpers. Deploy deferred to Session 6 when a call site lands.
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched at all; Anthropic prompt cache keys on SYSTEM_PROMPT content not function bundle, so even if we had deployed it would not have invalidated the cache)
+**App Store impact:** none — Session 5 code is uncalled. No runtime behavior change reaches users.
+
+### Goals
+- Build the foundation: `COLOR_FAMILIES` map + two pure lookup helpers (`colorFamilyForText`, `colorFamiliesForCategoryWord`) in the `generate-outfits` Edge Function.
+- DORMANT this session — added but called by nothing.
+- Foundation for Session 6 (Brief color matching) and future color learning.
+- Zero behavior change, zero deploy, zero cache cost.
+
+### What changed (single file: `supabase/functions/generate-outfits/index.ts`; +88 lines, 0 deletions; inserted between line 74 `COLOR_NAVY` and line 79 `FALLBACK_NAMES_BY_OCCASION`)
+
+- **`ColorFamily` union type** — 13 families: `white | beige-tan | brown | grey | black | metallic | blue | green | red | pink | purple | yellow | orange`.
+- **`COLOR_FAMILIES` map** — 87 single-word entries + 26 compound entries across 13 families. Final word lists approved by Grace at Step A after mid-spec corrections (Change 1: dropped bare "powder" from blue to fix "powder pink" misroute to blue; Change 2: dropped "linen" from beige-tan because it's a fabric word that would mislabel "White Linen Shirt"; chartreuse moved yellow → green; bare "midnight" dropped from blue for the same logic as powder, kept "midnight blue" compound).
+- **`COLOR_FAMILY_TEMPERATURE` map** — warm/cool/neutral tag per family (warm = beige-tan, brown, red, pink, yellow, orange; cool = blue, green, purple, grey; neutral = white, black, metallic).
+- **`COLOR_CATEGORY_WORDS` map** — 7 category phrases → family lists (warm tones, cool tones, neutrals, black & white, monochrome, earth tones, jewel tones). "pastels" and "bold colors" deliberately return null (saturation concepts, no clean family mapping — Session 6 needs a separate mechanism for them).
+- **`COLOR_LOOKUP_PATTERNS` IIFE** — precomputed at module load. Sorts entries by key length DESC so longest match wins (rose gold beats rose, powder blue beats blue, silver-grey beats silver). Regex metacharacters escaped via `replace(/[.*+?^${}()|[\]\\]/g, '\\$&')` so hyphens in `silver-grey` / `off-white` and any future special chars are safe.
+- **`colorFamilyForText(text: string): ColorFamily | null`** — single-color lookup. Whole-word `\b` anchored so "tan" doesn't hit "tank top". Case-insensitive. Trims input. Empty/whitespace-only input returns null. Iterates precomputed patterns in length-DESC order; first regex hit wins.
+- **`colorFamiliesForCategoryWord(text: string): ColorFamily[] | null`** — category-phrase lookup. Exact lowercase match against the `COLOR_CATEGORY_WORDS` keys via `?? null`. Case-insensitive. Trims input.
+
+### Naming + scoping decisions
+
+- New top-level helper deliberately named `colorFamilyForText(text)` to AVOID colliding with the existing inner `colorFamily(item: Item)` at index.ts:816 inside `buildSmartFallback` (Session 7C, 2026-05-14). The inner one is load-bearing for smart fallback and stays 100% byte-identical. Different signature (`text: string` vs `item: Item`), different name, no shadowing. Confirmed via `tsc --strict` clean compile.
+
+### Tests — all PASSED locally; ZERO iPhone test required (dormant code)
+
+1. **tsc compile check** — extracted insertion to a standalone `.ts` file in scratchpad, ran `npx tsc --noEmit --strict --target ES2022 --lib ES2022` with a small typed smoke-test calling both helpers and the temperature map → exit code 0, zero errors, zero warnings.
+2. **Byte audit** — em-dash count 137 → 137 (unchanged), middot count 18 → 18 (unchanged), inserted region 5167 bytes all ASCII (zero non-ASCII bytes — verified by Python byte-scan).
+3. **36/36 scratchpad tests pass** — standalone `.mjs` at `/private/tmp/claude-501/.../scratchpad/color_family_test.mjs`. Includes the four correctness-proof tests: `"powder pink"` → pink (Change 1 proof), `"linen"` → null (Change 2 proof), `"chartreuse"` → green (move proof), `"midnight purple"` → purple (midnight drop safe). All locked rulings hold: `copper` → brown, `terracotta` → orange, `teal` → blue, `Rose Gold` → metallic, `Coral Pink` → pink, `Silver-Grey` → grey.
+4. **No iPhone test needed** — nothing in the Edge Function calls the new helpers; nothing the user can do triggers any new code path. The earliest user-visible effect from this foundation lands in Session 6.
+
+### UNVERIFIED
+
+- **Deno runtime compile** — `tsc --strict` is a faithful proxy for Supabase Edge Function type-checking, but Deno wasn't installed locally so we didn't run `deno check`. Risk is essentially zero (pure ES2022 + standard TypeScript; no Deno-specific APIs in the new code), but flag for the record. Will be verified the moment Session 6 deploys with a call site added.
+
+### Notes / decisions
+
+- **No deploy this session.** Dormant code has nothing to verify at runtime. Anthropic prompt caching keys on SYSTEM_PROMPT CONTENT, not on function bundle — so a redeploy with byte-identical SYSTEM_PROMPT would NOT have invalidated the cache. The only natural cache cost is the 5-min TTL lapse between generations. Deploy deferred to Session 6 when the helpers actually get called.
+- **CRITICAL — Session 6 input contract (DO NOT FORGET):** when Session 6 wires `colorFamilyForText` to read item colours from the wardrobe, feed it the COLOUR FIELD ONLY (e.g. `item.colour`), NEVER `item.name + item.colour` combined. Item names contain fabric/style words (Linen Shirt, Denim Jacket, Sand-Washed Tee) that would produce false positives. The existing inner `colorFamily(item)` at index.ts:816 uses `name + colour` deliberately for its smart-fallback purpose only — do NOT propagate that pattern. The contract is anchored in three places: (a) the code comment above the helper definition, (b) the CLAUDE.md Standing Facts bullet for Session 5, (c) this SESSION_NOTES entry.
+- **Pastels + Bold Colors return null** — known gap; saturation/lightness concepts can't translate to a single family list. Session 6 will need a separate mechanism (probably a flag passed to Sonnet, or per-item lightness/saturation check). Documented in the code comment.
+- **One new low-priority KNOWN ISSUE added to CLAUDE.md** — Cool + Rainy occasionally picks a heavy winter parka. Read-only observation, no code change. Most users won't own a heavy winter parka. Revisit only if reported.
+- **`session-24a-shelved` not restored. `main` untouched. `production` untouched. No tags. No `npm audit fix`. No new dependencies. No App.js touched. No SYSTEM_PROMPT touched.**
+
+---
+
 ## Update 1 — Session 4 — 2026-06-24 — Indoor toggle silent-weather fix (Anorak bug)
 
 **Branch:** testing (HEAD at session start: `73a4419`)
