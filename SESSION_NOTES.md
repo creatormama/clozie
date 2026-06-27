@@ -10,6 +10,39 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 1, Session 8 — Style Learning Layer 1 — 2026-06-27
+Built and deployed Style Learning Layer 1 into generate-outfits.
+
+What it does: learns two clean signals from the user's last 30 rated outfits and injects them as ONE soft block into the USER message (never the cached SYSTEM_PROMPT):
+1. Vibe lean — mood words tallied love +2 / like +1 / nope −1; surface top 1–2 vibes clearing net +2.
+2. Star items — pieces in 2+ positive (love/like) outfits; top 2 by count.
+Gate: <5 rated rows emits nothing (new-user path). Color deliberately EXCLUDED — deferred to Update 1A.
+
+Block position: after stylingLines/DRESS RULE, above currentBlock/recentBlock/WARDROBE POOL (pool stays last for recency bias).
+
+Wildcard wording = Option C (upgraded from B mid-session to avoid over-varying a small closet):
+"Let these notes shape two of the three looks; her broader closet still leads. Keep the third free of them — a fresh, different choice that still feels easy to wear, never a costume."
+Star anti-domination guardrail: "feature them when they genuinely fit, but never force them, and never include either in every look."
+
+Deployed via CLI (--use-api, no --yes, no dashboard). Two deploys: Deploy 1 shadow-compute only (logged, never used); Deploy 2 wired into the injected block.
+
+VERIFICATION (all passed, iPhone + Logs):
+- Cache held 2,510 both calls (call 1 creation 2510/read 0; call 2 creation 0/read 2510). Injecting a user-message block did NOT move the system-prompt cache.
+- Full style notes block confirmed in logs on BOTH calls (19:32:08 and 19:32:31), complete through "never a costume."
+- learning layer 1 log: ratedCount 30, vibeLean "sharp" score 5, starItems Leather Low-Top Sneakers + Woven Straw Fedora.
+- Pool 56 styleable items — whole closet still in play.
+- User eyeball: outfits "good, like always" — pass (no regression). NOT yet proof learning is helping; that needs a week of natural rating.
+
+Corrections logged this session:
+- Keychain service name confirmed as `supabase-pat-clozie`.
+- Byte baseline confirmed em-dashes 140 / middots 18 (a prior note had middots wrong).
+
+WATCH-ITEM (next week): confirm learning actually shifts outfits once the user rates naturally and vibe/stars move. One stable-data session can't show that yet.
+
+HEAD at session start: 93e5270 (Session 7).
+
+---
+
 ## Update 1 — Session 7 — 2026-06-27 — Daily Notifications (Free Plan feature)
 
 **Branch:** testing (HEAD at session start: `61b9f6f`)

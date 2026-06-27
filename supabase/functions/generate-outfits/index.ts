@@ -550,8 +550,9 @@ function buildFreshContent(args: {
   recoveryMode: boolean
   recentOutfits: { name: string; vibe: string; itemNames: string[] }[]
   currentOutfits: { name: string; vibe: string; itemNames: string[] }[]
+  styleNotesBlock: string | null
 }): string {
-  const { styleProfile, temperature, condition, occasion, indoors, brief, briefFamily, pinned, items, recoveryMode, recentOutfits, currentOutfits } = args
+  const { styleProfile, temperature, condition, occasion, indoors, brief, briefFamily, pinned, items, recoveryMode, recentOutfits, currentOutfits, styleNotesBlock } = args
 
   const styles = styleProfile?.styles?.length ? styleProfile.styles.join(', ') : 'Not specified'
   const colours = styleProfile?.colours?.length ? styleProfile.colours.join(', ') : 'Not specified'
@@ -656,6 +657,7 @@ function buildFreshContent(args: {
     '',
     'DRESS RULE: A dress is a complete outfit. Never pair a dress with bottoms. Shoes and outerwear are fine with a dress.',
     '',
+    ...(styleNotesBlock ? [styleNotesBlock, ''] : []),
     ...(currentBlock ? [currentBlock, ''] : []),
     ...(recentBlock ? [recentBlock, ''] : []),
     'WARDROBE POOL (sorted by preference):',
@@ -1540,6 +1542,120 @@ Deno.serve(async (req) => {
       }, 400)
     }
 
+    // Update 1 Session 8 -- Learning Layer 1: VIBE LEAN + STAR ITEMS (SHADOW COMPUTE).
+    // Reads last 30 RATED outfits to compute (a) which vibes keep landing,
+    // (b) which items keep appearing in love/like outfits. SEPARATE query from
+    // 9F-D -- different filter (rating not null), different limit (30 vs 6),
+    // different purpose (learning vs avoid-repeat). Errors silently swallowed --
+    // failed read MUST NOT block generation. SHADOW: computed values are
+    // diagnostic-logged but NEVER passed to buildFreshContent and NEVER
+    // returned in the response. Deploy 2 (separate) wires the injection.
+    // Colour is read ONCE for the diagnostic log only -- never used in vibe
+    // tally, star selection, or any future STYLE NOTES wording. Colour-free
+    // logic this session; existing Session 6 briefFamily path untouched.
+    // Position is after Gate 7 so session-limit-blocked calls skip this read.
+    const { data: ratedRows } = await userClient
+      .from('outfit_history')
+      .select('rating, vibe, item_ids, rated_at')
+      .not('rating', 'is', null)
+      .order('rated_at', { ascending: false })
+      .limit(30)
+
+    let learningVibeLean: { vibe: string; score: number }[] = []
+    let learningStarItems: { id: string; name: string; positiveCount: number }[] = []
+    const ratedCount = Array.isArray(ratedRows) ? ratedRows.length : 0
+
+    // Gate: need at least 5 rated rows for any signal at all. Below 5 = noise.
+    if (ratedCount >= 5) {
+      // Vibe tally: love +2 / like +1 / nope -1. Lowercase + skip empty strings
+      // (Flag D -- older outfit_history rows may have stale or missing vibes).
+      const vibeScores = new Map<string, number>()
+      for (const r of ratedRows!) {
+        const vibe = (typeof r.vibe === 'string' ? r.vibe : '').trim().toLowerCase()
+        if (!vibe) continue
+        const w = r.rating === 'love' ? 2 : r.rating === 'like' ? 1 : r.rating === 'nope' ? -1 : 0
+        if (w === 0) continue
+        vibeScores.set(vibe, (vibeScores.get(vibe) || 0) + w)
+      }
+      // Surface top 1-2 vibes whose net score clears +2. A single Like alone
+      // cannot define a lean -- needs a Love OR multiple Likes net of any Nopes.
+      learningVibeLean = Array.from(vibeScores.entries())
+        .filter(([, score]) => score >= 2)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 2)
+        .map(([vibe, score]) => ({ vibe, score }))
+
+      // Star items: count distinct positive (love/like) outfits each item_id
+      // appears in. Nope rows EXCLUDED entirely. Within a single outfit, the
+      // same item only counts once (Set dedupe). 2+ positive outfits = star
+      // candidate. Top 2 by count. Items deleted from wardrobe since rating
+      // (name unresolvable via wardrobeNameById) are silently filtered out.
+      const positiveCounts = new Map<string, number>()
+      for (const r of ratedRows!) {
+        if (r.rating !== 'love' && r.rating !== 'like') continue
+        const ids = Array.isArray(r.item_ids) ? r.item_ids : []
+        const seenInThisOutfit = new Set<string>()
+        for (const id of ids) {
+          if (typeof id !== 'string' || seenInThisOutfit.has(id)) continue
+          seenInThisOutfit.add(id)
+          positiveCounts.set(id, (positiveCounts.get(id) || 0) + 1)
+        }
+      }
+      learningStarItems = Array.from(positiveCounts.entries())
+        .filter(([, count]) => count >= 2)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 2)
+        .map(([id, count]) => ({ id, name: wardrobeNameById.get(id) || '', positiveCount: count }))
+        .filter((s) => s.name)
+    }
+
+    // Flag G -- sanity log with colour + category so Grace can eyeball on
+    // Supabase Logs whether a surfaced star is a real signature piece or just
+    // a basic. Colour read here is LOG-ONLY (Addition 1). Built lazily so
+    // there's no lookup cost when there are no stars.
+    const starLogShape = learningStarItems.map((s) => {
+      const item = items.find((i) => i.id === s.id)
+      return {
+        name: s.name,
+        positiveCount: s.positiveCount,
+        colour: item?.colour ?? null,
+        category: item?.category ?? null,
+      }
+    })
+    console.log('[generate-outfits] learning layer 1:', {
+      ratedCount,
+      vibeLean: learningVibeLean,
+      starItems: starLogShape,
+    })
+
+    // Update 1 Session 8 -- Assemble the STYLE NOTES block from the learning
+    // data computed above. Block omitted (null) when neither vibe lean nor
+    // star items cleared their threshold. Single-star variant uses plural
+    // grammar because most clothing names are grammatically plural
+    // (sneakers, trousers, jeans). Multi-star variant is consistently plural
+    // ("them when they fit") for cleaner read. Wildcard line echoes Rule 3's
+    // "a push is not a costume" phrasing so it reinforces (never contradicts)
+    // the cached system prompt. Logged so Grace can verify the assembled text.
+    const styleNotesLines: string[] = []
+    if (learningVibeLean.length > 0) {
+      const vibeNames = learningVibeLean.map((v) => v.vibe).join(' and ')
+      styleNotesLines.push(`She's been responding to ${vibeNames} looks.`)
+    }
+    if (learningStarItems.length === 1) {
+      styleNotesLines.push(`Her ${learningStarItems[0].name} have been landing well — feature them when they genuinely fit the outfit, but never force them, and don't include them in every look.`)
+    } else if (learningStarItems.length >= 2) {
+      const starNames = learningStarItems.map((s) => `her ${s.name}`).join(' and ')
+      styleNotesLines.push(`Pieces like ${starNames} have been landing well — feature them when they genuinely fit, but never force them, and never include either in every look.`)
+    }
+    const styleNotesBlock = styleNotesLines.length > 0
+      ? [
+          'STYLE NOTES (from recent ratings):',
+          ...styleNotesLines,
+          'Let these notes shape two of the three looks; her broader closet still leads. Keep the third free of them — a fresh, different choice that still feels easy to wear, never a costume.',
+        ].join('\n')
+      : null
+    console.log('[generate-outfits] style notes block:', styleNotesBlock)
+
     // 6.5. Apply weather/indoor safety filters before Sonnet sees the pool.
     // Pinned item is exempt. Soft-fail reverts to unfiltered if filters break essentials.
     const filteredItems = applySafetyFilters({ items, temperature, condition, occasion, indoors, pinnedItemId, neverWear: styleProfile?.neverWear ?? null })
@@ -1554,7 +1670,7 @@ Deno.serve(async (req) => {
     // 7. Try Anthropic. On any failure, fall back to stub silently.
     if (anthropicKey) {
       const userContent = buildFreshContent({
-        styleProfile, temperature, condition, occasion, indoors, brief, briefFamily, pinned, items: filteredItems, recoveryMode, recentOutfits, currentOutfits: resolvedCurrentOutfits,
+        styleProfile, temperature, condition, occasion, indoors, brief, briefFamily, pinned, items: filteredItems, recoveryMode, recentOutfits, currentOutfits: resolvedCurrentOutfits, styleNotesBlock,
       })
 
       const aiResult = await callAnthropic({
