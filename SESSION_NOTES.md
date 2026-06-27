@@ -10,6 +10,55 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 1 — Session 7 — 2026-06-27 — Daily Notifications (Free Plan feature)
+
+**Branch:** testing (HEAD at session start: `61b9f6f`)
+**Commit(s):** to be created at session end, single commit on testing
+**Edge Function deploys:** 0 (none — App.js + package.json + package-lock.json + CLAUDE.md + SESSION_NOTES.md only)
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched at all)
+**App Store impact:** none — Edge Function untouched. Client-side wiring on testing only; reaches users when Build 13 ships and replaces Build 12 via Apple review.
+
+### Goals
+- Local-only daily notifications, no push token, no backend table, no Privacy Policy data-category change.
+- Settings toggle defaults OFF; flip ON shows Clozie pre-prompt → real iOS permission → 14-day rolling batch.
+- 7 locked messages, no emojis, no Friday/day-of-week logic, no two consecutive days the same.
+- Tap notification → Today's Vibe (both cold-launch and warm-launch); normal icon launch unchanged → My Closet for signed-in users.
+- Each substep tested in Expo Go before the next; pieces only verifiable on Build 13 clearly flagged as UNVERIFIED.
+
+### What changed
+- **Substep 1 — install (`package.json` + `package-lock.json`):** `npx expo install expo-notifications @react-native-community/datetimepicker` → `expo-notifications ~0.32.17` and `@react-native-community/datetimepicker 8.4.4`. No manual edits, no `npm audit fix` (CLAUDE.md Session 17A lesson). Expo CLI flagged datetimepicker config-plugin entry — deferred to Build 13 prep.
+- **Substep 2 — dead helpers in App.js:** new module-scope block at App.js:92-148 with `NOTIF_MESSAGES` (7 locked messages indexed 0–6), `NOTIF_ENABLED_KEY` / `NOTIF_TIME_KEY` / `NOTIF_LAST_MESSAGE_INDEX_KEY` under `@clozie:notif:*` namespace, and pure helpers `pickNextIndex(lastIdx)`, `formatTimeHHMM(date)`, `nextOccurrenceAt(hour, minute)`. Dead code on landing — no consumers.
+- **Substep 3 — handler config + cold-launch detection in App():** new `Notifications.setNotificationHandler({ shouldShowBanner/List/PlaySound: true, shouldSetBadge: false })` at App.js:157. Existing cold-launch useEffect wrapped in `Promise.all([supabase.auth.getSession(), Notifications.getLastNotificationResponseAsync().catch(() => null)])`. If signed-in AND `lastResponse?.notification?.request?.content?.data?.kind === 'daily'`, sets `mainInitialTab = 2` (Today's Vibe); else byte-identical (still My Closet for signed-in returning users, splash for signed-out).
+- **Substep 4 — toggle + AsyncStorage in SettingsScreen:** unhid the existing `{false && ...}` PREFERENCES card. Added `notifEnabled` useState, mount useEffect reading `NOTIF_ENABLED_KEY`, `handleNotifToggle` writing it. Subtitle "Get styled every morning · coming soon" → "Get styled every morning". No permission ask, no scheduling.
+- **Substep 5 — pre-prompt + real iOS permission + time picker:** added `parseHHMMToDate` helper. New SettingsScreen state: `notifTimeDate` (default 7:30am), `showNotifPrePrompt`. Mount useEffect upgraded to `multiGet` both keys + reconcile with `Notifications.getPermissionsAsync()` (revoked-in-iOS-Settings auto-reverts AsyncStorage to false). New handlers: `acceptNotifPrePrompt` fires `requestPermissionsAsync` and reverts toggle on denial; `dismissNotifPrePrompt` reverts toggle; `handleTimeChange` writes new time. PREFERENCES card gains a conditional Time row with native iOS `DateTimePicker` (`mode="time"`, `display="default"`). New Modal reuses Session 13I `savedStyles.confirm*` cross-section pattern. Copy: "A morning nudge from Clozie" / "Yes, remind me" / "Not now". `app.config.js` NOT touched.
+- **Substep 6 — actual scheduling:** new module-scope helpers `cancelAllClozieDailyNotifications` (read-filter-cancel-by-id, scoped to `data.kind === 'daily'`, NEVER calls `cancelAllScheduledNotificationsAsync`) and `batchScheduleNotifications(hour, minute)` (cancel first → read seed → 14 one-shot `SchedulableTriggerInputTypes.DATE` triggers, no-repeat enforced by `pickNextIndex` chain → persist day-1's index as the cross-batch no-repeat seed → diagnostic log). Wired into `acceptNotifPrePrompt` on grant, `handleNotifToggle` OFF path, `handleTimeChange` when enabled, mount-reconcile revoke case, and new App() cold-launch fire-and-forget useEffect (gates on `enabled === 'true'` AND `getPermissionsAsync().status === 'granted'`). `scheduleNotificationAsync` called from exactly one site in the codebase — inside the loop.
+- **Substep 7 — warm-launch tap listener in MainAppScreen:** new useEffect registering `Notifications.addNotificationResponseReceivedListener` with `kind === 'daily'` gate before `setActiveTab(2)`. Empty deps array. Cleanup `subscription.remove()` on unmount. UNVERIFIED in Expo Go (cannot reliably fire-and-tap a real notification in dev).
+
+### Tests (in Expo Go on iPhone)
+- Substep 1: app boots clean after install — verified.
+- Substep 2: app boots clean with dead helpers — verified.
+- Substep 3: signed-in cold launch lands on My Closet (byte-identical) — verified.
+- Substep 4: toggle ON/OFF, kill, reopen, state persists — verified both directions.
+- Substep 5: pre-prompt appears, "Not now" reverts toggle, "Yes, remind me" → real iOS dialog (titled "Expo Go" in dev, expected) → Allow keeps toggle ON, time picker works, chosen time (6:00 AM) survived kill/reopen — verified.
+- Substep 6: flip ON logged `[notif] batch scheduled: 14 daily (total pending: 14)` with 14 `kind=daily` entries, no back-to-back repeats, ~1-day stepping. Changing time produced fresh 14-entry batch with new shuffle. Toggle OFF produced no new schedule log (cancel confirmed) — verified.
+- Substep 7: app boots clean after listener added; normal navigation unchanged — verified.
+
+### UNVERIFIED (await Build 13 / TestFlight standalone)
+- Actual notification firing at scheduled local time (Expo Go SDK 53+ has reduced local-notification reliability).
+- Cold-launch tap → Today's Vibe routing (App() useEffect via `getLastNotificationResponseAsync`).
+- Warm-launch tap → Today's Vibe routing (MainAppScreen useEffect via `addNotificationResponseReceivedListener`).
+- Foreground display banner/sound from `setNotificationHandler`.
+- Permission dialog title resolving from "Expo Go" (dev) to "Clozie" (standalone).
+
+### Notes
+- Local-only architecture choice: no push token created, no Supabase table, no Privacy Policy data-category change. Spec was explicit. Architecture remains revisitable if Pro launches a personalized smart-morning push later.
+- iOS 64-pending-notification cap: well within (we schedule 14).
+- Cross-batch no-repeat: first message of every batch is constrained by the persisted `NOTIF_LAST_MESSAGE_INDEX_KEY` to differ from that index. The persisted index is the previous batch's day-1 message — that's "what just fired this morning" if rebatch happens after the morning fire, or "what fires next" if rebatch happens before. Either reading satisfies the no-two-days-in-a-row rule for the user's actual lived sequence of fires.
+- `cancelAllScheduledNotificationsAsync` is mentioned in one CODE COMMENT only (warning against using it) — zero call sites. Other apps' notifications and any future non-`kind:'daily'` Clozie notifications are untouched by both the cancel helper and the warm-launch listener.
+- For Build 13 testing: plan to add a temporary "fire test notification in ~10 seconds" button so firing + tap-to-open verifies in seconds instead of waiting until morning. Remove before App Store submission. NOT in this session.
+
+---
+
 ## Update 1 — Session 6 — 2026-06-27 — Brief color lift (first wiring of Session 5's color-family map)
 
 **Branch:** testing (HEAD at session start: `c216b12`)

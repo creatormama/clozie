@@ -37,6 +37,9 @@ import * as Sharing from 'expo-sharing';
 import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Notifications from 'expo-notifications';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './src/lib/supabase';
 import { fetchWardrobeItems, getSignedPhotoUrl, uploadWardrobePhoto, insertWardrobeItem, updateWardrobeItem, deleteWardrobePhoto, deleteWardrobeItem } from './src/lib/wardrobeItems';
 import { recognizeWardrobePhoto } from './src/lib/clozieRecognition';
@@ -89,8 +92,173 @@ function isNetworkError(err) {
   );
 }
 
+// ── Daily Notifications (Update 1 — Session 7) ──────────────────────────────
+// Module-scope constants + pure helpers for the daily-notification feature.
+// Permission ask, scheduling, Settings UI, and tap routing all land in later
+// substeps. These helpers have no side effects and nothing calls them yet —
+// they are inert dead code as of this substep.
+
+// Locked 7-message rotation. Word-for-word from spec. No emojis, no
+// day-of-week logic. The index is the canonical handle used by
+// NOTIF_LAST_MESSAGE_INDEX_KEY to enforce no-repeat-two-days-in-a-row.
+const NOTIF_MESSAGES = [
+  'What are we wearing today?',
+  'Your closet has ideas.',
+  "Morning. Clozie's ready when you are.",
+  "Today's look is waiting.",
+  'Something good is in your closet.',
+  'New day. New outfit options.',
+  "Let's see what your closet says.",
+];
+
+// AsyncStorage keys. Single @clozie:notif:* namespace so they cluster
+// together in storage and are easy to audit or clear as a group.
+const NOTIF_ENABLED_KEY = '@clozie:notif:enabled';                    // 'true' | 'false'
+const NOTIF_TIME_KEY = '@clozie:notif:time';                          // 'HH:MM' 24h local
+const NOTIF_LAST_MESSAGE_INDEX_KEY = '@clozie:notif:lastMessageIndex'; // '0'..'6'
+
+// Pick a random index 0..NOTIF_MESSAGES.length-1 that is NOT lastIdx.
+// If lastIdx is null/undefined/out-of-range, any index can win. Guarantees
+// the no-repeat-two-days-in-a-row rule.
+function pickNextIndex(lastIdx) {
+  const total = NOTIF_MESSAGES.length;
+  const candidates = [];
+  for (let i = 0; i < total; i++) {
+    if (i !== lastIdx) candidates.push(i);
+  }
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+// Format a Date as 'HH:MM' in 24-hour local time, zero-padded.
+function formatTimeHHMM(date) {
+  const h = String(date.getHours()).padStart(2, '0');
+  const m = String(date.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+// Parse 'HH:MM' (24-hour) into a Date today at that local hour/minute.
+// Falls back to 7:30 if the string is missing or malformed. Only the
+// hour/minute portion is meaningful — the date portion is unused.
+function parseHHMMToDate(hhmm) {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(hhmm || '');
+  const h = match ? Math.min(23, parseInt(match[1], 10)) : 7;
+  const m = match ? Math.min(59, parseInt(match[2], 10)) : 30;
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return d;
+}
+
+// Cancel every pending notification stamped data.kind === 'daily' — and ONLY
+// those. We never call cancelAllScheduledNotificationsAsync, which would nuke
+// notifications from any other source. Read-filter-cancel by identifier so
+// the scope is provably ours.
+async function cancelAllClozieDailyNotifications() {
+  try {
+    const all = await Notifications.getAllScheduledNotificationsAsync();
+    const ours = all.filter((n) => n?.content?.data?.kind === 'daily');
+    await Promise.all(
+      ours.map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier))
+    );
+  } catch (err) {
+    console.warn('[notif] cancel-all failed', err);
+  }
+}
+
+// Batch-schedule 14 consecutive daily notifications at (hour, minute) local.
+// Each gets a pre-picked message respecting no-repeat-two-days-in-a-row and
+// is stamped data.kind === 'daily' so tap-routing and cancel-scoping only
+// ever touch our notifications. Seeds the no-repeat chain from
+// NOTIF_LAST_MESSAGE_INDEX_KEY so the FIRST message of the new batch
+// differs from the most recently scheduled/fired message — this catches the
+// cross-batch case where a rebatch happens after the morning fire and the
+// next day's pick would otherwise collide. Persists the new day-1 index
+// after scheduling so the next rebatch keeps the chain unbroken.
+async function batchScheduleNotifications(hour, minute) {
+  try {
+    // 1. Scoped cancel of any existing Clozie-daily notifications
+    await cancelAllClozieDailyNotifications();
+
+    // 2. Read seed (= the message that fires next / has just fired)
+    const seedRaw = await AsyncStorage.getItem(NOTIF_LAST_MESSAGE_INDEX_KEY);
+    const seedNum = seedRaw == null ? NaN : parseInt(seedRaw, 10);
+    const seedValid =
+      Number.isInteger(seedNum) && seedNum >= 0 && seedNum < NOTIF_MESSAGES.length;
+    let prevIdx = seedValid ? seedNum : null;
+
+    // 3. First fire date — today if (hour:minute) still upcoming, else tomorrow
+    const firstFireDate = nextOccurrenceAt(hour, minute);
+
+    // 4. Schedule 14 one-shot DATE triggers, advancing one day each iteration
+    let firstScheduledIdx = null;
+    for (let i = 0; i < 14; i++) {
+      const idx = pickNextIndex(prevIdx);
+      if (i === 0) firstScheduledIdx = idx;
+      const triggerDate = new Date(firstFireDate);
+      triggerDate.setDate(triggerDate.getDate() + i);
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          body: NOTIF_MESSAGES[idx],
+          data: { kind: 'daily' },
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: triggerDate,
+        },
+      });
+      prevIdx = idx;
+    }
+
+    // 5. Persist day-1 index — seed for the next rebatch so cross-batch
+    //    no-repeat catches the "rebatch after this morning fired" case.
+    if (firstScheduledIdx != null) {
+      await AsyncStorage.setItem(
+        NOTIF_LAST_MESSAGE_INDEX_KEY,
+        String(firstScheduledIdx)
+      );
+    }
+
+    // 6. Diagnostic log — easy verification in Expo Go console
+    const verify = await Notifications.getAllScheduledNotificationsAsync();
+    const ours = verify.filter((n) => n?.content?.data?.kind === 'daily');
+    console.log(`[notif] batch scheduled: ${ours.length} daily (total pending: ${verify.length})`);
+    ours.forEach((n, i) => {
+      const date = n?.trigger?.date ? new Date(n.trigger.date) : null;
+      const when = date ? date.toLocaleString() : JSON.stringify(n?.trigger);
+      console.log(`  [${i + 1}] ${when} — "${n?.content?.body}" — kind=${n?.content?.data?.kind}`);
+    });
+  } catch (err) {
+    console.warn('[notif] batch schedule failed', err);
+  }
+}
+
+// Next local-time occurrence of (hour, minute). If that moment has already
+// passed today, returns tomorrow at the same wall-clock time.
+function nextOccurrenceAt(hour, minute) {
+  const now = new Date();
+  const target = new Date(now);
+  target.setHours(hour, minute, 0, 0);
+  if (target.getTime() <= now.getTime()) {
+    target.setDate(target.getDate() + 1);
+  }
+  return target;
+}
+
 // Keep native splash visible while fonts load
 NativeSplash.preventAutoHideAsync();
+
+// ── Notification display config (Update 1 — Session 7) ──────────────────────
+// Tells expo-notifications how to render a notification that arrives while
+// the app is foregrounded. Without this handler, foreground notifications
+// are silently swallowed. Pure config — no side effects, no permission ask.
+// Permission ask + scheduling land in later substeps.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 // ── Splash Screen ───────────────────────────────────────────────────────────
 function SplashScreenView({ onFinished }) {
@@ -5712,6 +5880,116 @@ function SettingsScreen({ onClose, onSignOut, onRevokeConsent, onClearMemory }) 
     loadUser();
   }, []);
 
+  // Daily notifications (Update 1 — Session 7, substeps 4 + 5)
+  // Local state + AsyncStorage persistence + Clozie pre-prompt + real iOS
+  // permission ask + time picker. Scheduling lands in substep 6.
+  const [notifEnabled, setNotifEnabled] = useState(false);
+  const [notifTimeDate, setNotifTimeDate] = useState(() => parseHHMMToDate('07:30'));
+  const [showNotifPrePrompt, setShowNotifPrePrompt] = useState(false);
+
+  // Mount: load persisted enabled flag + time, reconcile with OS permission.
+  // If user previously enabled notifications but later revoked them in iOS
+  // Settings, AsyncStorage stays 'true' but the OS permission isn't granted
+  // — we revert AsyncStorage to 'false' so the toggle reflects reality
+  // (Apple rule: no visible-but-dead controls).
+  useEffect(() => {
+    AsyncStorage.multiGet([NOTIF_ENABLED_KEY, NOTIF_TIME_KEY])
+      .then(async (entries) => {
+        const map = Object.fromEntries(entries);
+        if (map[NOTIF_TIME_KEY]) {
+          setNotifTimeDate(parseHHMMToDate(map[NOTIF_TIME_KEY]));
+        }
+        if (map[NOTIF_ENABLED_KEY] === 'true') {
+          try {
+            const { status } = await Notifications.getPermissionsAsync();
+            if (status === 'granted') {
+              setNotifEnabled(true);
+            } else {
+              // Revoked in iOS Settings since we last persisted — reconcile
+              // local state and clean up any leftover scheduled notifications.
+              await AsyncStorage.setItem(NOTIF_ENABLED_KEY, 'false');
+              cancelAllClozieDailyNotifications();
+            }
+          } catch {
+            setNotifEnabled(true); // best-effort if permission check fails
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleNotifToggle = async (value) => {
+    if (!value) {
+      // Toggle OFF — persist + scoped cancel of every kind:'daily' pending
+      // notification. Never touches other apps' notifications.
+      setNotifEnabled(false);
+      try {
+        await AsyncStorage.setItem(NOTIF_ENABLED_KEY, 'false');
+      } catch (err) {
+        console.warn('[notif] failed to persist enabled flag', err);
+      }
+      cancelAllClozieDailyNotifications();
+      return;
+    }
+    // Toggle ON — optimistic visual flip + show Clozie pre-prompt before iOS
+    setNotifEnabled(true);
+    setShowNotifPrePrompt(true);
+  };
+
+  const acceptNotifPrePrompt = async () => {
+    setShowNotifPrePrompt(false);
+    try {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status === 'granted') {
+        try {
+          await AsyncStorage.setItem(NOTIF_ENABLED_KEY, 'true');
+        } catch (err) {
+          console.warn('[notif] failed to persist enabled flag', err);
+        }
+        // Schedule the 14-day rolling batch immediately. Fire-and-forget —
+        // the helper logs success/failure; UI doesn't block on it.
+        batchScheduleNotifications(notifTimeDate.getHours(), notifTimeDate.getMinutes());
+      } else {
+        // Denied or restricted — revert toggle (Apple rule)
+        setNotifEnabled(false);
+        try {
+          await AsyncStorage.setItem(NOTIF_ENABLED_KEY, 'false');
+        } catch (err) {
+          console.warn('[notif] failed to persist enabled flag', err);
+        }
+      }
+    } catch (err) {
+      console.warn('[notif] permission request failed', err);
+      setNotifEnabled(false);
+      AsyncStorage.setItem(NOTIF_ENABLED_KEY, 'false').catch(() => {});
+    }
+  };
+
+  const dismissNotifPrePrompt = async () => {
+    setShowNotifPrePrompt(false);
+    setNotifEnabled(false);
+    try {
+      await AsyncStorage.setItem(NOTIF_ENABLED_KEY, 'false');
+    } catch (err) {
+      console.warn('[notif] failed to persist enabled flag', err);
+    }
+  };
+
+  const handleTimeChange = (event, date) => {
+    if (event?.type === 'set' && date) {
+      setNotifTimeDate(date);
+      AsyncStorage.setItem(NOTIF_TIME_KEY, formatTimeHHMM(date)).catch((err) => {
+        console.warn('[notif] failed to persist time', err);
+      });
+      // If notifications are currently enabled, rebatch with the new time so
+      // the rolling 14-day window picks up the change immediately. Cancel
+      // inside batchScheduleNotifications scopes by kind:'daily'.
+      if (notifEnabled) {
+        batchScheduleNotifications(date.getHours(), date.getMinutes());
+      }
+    }
+  };
+
   // Subscription modal state
   const [showSubscription, setShowSubscription] = useState(false);
 
@@ -6244,24 +6522,39 @@ function SettingsScreen({ onClose, onSignOut, onRevokeConsent, onClearMemory }) 
           </View>
         </View>
 
-        {/* PREFERENCES card — hidden until Daily Notifications is built (Phase 2) */}
-        {false && (
-          <View style={settingsStyles.card}>
-            <View style={settingsStyles.cardRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={settingsStyles.cardRowLabel}>Daily outfit notifications</Text>
-                <Text style={settingsStyles.cardRowValue}>Get styled every morning · coming soon</Text>
-              </View>
-              <Switch
-                value={false}
-                disabled={true}
-                trackColor={{ false: 'rgba(44,26,14,0.15)', true: '#BCC7B7' }}
-                thumbColor="#FFFFFF"
-                ios_backgroundColor="rgba(44,26,14,0.15)"
-              />
+        {/* PREFERENCES card — daily notifications toggle + time (Update 1 — Session 7) */}
+        <View style={settingsStyles.card}>
+          <View style={settingsStyles.cardRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={settingsStyles.cardRowLabel}>Daily outfit notifications</Text>
+              <Text style={settingsStyles.cardRowValue}>Get styled every morning</Text>
             </View>
+            <Switch
+              value={notifEnabled}
+              onValueChange={handleNotifToggle}
+              trackColor={{ false: 'rgba(44,26,14,0.15)', true: '#BCC7B7' }}
+              thumbColor="#FFFFFF"
+              ios_backgroundColor="rgba(44,26,14,0.15)"
+            />
           </View>
-        )}
+          {notifEnabled && (
+            <>
+              <View style={settingsStyles.divider} />
+              <View style={settingsStyles.cardRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={settingsStyles.cardRowLabel}>Time</Text>
+                  <Text style={settingsStyles.cardRowValue}>When Clozie sends your reminder</Text>
+                </View>
+                <DateTimePicker
+                  value={notifTimeDate}
+                  mode="time"
+                  display="default"
+                  onChange={handleTimeChange}
+                />
+              </View>
+            </>
+          )}
+        </View>
 
         {/* ABOUT card */}
         <View style={settingsStyles.card}>
@@ -6424,6 +6717,39 @@ function SettingsScreen({ onClose, onSignOut, onRevokeConsent, onClearMemory }) 
               onPress={() => setShowRevokeConsentModal(false)}
             >
               <Text style={savedStyles.confirmCancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Daily Notifications pre-prompt — Apple HIG explanatory pre-prompt */}
+      <Modal
+        visible={showNotifPrePrompt}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={dismissNotifPrePrompt}
+      >
+        <View style={savedStyles.confirmOverlay}>
+          <View style={savedStyles.confirmModal}>
+            <Text style={savedStyles.confirmHeading}>A morning nudge from Clozie</Text>
+            <Text style={savedStyles.confirmBody}>
+              Clozie can send a daily reminder so you never start the day wondering what to wear.
+            </Text>
+            <View style={savedStyles.confirmPrimaryRing}>
+              <TouchableOpacity
+                style={savedStyles.confirmPrimaryButton}
+                activeOpacity={0.8}
+                onPress={acceptNotifPrePrompt}
+              >
+                <Text style={savedStyles.confirmPrimaryButtonText}>Yes, remind me</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={savedStyles.confirmCancelButton}
+              activeOpacity={0.7}
+              onPress={dismissNotifPrePrompt}
+            >
+              <Text style={savedStyles.confirmCancelButtonText}>Not now</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -7243,6 +7569,30 @@ function MainAppScreen({ onSignOut, initialTab = 0 }) {
     };
   }, []);
 
+  // Step 7 (Update 1 — Session 7): warm-launch tap routing. When the user
+  // taps a Clozie daily notification while the app is alive (e.g.
+  // backgrounded then foregrounded via the notification banner), route to
+  // Today's Vibe. Scoped to data.kind === 'daily' so the listener never
+  // reacts to any other notification source — every other tap is a no-op.
+  // Cold-launch tap routing lives in App() (substep 3); this useEffect only
+  // handles the warm-launch case.
+  //
+  // Subscription removed on unmount. MainAppScreen unmounts on sign-out
+  // (gated by currentScreen === 'main' in App()), so the listener never
+  // outlives its tab state, and re-mount on sign-in registers a fresh one.
+  //
+  // UNVERIFIED until Build 13 (TestFlight). Expo Go cannot reliably fire a
+  // real notification for tap-testing.
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const kind = response?.notification?.request?.content?.data?.kind;
+      if (kind === 'daily') {
+        setActiveTab(2); // Today's Vibe
+      }
+    });
+    return () => subscription.remove();
+  }, []);
+
   // Session 12 S1b: Load saved outfits from outfit_history on mount.
   // fetchSavedOutfits returns rows with itemIds: string[] (the snapshot of which
   // items were in the outfit when saved). Items get resolved against the current
@@ -7654,12 +8004,26 @@ export default function App() {
   // Step 1 (Session 26): on cold launch, check AsyncStorage for an existing
   // Supabase session. If valid, skip splash/welcome/auth and go straight to
   // main. If no session, fall through to the existing splash → welcome flow.
+  //
+  // Step 3 (Update 1 — Session 7): also check whether this cold launch was
+  // triggered by tapping a Clozie daily notification. If so, route to
+  // Today's Vibe (tab 2) instead of My Closet (tab 1). All other cold-launch
+  // paths (icon launch, deep link, etc.) stay byte-identical: lastResponse
+  // is null OR data.kind !== 'daily', so wasNotifTap stays false and tab
+  // selection follows the pre-existing My Closet default. The inner .catch
+  // on getLastNotificationResponseAsync ensures a notification-module failure
+  // can never break the normal session-restore flow.
   useEffect(() => {
     let cancelled = false;
-    supabase.auth.getSession().then(({ data }) => {
+    Promise.all([
+      supabase.auth.getSession(),
+      Notifications.getLastNotificationResponseAsync().catch(() => null),
+    ]).then(([{ data }, lastResponse]) => {
       if (cancelled) return;
       if (data?.session) {
-        setMainInitialTab(1); // returning user → My Closet
+        const wasNotifTap =
+          lastResponse?.notification?.request?.content?.data?.kind === 'daily';
+        setMainInitialTab(wasNotifTap ? 2 : 1); // notif tap → Today's Vibe, else My Closet
         setCurrentScreen('main');
       } else {
         setCurrentScreen('splash');
@@ -7685,6 +8049,33 @@ export default function App() {
       }
     });
     return () => sub.remove();
+  }, []);
+
+  // Step 6 (Update 1 — Session 7): cold-launch rebatch. If the user has
+  // notifications enabled AND the OS permission is still granted, refresh
+  // the 14-day rolling schedule so the window always extends 14 days from
+  // today. Fire-and-forget — never blocks UI, never throws (helpers swallow
+  // errors and log warnings). If permission was revoked in iOS Settings, we
+  // silently skip; the SettingsScreen mount useEffect reconciles AsyncStorage
+  // the next time the user opens Settings.
+  useEffect(() => {
+    let cancelled = false;
+    const refreshSchedule = async () => {
+      try {
+        const enabled = await AsyncStorage.getItem(NOTIF_ENABLED_KEY);
+        if (cancelled || enabled !== 'true') return;
+        const { status } = await Notifications.getPermissionsAsync();
+        if (cancelled || status !== 'granted') return;
+        const timeStr = await AsyncStorage.getItem(NOTIF_TIME_KEY);
+        const timeDate = parseHHMMToDate(timeStr);
+        if (cancelled) return;
+        await batchScheduleNotifications(timeDate.getHours(), timeDate.getMinutes());
+      } catch (err) {
+        console.warn('[notif] cold-launch rebatch failed', err);
+      }
+    };
+    refreshSchedule();
+    return () => { cancelled = true; };
   }, []);
 
   if (!fontsLoaded) {
