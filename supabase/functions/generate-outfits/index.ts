@@ -474,8 +474,19 @@ function findFabric(text: string | null | undefined): string | null {
 // Format: Name | Category | Colour [| fabric] [| Warmth]
 // Fabric only when NOT already in the name (else it doubles up). Warmth only on Outerwear.
 // Today's uploads get a "* " prefix.
-function buildCompressedPool(items: Item[]): string {
+function buildCompressedPool(items: Item[], briefFamily: ColorFamily | null = null): string {
   const sorted = [...items].sort((a, b) => {
+    // Session 6 (Update 1): Brief color lift. When the user names a color in
+    // their Brief (e.g. "navy"), items whose COLOUR field resolves to that
+    // same family rank ahead of others. Gentle nudge only: when briefFamily
+    // is null (no Brief, or no recognized color), this short-circuits and
+    // the existing newest-first order is byte-identical to before.
+    // Input contract: colour field ONLY, never name + colour (Session 5 lock).
+    if (briefFamily) {
+      const aMatch = colorFamilyForText(a.colour || '') === briefFamily ? 0 : 1
+      const bMatch = colorFamilyForText(b.colour || '') === briefFamily ? 0 : 1
+      if (aMatch !== bMatch) return aMatch - bMatch
+    }
     const ta = a.createdAt ? Date.parse(a.createdAt) : 0
     const tb = b.createdAt ? Date.parse(b.createdAt) : 0
     return tb - ta
@@ -533,13 +544,14 @@ function buildFreshContent(args: {
   occasion: string
   indoors: boolean
   brief: string | null
+  briefFamily: ColorFamily | null
   pinned: Item | null
   items: Item[]
   recoveryMode: boolean
   recentOutfits: { name: string; vibe: string; itemNames: string[] }[]
   currentOutfits: { name: string; vibe: string; itemNames: string[] }[]
 }): string {
-  const { styleProfile, temperature, condition, occasion, indoors, brief, pinned, items, recoveryMode, recentOutfits, currentOutfits } = args
+  const { styleProfile, temperature, condition, occasion, indoors, brief, briefFamily, pinned, items, recoveryMode, recentOutfits, currentOutfits } = args
 
   const styles = styleProfile?.styles?.length ? styleProfile.styles.join(', ') : 'Not specified'
   const colours = styleProfile?.colours?.length ? styleProfile.colours.join(', ') : 'Not specified'
@@ -647,7 +659,7 @@ function buildFreshContent(args: {
     ...(currentBlock ? [currentBlock, ''] : []),
     ...(recentBlock ? [recentBlock, ''] : []),
     'WARDROBE POOL (sorted by preference):',
-    buildCompressedPool(items),
+    buildCompressedPool(items, briefFamily),
   ].join('\n')
 }
 
@@ -1533,10 +1545,16 @@ Deno.serve(async (req) => {
     const filteredItems = applySafetyFilters({ items, temperature, condition, occasion, indoors, pinnedItemId, neverWear: styleProfile?.neverWear ?? null })
     console.log('[generate-outfits] pool size after filters:', filteredItems.length, 'of', items.length)
 
+    // Session 6 (Update 1): Brief color lift. Detect a single color word in the
+    // Brief and pass the family down to buildCompressedPool, which lifts matching
+    // items toward the top of the pool. Null when no Brief, or no color word found.
+    const briefFamily = brief ? colorFamilyForText(brief) : null
+    if (briefFamily) console.log('[generate-outfits] brief color lift:', briefFamily)
+
     // 7. Try Anthropic. On any failure, fall back to stub silently.
     if (anthropicKey) {
       const userContent = buildFreshContent({
-        styleProfile, temperature, condition, occasion, indoors, brief, pinned, items: filteredItems, recoveryMode, recentOutfits, currentOutfits: resolvedCurrentOutfits,
+        styleProfile, temperature, condition, occasion, indoors, brief, briefFamily, pinned, items: filteredItems, recoveryMode, recentOutfits, currentOutfits: resolvedCurrentOutfits,
       })
 
       const aiResult = await callAnthropic({

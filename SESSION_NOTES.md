@@ -10,6 +10,65 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 1 — Session 6 — 2026-06-27 — Brief color lift (first wiring of Session 5's color-family map)
+
+**Branch:** testing (HEAD at session start: `c216b12`)
+**Commit(s):** to be created at session end, single commit on testing
+**Edge Function deploys:** 1 (`generate-outfits` via CLI `--use-api`, no `--yes` flag)
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched at all; verified `cache_creation_input_tokens: 2510` first call after deploy, then `cache_read_input_tokens: 2510` round-trip on subsequent call within 5 min)
+**App Store impact:** LIVE — the same `generate-outfits` Edge Function is called by Build 12 in production. The deploy reached live App Store users immediately. Behavior degrades to byte-identical to pre-Session-6 when no color word is detected in the Brief (the dominant case), which protects the existing user base.
+
+### Goals
+- First real call site for the Session 5 color-family helpers: when the user names a color in the Brief, lift matching-colour items toward the top of the wardrobe pool the Edge Function sends to Sonnet.
+- **Gentle Step 1 only** (per the advisory panel's staged plan). Pool is re-sorted, never filtered. No post-generation surgery. No swapping. No forcing.
+- Pin is sacred — tested every run, must be present in all 3 outfits across every test.
+- Third/wildcard outfit stays free of forced color — trust the gentle nudge, do NOT add per-outfit logic.
+- Single colors only — `colorFamiliesForCategoryWord` (category phrases like "warm tones") deferred.
+- SYSTEM_PROMPT untouched, cache must hold at 2,510.
+
+### What changed (`supabase/functions/generate-outfits/index.ts` only — 4 hunks; +18 lines net, zero deletions, plain ASCII)
+
+**Edit 1 — `buildCompressedPool` gains optional `briefFamily` arg.** Signature becomes `buildCompressedPool(items: Item[], briefFamily: ColorFamily | null = null)`. New short-circuit block at the top of the sort comparator: when `briefFamily` is non-null, items whose `colorFamilyForText(item.colour || '')` equals `briefFamily` get rank 0, others rank 1. Tiebreak is the existing newest-`createdAt`-first sort. When `briefFamily` is null, the new block is skipped entirely → sort is byte-identical to pre-Session-6 behavior.
+
+**Edit 2 — `buildFreshContent` args type + destructure + forward.** New `briefFamily: ColorFamily | null` field on the args type, placed between `brief` and `pinned` for logical grouping. Destructured into scope. Existing `buildCompressedPool(items)` call updated to `buildCompressedPool(items, briefFamily)`.
+
+**Edit 3 — Handler computes `briefFamily`.** Five-line block inserted between the safety-filter log and the Anthropic gate: `const briefFamily = brief ? colorFamilyForText(brief) : null` followed by a conditional `console.log('[generate-outfits] brief color lift:', briefFamily)` — log fires only when non-null (silent on no-color baseline). New field passed into the `buildFreshContent` call.
+
+**Honors Session 5 input contract:** the comparator feeds `colorFamilyForText(a.colour || '')` — COLOUR FIELD ONLY, never `name + colour`. The fabric-word collision risk (Linen Shirt, Denim Jacket, Sand-Washed Tee) does not surface.
+
+**Byte audit before deploy:** lines 1671 → 1689 (+18), em-dash count 137 → 137 (zero drift), middot count 17 → 17 (zero drift), bytes 74,924 → 76,133 (+1,209 plain ASCII). Confirmed no Unicode introduced by today's additions.
+
+**Old inner `colorFamily(item)` at index.ts:904 NOT touched, NOT mirrored.** That helper uses `name + colour` deliberately for its smart-fallback purpose only.
+
+### Tests — all PASSED on iPhone + Supabase Logs
+
+1. **Pin + "navy" — 3 rounds, 3 different pinned tops (none of them navy).** Pinned item present in all 3 outfits every round. Navy/blue-family items surfaced. Log line `[generate-outfits] brief color lift: blue` fired on every run. Pool size 55 of 56 (one item filtered by safety filter — pool re-sorted, never emptied). ✅ PASSED.
+2. **"purple" with no purple items owned, no pin.** Generated normally, no error, no empty state. Sonnet styled around it (added an amethyst bracelet, working with the implied request rather than forcing purple clothes). ✅ PASSED.
+3. **No color in Brief.** Outfits behaved exactly like pre-Session-6. The new log line was NOT present (short-circuit confirmed). ✅ PASSED.
+4. **Family-lookup verification in Logs.** "navy" → `blue` (per COLOR_FAMILIES line 100), "cream" → `white` (per line 94). Both confirmed in `[generate-outfits] brief color lift:` log lines. ✅ PASSED.
+5. **Cache verification.** First call after deploy: `cache_creation_input_tokens: 2510`. Subsequent call within 5 min: `cache_read_input_tokens: 2510`. Round-trip proof; cache untouched. ✅ PASSED.
+6. **Garment + colour, no pin.** Briefs "white t-shirt", "white sneakers", "navy blouse + pearls", "black sneakers" all surfaced the requested colour-garment combos correctly. The colour lift and Sonnet's natural garment-matching work together when no pin competes for attention. ✅ PASSED.
+7. **Pin never dropped across all tests.** ✅ PASSED.
+
+### UNVERIFIED
+None this session. All seven scenarios verified directly on iPhone calling the live Edge Function. Cache integrity confirmed via Supabase Logs round-trip.
+
+### Open issues surfaced (NOT fixed this session — flagged for future)
+
+1. **PIN + COLOUR + GARMENT triple-combo in the Brief is inconsistent.** When the user pins an item AND the Brief names a colour + garment (e.g. pin denim jeans + Brief "white sneakers"), the requested colour-garment item surfaces only sometimes, and outfit quality drops on the misses. Three signals compete for Sonnet's attention: the HARD pin constraint (must appear in every outfit), the occasion + style profile, and the SOFT colour-family pool lift introduced this session. The pool lift is intentionally the weakest signal of the three (gentle nudge by design), so it loses when the pin and occasion also compete. NOT caused by today's change and NOT a regression — it's the ceiling of the soft pool-lift approach. Candidate fix for a future session: a light post-generation colour/garment check (the "Step 2" deferred from this session's staged plan). Needs council input before building. Added to CLAUDE.md KNOWN ISSUES.
+2. **"navy blazer" watch item.** Once during testing, a "navy blazer" Brief produced two blazers in one outfit. Re-ran twice, did not repeat. Pre-existing Sonnet structural edge case (related to the Session 17F two-bottoms-no-top class), not caused by the colour lift. Watch only — flag if it reproduces in production. Added to CLAUDE.md KNOWN ISSUES.
+
+### Notes / decisions
+- **Staged-by-design.** The advisory panel deliberately started with the gentlest possible Step 1. Worst case the AI ignores the nudge and we get pre-Session-6 behavior back — there is no failure mode that makes outfits worse. Step 2 (post-generation check) is a separate decision next session if production behavior warrants it.
+- **`colorFamiliesForCategoryWord` still uncalled.** Category phrases like "warm tones" / "earth tones" are out of scope this session. Single colors only.
+- **First-detected-color-wins for multi-color briefs.** `colorFamilyForText` returns the first family it finds, driven by longest-key-first ordering in `COLOR_LOOKUP_PATTERNS`. For a Brief like "navy top with cream trousers", the lift targets the navy/blue family. Simple, predictable, documented.
+- **False-positive risk acknowledged.** Phrases like "red carpet event" or "blue collar" would incorrectly trigger a colour lift. Acceptable for Step 1 because (a) the lift is gentle, (b) the Occasion chip and rest of the Brief dominate Sonnet's reasoning, (c) worst case is a soft preference toward red items in a Formal Event context — not a broken outfit. Revisit only if production telemetry shows abuse.
+- **Live blast radius.** Same Edge Function that serves Build 12 in production. Behavior degrades cleanly to byte-identical when no color word is in the Brief, which is the dominant case (most Briefs have no color).
+- **Helpers no longer dormant.** Session 5's `colorFamilyForText` is now load-bearing in production. The Session 5 standing-facts bullet in CLAUDE.md remains historically accurate (it captured what shipped in Session 5); the new Session 6 bullet supersedes the dormant claim.
+- `session-24a-shelved` not restored. `main` untouched. `production` untouched. No tags. No `npm audit fix`. No new dependencies. No App.js touched. No SYSTEM_PROMPT touched. Old inner `colorFamily(item)` at index.ts:904 NOT touched.
+
+---
+
 ## Update 1 — Session 5 — 2026-06-25 — Dormant color-family map (foundation for Session 6)
 
 **Branch:** testing (HEAD at session start: `e7dae0b`, after Session 5 commit: `7d997a7`)
