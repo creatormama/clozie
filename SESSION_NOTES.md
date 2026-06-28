@@ -54,6 +54,15 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 - Em-dash in the gap observation body (U+2014) was preserved through Step A's first paste + Step A's wording fix + the Step D iPhone test. Node sanity check printed it intact in case 5.
 - HEAD at session start: `17f75dd` (Session 8 commit "Style Learning Layer 1: vibe lean + star items injected into user message").
 
+### Polish (2026-06-28): sage ring on Analyse cards
+Visual-only polish to two style entries so the Analyse entry card + 1-3 observation cards read as one cohesive family on My Closet (previously plain white + faint espresso border, blended with item cards).
+- `analyseEntryCard` + `analyseObservationCard`: `borderColor: 'rgba(44,26,14,0.08)'` → `'#BCC7B7'` (the canonical sage from `floatingAddButton` + `stickyVibeBar` — verified live, not guessed).
+- `borderWidth: 1` → `1.5` (matches Session 10B chip border convention; 2px felt chunky on a 12px-radius card).
+- Added shadow block: `shadowColor: '#2C1A0E'` (espresso-tinted, matches `floatingAddButton`), `shadowOffset: { width: 0, height: 2 }`, `shadowOpacity: 0.06` (matches Session 9F recovery banner softness), `shadowRadius: 8`, `elevation: 2`.
+- Identical treatment on both styles so all three visible cards are pixel-consistent.
+- Zero JSX changes, zero new styles, zero logic changes. Style isolation verified: `analyseEntryCard` referenced only at App.js:1916, `analyseObservationCard` referenced only at App.js:1939 (inside the Session 9 `.map`).
+- iPhone-verified on user's 56-item closet: sage ring + soft lift reads well, all three cards match, rest of My Closet visually identical, Search hides/restores cleanly. Shadow `0.06` was right — the pre-approved `0.10` fallback not needed.
+
 ---
 
 ## Update 1, Session 8 — Style Learning Layer 1 — 2026-06-27
