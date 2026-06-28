@@ -10,6 +10,47 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 1 — Session B — 2026-06-28 — Hanger-icon fallback parity (Your Looks + Saved Outfits)
+
+**Branch:** testing (HEAD at session start: `e200301`)
+**Commit(s):** `a426be0` Step 1 (Your Looks photo strip) + `ec3d4b1` Step 2 (Saved Outfits thumbs). Two separate commits so either can be reverted independently.
+**Edge Function deploys:** 0 (App.js only).
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched).
+**App Store impact:** none — Edge Function untouched. Client-side fallback swap lives on testing only and reaches users when Build 13 ships.
+
+### Goals
+- Wherever a no-photo wardrobe item still showed a category emoji (👕/👖/👗/🧥/👟/👜), swap for the same sage-tint + TabHangerIcon + "No photo" placeholder My Closet has used since Session 10A Step 5.
+- Two real targets after reality check: Your Looks outfit card photo strip thumbnails (~90×120pt, 3-col) and Saved Outfits item thumbnails (~60×60pt, 4-col). Mood Board / accessory grid / Hanger View / Share Card / Your Week all use intentional category-color or solid-block fallbacks per their Session 9D / 13E / 9G / 20 designs — deliberately out of scope.
+
+### What changed
+- **Step 1 — Your Looks outfit card photo strip ([App.js:3937-3956](App.js:3937)), two ternary swaps in the same block.** Main map branch (`outfit.items.map`): old `<Text style={{ fontSize: 22 }}>{getCategoryEmoji(item.category)}</Text>` → new `<View>` with `width: '100%', height: '100%', backgroundColor: 'rgba(188,199,183,0.18)', alignItems: 'center', justifyContent: 'center'` containing `<TabHangerIcon active={false} size={40} color="#BCC7B7" strokeWidth={1.6} viewBox="-2 -2 28 28" />` + `<Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 11, color: '#A09888', marginTop: 6, letterSpacing: 0.2 }}>No photo</Text>`. Same swap applied to the sample-item fallback inner ternary (`outfit.items.length === 0` branch — replaces `getCategoryEmoji('Tops')` with identical placeholder block). Inline styles deliberately chosen over new stylesheet entries — smallest possible diff, single-block revert if needed. `getCategoryEmoji` function definition untouched (still used by Peek Inside onboarding mockup at App.js:411, 424, 2678).
+- **Step 2 — Saved Outfits item thumbnails ([App.js:4703-4709](App.js:4703)), single ternary swap.** Old `<Text style={{ fontSize: 20 }}>{getCategoryEmoji(item.category)}</Text>` → new `<View>` with same sage-tint background + `<TabHangerIcon active={false} size={28} color="#BCC7B7" strokeWidth={1.6} viewBox="-2 -2 28 28" />`. Two intentional deviations from Step 1: **size 28 instead of 40** (forced by ~60pt square thumb — 40 would fill ~67% of the thumb and dominate; 28 ≈ 47% and breathes), and **no "No photo" caption** (40pt hanger + 11pt caption with marginTop 6 ≈ 61pt total, won't fit in a 60pt thumb; outfit name + item chip labels below already tell the user what's there). Same sage hanger color, same viewBox, same background tint — reads as the same family as Step 1 + My Closet, just scaled.
+
+### Apple HIG audit
+- Tap target N/A — photo strip thumbs are non-interactive; whole saved outfit row is the interactive area.
+- All visible text ≥11pt: "No photo" caption in Step 1 is 11pt ✓. Step 2 has no caption (icon-only).
+- Contrast: `#BCC7B7` sage hanger silhouette + `#A09888` "No photo" caption both ride on `rgba(188,199,183,0.18)` sage-tint background — same exact color combination shipped through the May 24 Session 19C audit on My Closet's `gridCardPlaceholder` + `gridCardPlaceholderText`. No new colors introduced.
+- Dynamic Type 1.3× cap inherited from Update 1 — Session 3 global cap ✓.
+
+### Tests — both steps iPhone-verified in Expo Go with a no-photo wardrobe item
+- **Step 1 (Your Looks):** added a wardrobe item without uploading a photo, generated outfits, found the no-photo item in the resulting photo strips. Hanger placeholder fills the thumb cleanly, no overflow, "No photo" caption readable + not clipped, items WITH photos render byte-identical to pre-session (Image at `looksStyles.photoStripThumbImage` unchanged), sample-item fallback case (zero items in an outfit, rare in practice) also renders the placeholder cleanly.
+- **Step 2 (Saved Outfits):** opened ❤️ Saved modal, found the same no-photo item inside a saved outfit. 28pt hanger fits balanced next to photo thumbnails in the 4-column strip, no chunky/cramped feel, the row still reads as one card (vibe eyebrow + DM Serif outfit name + photo strip + item chips + Remove button below all visually unchanged).
+
+### UNVERIFIED
+- TestFlight standalone (Build 13): both swaps are pure JSX, no native module, no env var, no platform-conditional code — Expo Go behavior should carry over byte-identical to TestFlight. Flag only if a tester reports the hanger SVG path stroke rendering oddly at the smaller 28pt size.
+
+### Notes
+- HEAD at session start: `e200301` (Session A docs commit).
+- Two commits deliberately separated so either can be reverted independently. They touch different JSX blocks (~770 lines apart) with no shared state. Step 1 is the larger swap (8 ins / 2 del across two hunks — both the map and sample-item branches); Step 2 is the smaller (3 ins / 1 del, single hunk).
+- Out-of-scope locations confirmed via read-only audit and left untouched: Mood Board single-item polaroid (App.js:3151, 3165), Mood Board accessory grid cell (3087), Hanger View dress/top/pants/shoes/sideOuter/accessories (4357-4464), Share Card photo grid (3234-3238), Your Week mini cards (4862-4870). All five render solid `MOOD_PLACEHOLDER_COLORS[category]` or cream `#F5F0E8` blocks as intentional Session 9D / 13E / 9G / 20 design decisions, not emoji — they are NOT the bug Session B was fixing, and replacing them would alter polaroid + hanger-rod + share-card aesthetics that have been signed off.
+- Inline styles chosen over new `looksStyles` / `savedStyles` entries deliberately. The My Closet pattern already lives in two stylesheets (`wardrobeStyles` from Session 10A and `pinSheetStyles` from Session 11 byte-mirror); Session 11 chose byte-mirroring over promoting to a shared scope, and this session follows that precedent at the inline level for minimum surface. If a fourth or fifth callsite of this placeholder ever lands, the right move is to extract a shared `<HangerPlaceholder size={...} showCaption={...} />` component — not yet warranted with two callsites + two reference callsites already in stylesheets.
+- `getCategoryEmoji` helper function definition at App.js:1366 left in place — still used by Peek Inside Step 1 onboarding mockup (illustrative emoji teaching content, NOT a real wardrobe item display). Removing it would break onboarding; only the emoji DISPLAY in real wardrobe-item UI is the bug.
+- Dead `wardrobeStyles.emptyEmoji` style at line 2069 sits inside a `{/* HIDDEN: Session 10A Step 4 */}` JSX comment block — not used anywhere live. Left untouched; future cleanup polish.
+- Tab bar registration line `{ label: ..., icon: '👗', IconComponent: TabHangerIcon }` at App.js:7968 — the `icon` string is dormant fallback config; `IconComponent` is what actually renders the hanger in the tab bar. Already correct in practice, no action needed.
+- Brief originally named this "Session B" (letter, not number); preserved as the literal session identifier per Grace's framing, matching the Session A convention from the same day.
+
+---
+
 ## Update 1 — Session A — 2026-06-28 — Your Looks header reframe + View mood board restyle
 
 **Branch:** testing (HEAD at session start: `ad10bc7`)
