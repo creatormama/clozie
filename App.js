@@ -3973,11 +3973,18 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
 
           {/* View Mood Board link */}
           <TouchableOpacity
-            style={{ marginTop: 10, minHeight: 44, justifyContent: 'center' }}
+            style={{
+              marginTop: 10,
+              minHeight: 44,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
             activeOpacity={0.7}
             onPress={() => { setMoodBoardTab('moodboard'); setMoodBoardOutfit(outfit); }}
           >
             <Text style={looksStyles.moodBoardLink}>View mood board</Text>
+            <Text style={looksStyles.moodBoardChevron}>›</Text>
           </TouchableOpacity>
 
           {/* Row 1: Save + I wore this today — equal pills */}
@@ -10930,9 +10937,17 @@ const looksStyles = StyleSheet.create({
     marginTop: 4,
   },
   moodBoardLink: {
-    fontFamily: 'Outfit_400Regular',
-    fontSize: 13,
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 11,
     color: '#A44A34',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+  },
+  moodBoardChevron: {
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 20,
+    color: '#A44A34',
+    lineHeight: 18,
   },
   saveButton: {
     borderWidth: 1,
