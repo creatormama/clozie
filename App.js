@@ -3908,7 +3908,7 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
       {/* Subtitle — only when outfits generated */}
       {hasGenerated && outfits.length > 0 && (
         <Text style={looksStyles.subtitle}>
-          Here are today's looks, styled just for you. ✦ Clozie learns your taste with every rating.
+          Here are today's looks, styled just for you. One outfit is meant to surprise you — because great looks often start as a "maybe." Wear it bravely. ✦ Rate each look and Clozie learns your taste.
         </Text>
       )}
 
