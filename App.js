@@ -3937,14 +3937,20 @@ function YourLooksTab({ onGoToVibe, generationStatus, outfits: outfitsProp, gene
                   {item.photoUri ? (
                     <Image source={{ uri: item.photoUri }} style={looksStyles.photoStripThumbImage} />
                   ) : (
-                    <Text style={{ fontSize: 22 }}>{getCategoryEmoji(item.category)}</Text>
+                    <View style={{ width: '100%', height: '100%', backgroundColor: 'rgba(188,199,183,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                      <TabHangerIcon active={false} size={40} color="#BCC7B7" strokeWidth={1.6} viewBox="-2 -2 28 28" />
+                      <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 11, color: '#A09888', marginTop: 6, letterSpacing: 0.2 }}>No photo</Text>
+                    </View>
                   )}
                 </View>
               </View>
             )) : (
               <View style={looksStyles.photoStripItem}>
                 <View style={looksStyles.photoStripThumb}>
-                  <Text style={{ fontSize: 22 }}>{getCategoryEmoji('Tops')}</Text>
+                  <View style={{ width: '100%', height: '100%', backgroundColor: 'rgba(188,199,183,0.18)', alignItems: 'center', justifyContent: 'center' }}>
+                    <TabHangerIcon active={false} size={40} color="#BCC7B7" strokeWidth={1.6} viewBox="-2 -2 28 28" />
+                    <Text style={{ fontFamily: 'Outfit_400Regular', fontSize: 11, color: '#A09888', marginTop: 6, letterSpacing: 0.2 }}>No photo</Text>
+                  </View>
                 </View>
               </View>
             )}
