@@ -47,6 +47,7 @@ import { generateOutfits } from './src/lib/outfitGeneration';
 import { upsertOutfitInteraction, markItemsWorn, fetchSavedOutfits, fetchWornOutfits, clearClozieMemory } from './src/lib/outfitHistory';
 import { filterWardrobeItems } from './src/lib/filterWardrobeItems';
 import { filterSavedOutfits } from './src/lib/filterSavedOutfits';
+import { analyseWardrobe } from './src/lib/wardrobeIntelligence';
 
 // Dynamic Type global cap — limits iOS Larger Text scaling to 1.3× app-wide.
 // Tighter caps on big headings live inline at Welcome + Splash.
@@ -1553,6 +1554,12 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [editingItemId, setEditingItemId] = useState(null);
   const [showAnalyseMessage, setShowAnalyseMessage] = useState(false);
+  // Update 1 Session 9 D2: auto-close results when Search opens so they don't orphan.
+  useEffect(() => {
+    if (searchVisible) {
+      setShowAnalyseMessage(false);
+    }
+  }, [searchVisible]);
 
   const handleEditItem = (item) => {
     setEditingItemId(item.id);
@@ -1902,6 +1909,68 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
           { width: progressWidth + '%' },
         ]} />
       </View>
+
+      {/* Update 1 Session 9: Analyse My Wardrobe entry card */}
+      {itemCount >= 5 && !searchVisible && (
+        <TouchableOpacity
+          style={wardrobeStyles.analyseEntryCard}
+          activeOpacity={0.7}
+          onPress={() => setShowAnalyseMessage(true)}
+        >
+          <View style={wardrobeStyles.analyseEntryTextWrap}>
+            <Text style={wardrobeStyles.analyseEntryLabel}>Analyse My Wardrobe</Text>
+            <Text style={wardrobeStyles.analyseEntrySubtitle}>
+              Clozie takes a look at your closet and shares what stands out
+            </Text>
+          </View>
+          <Text style={wardrobeStyles.analyseEntryCaret}>▾</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Update 1 Session 9: Analyse My Wardrobe results (free JS, observations from analyseWardrobe helper) */}
+      {showAnalyseMessage && !searchVisible && (
+        <View style={wardrobeStyles.analyseResultsBlock}>
+          <Text style={wardrobeStyles.analyseResultsHeader}>
+            Here's what stands out about your closet right now.
+          </Text>
+          {analyseWardrobe(items).observations.map((obs, index) => (
+            <View
+              key={`${obs.type}-${index}`}
+              style={wardrobeStyles.analyseObservationCard}
+            >
+              <Text style={wardrobeStyles.analyseObservationTitle}>{obs.title}</Text>
+              <Text style={wardrobeStyles.analyseObservationBody}>{obs.body}</Text>
+              {obs.actionable && (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={obs.onAction || (() => {})}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  style={{ marginTop: 8 }}
+                >
+                  <Text style={{
+                    fontFamily: 'Outfit_500Medium',
+                    fontSize: 13,
+                    color: '#A44A34',
+                    textDecorationLine: 'underline',
+                  }}>
+                    {obs.actionLabel || ''}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ))}
+          <View style={{ alignItems: 'center', marginTop: 4 }}>
+            <TouchableOpacity
+              style={wardrobeStyles.analyseCardButton}
+              activeOpacity={0.85}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              onPress={() => setShowAnalyseMessage(false)}
+            >
+              <Text style={wardrobeStyles.analyseCardButtonText}>Got it</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {/* Session 10B Step 3: Search bar (revealed when searchVisible is true) */}
       {searchVisible && (
@@ -9831,6 +9900,68 @@ const wardrobeStyles = StyleSheet.create({
     fontFamily: 'Outfit_500Medium',
     fontSize: 13,
     color: '#2C1A0E',
+  },
+  // ── Update 1 Session 9: Analyse My Wardrobe (free JS) ──
+  analyseEntryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(44,26,14,0.08)',
+    marginBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  analyseEntryTextWrap: {
+    flex: 1,
+  },
+  analyseEntryLabel: {
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 17,
+    color: '#2C1A0E',
+  },
+  analyseEntrySubtitle: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
+    marginTop: 2,
+  },
+  analyseEntryCaret: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 18,
+    color: '#2C1A0E',
+    marginLeft: 12,
+  },
+  analyseResultsBlock: {
+    marginBottom: 14,
+  },
+  analyseResultsHeader: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
+    marginBottom: 12,
+  },
+  analyseObservationCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(44,26,14,0.08)',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  analyseObservationTitle: {
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 17,
+    color: '#2C1A0E',
+    marginBottom: 4,
+  },
+  analyseObservationBody: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
+    lineHeight: 20,
   },
   vibeButton: {
     backgroundColor: '#BCC7B7',

@@ -10,6 +10,52 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 1 — Session 9 — 2026-06-28 — Analyse My Wardrobe (free JS, foundation for Pro)
+
+**Branch:** testing (HEAD at session start: `17f75dd`)
+**Commit(s):** to be created at session end, single commit on testing covering Steps A-D + docs.
+**Edge Function deploys:** 0 (none — App.js + new helper + CLAUDE.md + SESSION_NOTES.md only).
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched).
+**App Store impact:** none — Edge Function untouched. Client-side wiring lives on testing only and reaches users when Build 13 ships.
+
+### Goals
+- Build the free JavaScript version of "Analyse My Wardrobe". Pure client-side observations. Zero API calls.
+- Place the entry card per the locked Nav Architecture v2 (between header and grid on My Closet, NOT bottom-of-scroll — the old April placement was explicitly rejected as undiscoverable).
+- Structure helper + UI exactly to the May 27 Pro spec so the future Pro version (Haiku/Sonnet Edge Function) drops in as a pure data-flip: entry card + observation cards + structured shape stay identical, Pro only swaps the observation source and may flip `actionable: true` on its unworn-items card.
+
+### What changed
+- **Step A — `src/lib/wardrobeIntelligence.js` (new file, 147 lines).** Pure JS. Single export `analyseWardrobe(items)` returning `{ observations: [{ type, title, body, count, itemIds, actionable }], source: "javascript" }`. Selection logic: <5 items → empty array (defense in depth — UI also gates). ≥5 items → slot 1 one balance/structural (S1 tops≥5 & bottoms≤2 → S2 bottoms≥5 & tops≤2 → G2 bottoms=0 & dresses=0) + slots 2-3 strengths in order depth (tops≥5 & bottoms≥3 & shoes≥2) → rich palette (itemCount≥25) → tops collection (tops≥8) → shoes covered (shoes≥4), skipping any whose primary data-key already appeared in slot 1 + F1 encouragement fallback. Never returns zero observations at ≥5 items. Every count is real (tops/bottoms/itemCount/shoes) or null. After Step A's first paste, refined two body lines for the zero case: S1/S2 swap "only 0 bottoms/tops" for "no bottoms yet"/"no tops yet". Em-dash U+2014 in gap body preserved byte-perfect.
+- **Step B — 10 new wardrobeStyles entries in App.js.** `analyseEntryCard` (white + soft border + radius 12 + padding 14/16 + flex row), `analyseEntryTextWrap` (flex:1), `analyseEntryLabel` (DM Serif 17 espresso), `analyseEntrySubtitle` (Outfit 13 body), `analyseEntryCaret` (Outfit 18 espresso), `analyseResultsBlock` (plain wrapper marginBottom 14), `analyseResultsHeader` (Outfit 13 body marginBottom 12), `analyseObservationCard` (white + soft border + radius 12 + padding 14/16, NOT nested inside another card), `analyseObservationTitle` (DM Serif 17 espresso), `analyseObservationBody` (Outfit 13 body lineHeight 20). Inserted between existing `analyseCardButtonText` and `vibeButton`. Zero existing styles modified.
+- **Step C — entry card JSX + placeholder results + D2 useEffect.** Entry card inserted between progress bar (App.js:1904) and search-bar conditional (App.js:1907), gated `itemCount >= 5 && !searchVisible`. Title + subtitle (flex:1) + down-caret `▾` (U+25BE) right-aligned. `TouchableOpacity activeOpacity={0.7}` for pressed-state dim. Placeholder results block (gated `showAnalyseMessage && !searchVisible`): header line "Here's what stands out about your closet right now." + one placeholder card + Got it button (reuses existing `analyseCardButton` + `analyseCardButtonText`, no sparkle, hitSlop 6/6/6/6 → ~53pt effective tap target). D2 defensive useEffect right after `showAnalyseMessage` state declaration: when `searchVisible` flips true, also `setShowAnalyseMessage(false)` so results never orphan.
+- **Step D — placeholder → real observations.** New import line `import { analyseWardrobe } from './src/lib/wardrobeIntelligence';`. Single placeholder card replaced with `.map()` over `analyseWardrobe(items).observations` — each iteration renders an `analyseObservationCard` with `analyseObservationTitle` + `analyseObservationBody` + dormant `{obs.actionable && (...)}` action block (inline terracotta `#A44A34` underline style, hitSlop 6/6/6/6, renders nothing in free because actionable is always false). Per-observation `key={`${obs.type}-${index}`}`. Helper called inline (no `useMemo` — O(n) on 50-item ceiling is sub-millisecond, gate short-circuits when card is closed). Header line + Got it button + all gating + D2 useEffect byte-identical to Step C.
+
+### Apple HIG audit (during Step C)
+- Entry card ~69pt visual height (≥44pt ✓) — no hitSlop needed.
+- Got it button visual ~41pt + 6pt top/bottom hitSlop = ~53pt effective (≥44pt ✓).
+- All text ≥11pt: 17 (titles), 13 (bodies/subtitles), 18 (caret) ✓.
+- Contrast: caret #2C1A0E on white ~17:1, subtitle #5C4A3A on white ~8.8:1 — WCAG AAA ✓.
+- Dynamic Type 1.3× cap inherited from Update 1 — Session 3 global cap ✓.
+
+### Tests
+- **Step A sanity check (Node script in scratchpad — not committed):** 8 fake closets covering empty, 5 Tops only (S1 with new "no bottoms yet"), 2 Tops + 5 Bottoms (S2 with "only 2 tops"), 0 Tops + 5 Bottoms (S2 with new "no tops yet"), 3 Shoes + 2 Accessories (G2 gap, em-dash intact), 25 mixed rich (Depth + Rich palette, C3/C4 correctly skipped by used-keys dedup), balanced 12 (Depth only), mini balanced 8 (F1 fallback). All 8 passed.
+- **Step B:** additive styles only, no iPhone test.
+- **Step C (iPhone):** entry card renders correctly in band, tap shows placeholder, Got it closes, re-tap reopens, opening Search hides both card and results cleanly, closing Search restores entry card.
+- **Step D (iPhone, real 56-item closet):** TWO observations rendered — "Your closet has real depth" + "A rich palette to play with — 56 pieces gives Clozie plenty to mix and match across the week." The literal count 56 proves the helper is reading the real closet. Got it collapses cleanly, re-tapping reopens the same observations, Search hides everything.
+
+### UNVERIFIED
+- None for the free JS path itself — pure synchronous JS over in-memory state, fully exercised on the real closet.
+- The dormant `obs.actionable` JSX block has never rendered (actionable hardcoded false in free). Will be exercised when Pro lands; rendering is straightforward but no-op'd today.
+
+### Notes
+- **Free is the foundation Pro builds on.** Pro version (Update 2, planned Haiku/Sonnet Edge Function) will: (a) swap the observation source from local JS to a server-side Edge Function call with its own caching + session limits, (b) flip `actionable: true` and add `onAction` + `actionLabel` on the unworn-items observation (which requires `times_worn` data not currently exposed via `rowToItem`), (c) potentially extend the helper with new observation types (e.g. "unworn"). Entry card + observation cards + Got it + structured shape stay byte-identical — zero UI work needed in Pro.
+- Old dead `{false && ...}` Analyse button + card blocks at App.js:2331-2357 (from the pre-Update-1 hidden shell) NOT removed this session — that's Step E, deferred as its own focused step.
+- Existing styles `analyseButton` / `analyseButtonText` / `analyseCard` / `analyseCardText` become unused as a side effect of Steps C+D but stay in place (Session 10A leave-in precedent); flag for future cleanup polish.
+- Inline `analyseWardrobe(items)` call inside JSX short-circuits via the `showAnalyseMessage && !searchVisible` gate — runs only when the card is open. On a 56-item closet, 4 category filters × 56 items ≈ 224 comparisons per render. Sub-millisecond. No `useMemo`.
+- Em-dash in the gap observation body (U+2014) was preserved through Step A's first paste + Step A's wording fix + the Step D iPhone test. Node sanity check printed it intact in case 5.
+- HEAD at session start: `17f75dd` (Session 8 commit "Style Learning Layer 1: vibe lean + star items injected into user message").
+
+---
+
 ## Update 1, Session 8 — Style Learning Layer 1 — 2026-06-27
 Built and deployed Style Learning Layer 1 into generate-outfits.
 
