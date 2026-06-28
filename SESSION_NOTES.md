@@ -10,6 +10,44 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 1 — Session A — 2026-06-28 — Your Looks header reframe + View mood board restyle
+
+**Branch:** testing (HEAD at session start: `ad10bc7`)
+**Commit(s):** `5f9c852` Step 2 (header copy) + `d1bf146` Step 3 (mood board link restyle). Two separate commits so either can be reverted independently.
+**Edge Function deploys:** 0 (App.js only).
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched).
+**App Store impact:** none — Edge Function untouched. Client-side copy + style changes live on testing only and reach users when Build 13 ships.
+
+### Goals
+- Reframe the Your Looks subtitle so the user understands one of the three looks is deliberately meant to surprise her ("wear it bravely") and the rating buttons below are how Clozie learns her taste.
+- Make the "View mood board" link read as clearly tappable. Pre-session it was small lowercase Outfit_400Regular 13pt terracotta text buried between the outfit description and the Save/rate buttons — easy to miss.
+
+### What changed
+- **Step 2 — App.js:3911, single-line subtitle swap.** Old: `Here are today's looks, styled just for you. ✦ Clozie learns your taste with every rating.` New: `Here are today's looks, styled just for you. One outfit is meant to surprise you — because great looks often start as a "maybe." Wear it bravely. ✦ Rate each look and Clozie learns your taste.` Em-dash U+2014, straight ASCII quotes around "maybe" (matches the existing straight apostrophe in `today's` rather than introducing curly quotes mid-string), sparkle U+2726, byte-verified before commit. Style untouched (`looksStyles.subtitle` — Outfit_400Regular 13 / `#5C4A3A` / lineHeight 20 / marginBottom 24). One flowing block, no line break, no new styles, no layout change. Closing phrase landed on the verb-only "Rate each look and Clozie learns your taste" after Grace switched mid-step from a first draft that named the buttons inline ("Tap Love it, Like it, or Not for me"). Header renders once at the top of the tab (not per-card), gated `hasGenerated && outfits.length > 0`.
+- **Step 3 — `looksStyles.moodBoardLink` swapped to eyebrow style + new `moodBoardChevron` style + JSX wrap.** `moodBoardLink` was Outfit_400Regular 13 sentence case — now Outfit_700Bold 11 / letterSpacing 2.5 / textTransform uppercase / `#A44A34` unchanged. New sibling style `moodBoardChevron` — Outfit_700Bold 20 / `#A44A34` / lineHeight 18. JSX at App.js:3975-3987: the existing `TouchableOpacity` now lays out as a row (`flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'`) with the label on the left and a new `<Text style={looksStyles.moodBoardChevron}>›</Text>` (U+203A) at the right edge. Whole row stays one tap target at `minHeight: 44`. Handler `() => { setMoodBoardTab('moodboard'); setMoodBoardOutfit(outfit); }` byte-identical — opens the Mood Board modal on the Mood Board tab. No divider line, no hairline, no pill, no background, no box. Plain row. Only one render site in App.js — Saved Outfits opens the mood board by whole-card tap (different UI, not affected).
+
+### Apple HIG audit
+- Tap row `minHeight: 44` ✓
+- All text ≥11pt: 11 (label), 20 (chevron) ✓
+- Contrast: `#A44A34` on white card ~5.5:1 — WCAG AA ✓ (same color the existing VIBE eyebrow ships through the Session 19C audit on May 24)
+- Dynamic Type 1.3× cap inherited from Update 1 — Session 3 global cap ✓
+
+### Tests — both steps iPhone-verified in Expo Go on a real generated outfit set
+- **Step 2:** subtitle reads as one flowing block, em-dash + sparkle both render cleanly, no tofu, no layout collision with recovery banner / session nudge / first outfit card.
+- **Step 3:** row reads as visibly tappable, chevron sits centered and whole at the right edge (the `lineHeight: 18` paired with `fontSize: 20` was flagged as a possible clip risk pre-commit — turned out fine on iPhone, no follow-up needed), VIBE eyebrow above does NOT invite a tap (chevron is the differentiator), modal still opens to the Mood Board tab, no divider / pill / background appeared, outfit name + photos + description + Save + I wore this today + ratings + Share Outfit all visually unchanged.
+
+### UNVERIFIED
+- TestFlight standalone (Build 13): both changes are pure JSX + StyleSheet, no native module, no env var, no platform-conditional code — Expo Go behavior should carry over byte-identical to TestFlight. Flag only if a tester reports the chevron rendering oddly under iOS's bold-system-font fallback.
+
+### Notes
+- HEAD at session start: `ad10bc7` (Session 9 polish — sage ring on Analyse cards).
+- Two commits deliberately separated so either can be reverted independently. Step 2 is a copy-only change; Step 3 is a style + tiny JSX change. They don't depend on each other.
+- Chevron glyph chosen: `›` (U+203A) rendered in the existing Outfit font — same family as the `▾` caret used in Session 9. No icon font, no SVG, no new dependency.
+- Quote-style decision in Step 2: straight ASCII `"` around "maybe" rather than curly `"…"`. The rest of the line uses straight apostrophes (`today's`), so straight double-quotes blend in; curly quotes in one spot of an otherwise-straight string read as inconsistent. Flagged before committing — Grace approved.
+- Original brief named this session "Session A" (letter, not number); preserved as the literal session identifier per Grace's framing.
+
+---
+
 ## Update 1 — Session 9 — 2026-06-28 — Analyse My Wardrobe (free JS, foundation for Pro)
 
 **Branch:** testing (HEAD at session start: `17f75dd`)
