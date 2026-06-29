@@ -1,14 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   Animated,
   AppState,
   Dimensions,
   ScrollView,
-  TextInput,
   Keyboard,
   KeyboardAvoidingView,
   LayoutAnimation,
@@ -21,6 +19,8 @@ import {
   ImageBackground,
   Alert,
 } from 'react-native';
+import Text from './src/components/ClozieText';
+import TextInput from './src/components/ClozieTextInput';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { PlayfairDisplay_400Regular, PlayfairDisplay_400Regular_Italic } from '@expo-google-fonts/playfair-display';
