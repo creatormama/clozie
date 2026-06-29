@@ -10,6 +10,48 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 2 — Session 1 — 2026-06-29 — Dynamic Type AX wrapper (ClozieText + ClozieTextInput)
+
+**Branch:** testing (HEAD at session start: `eb7c2e3`; HEAD at session end: `9e450f8`)
+**Commit(s):** `9e450f8` "Update 2 Session 1: Dynamic Type AX wrapper (ClozieText + ClozieTextInput)" — single commit on testing. Three files: `App.js` (+2/-2 import swap), `src/components/ClozieText.js` (new, 78 lines), `src/components/ClozieTextInput.js` (new, 58 lines). 138 insertions, 2 deletions. Not pushed.
+**Edge Function deploys:** 0.
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched).
+**App Store impact:** none — testing-only commit; reaches users when next build ships in Update 2 = v1.0.2.
+
+### Goals
+- Fix the Update 1 — Session 3 Dynamic Type cap escape: 1.3× cap holds under the standard Settings > Display & Brightness > Text Size slider, but **does not hold** under Settings > Accessibility > Display & Text Size > Larger Text (AX sizes), where text scales past 1.3× and breaks layouts. Cause confirmed in this session: documented Fabric bug (RN issue #47499) — `maxFontSizeMultiplier` and `defaultProps.maxFontSizeMultiplier` are both silently ignored at iOS AX sizes on RN 0.81.5 / Expo SDK 54 New Architecture.
+- Land the fix in tiny LOW-risk steps with iPhone verification between each.
+
+### What changed
+- **Step 0 — fontScale probe (diagnostic-only, reverted before any wrapper work).** Inserted a throwaway white card on the Welcome screen rendering `useWindowDimensions().fontScale` + `PixelRatio.getFontScale()`. Real iPhone confirmed both APIs return **3.571 at AX max** — well above 1.3, meaning the JS-clamp approach has a working signal. Reverted via `git checkout App.js` before any wrapper code. Nothing committed from the probe.
+- **Wrapper design — `src/components/ClozieText.js` + `ClozieTextInput.js`.** Reads `useWindowDimensions().fontScale` on every render, clamps via `min(fontScale, elementCap, 1.3)`, sets `allowFontScaling={false}` so iOS doesn't double-scale. Only scales elements whose flattened style has its own `fontSize` — nested-Text parents (Welcome / Peek / Auth logoRow) and inherited-size Texts pass through untouched. Also scales `lineHeight` proportionally when set, matching native scaling behavior. `dontScale={true}` opt-out forces `allowFontScaling={false}` + raw `fontSize` with zero JS scaling — reserved for ShareCard's offscreen PNG capture (wiring lands in a follow-up session).
+- **App.js import swap (`App.js` line 4 + line 11 removed, lines 22-23 added).** `Text` and `TextInput` no longer destructured from `'react-native'`; instead imported from the wrappers. All 372 `<Text>` and 17 `<TextInput>` JSX call sites resolve to the wrapper with zero call-site changes. The single `Animated.Text` ([App.js:3775](App.js:3775) — spinning loading ✦) keeps using RN's native Text via `Animated.Text` namespace, unchanged.
+- **Step 1 attempted + reverted within session.** Welcome logo Text→View change ([App.js:357-360](App.js:357)) applied, iPhone-tested at NORMAL text size, and "zie" dropped below "Clo" because `welcomeStyles.logoRow` lacks `flexDirection: 'row'` — View defaulted to column layout and stacked the children. Reverted byte-for-byte via surgical Edit (Text→View tags reversed only, wrapper imports kept). Welcome logo back to original `<Text>` parent. Splash's structurally-working pattern (`<View style={splashLogo}>` with `flexDirection: 'row'`) is what the next-session fix must mirror.
+
+### Tests — iPhone, Expo Go, end-to-end at NORMAL and AX MAX
+- **NORMAL text size** after wrapper import swap: every screen renders visually byte-identical to pre-session. Welcome / Peek / Splash / Auth logos, eyebrows, taglines, Mood Board polaroid captions, Hanger View, brief field typing, search bars, Settings forms — all unchanged.
+- **AX MAX (Accessibility > Larger Text slider near top)**: My Closet, Today's Vibe, Your Looks, Mood Board, Hanger View, Saved Outfits, Settings — **all cap correctly**. Splash also caps correctly (its parent is `<View>` so children are top-level Texts whose `allowFontScaling={false}` is honored). Welcome eyebrow + tagline cap correctly. **Welcome + Sign In + PostLogin Welcome big "Clozie" wordmark logos overflow at AX max** (observed on iPhone). **Peek Inside not tested at AX tonight** but structurally identical (nested-Text parent) and listed as the 4th likely-affected site. See KNOWN OPEN below.
+
+### KNOWN OPEN — 4 nested-Text logo sites still overflow at AX max
+- **Cause:** iOS only honors `allowFontScaling` on the OUTERMOST `<Text>` in a nested-Text tree. The wrapper correctly sets `allowFontScaling={false}` on the child Texts (Clo / zie), but the parent `<Text style={welcomeStyles.logoRow}>` is in the wrapper's pass-through branch (no own fontSize) and ships to iOS with `allowFontScaling=true` by default. iOS reads the parent's setting, scales the entire nested tree by the OS font scale, and the child wrapper's `allowFontScaling={false}` is ignored. 64px × 3.571 ≈ 228px overflow at AX max.
+- **Four sites affected:** Welcome ([App.js:357-360](App.js:357)), Sign In / Auth ([App.js:855-858](App.js:855)), Peek Inside ([App.js:518-521](App.js:518)), and PostLogin Welcome — all use `<Text>` parent wrapping `<Text>` children for the Clo+zie wordmark. **PostLogin Welcome was confirmed broken on iPhone tonight but its JSX structure was NOT line-verified during this session — locate exact line range + parent style ref during Step 1 v2 before applying any change.**
+- **Splash is unaffected** because Session 13A (2026-05-18) restructured Splash's logo from nested-Text to `<View style={splashLogo}>` parent with `flexDirection: 'row'` + sibling Texts. Children become top-level Texts whose `allowFontScaling={false}` IS honored.
+- **Fix queued for Update 2 — Session 2 (Step 1 v2):** swap outer `<Text>` → `<View>` AND add `flexDirection: 'row'` to `welcomeStyles.logoRow` (and likely `alignItems: 'baseline'`) so children render row-wise inline. `styles.logo` (used by Auth + Peek) already has `flexDirection: 'row'` so those two sites only need the tag swap. **PostLogin parent style not yet verified** — its requirement may match Welcome (no flexDirection, needs to be added) or Auth/Peek (`styles.logo` has flexDirection, tag swap alone is enough) depending on which stylesheet it uses; confirm during Step 1 v2. Tonight's plain Text→View attempt without the flexDirection addition is what failed — reverted cleanly. Four small surgical Edits, iPhone-tested between each.
+
+### UNVERIFIED
+- TestFlight standalone (Build 13 or later): wrapper proven in Expo Go on real iPhone at AX max. Standalone behavior should match (no native module, no env var) but flag if a tester reports any AX text growing past 1.3× on a non-nested-Text surface.
+- ShareCard `dontScale` opt-out: prop exists in wrapper but no caller uses it yet. ShareCard's 5 Text props still scale with AX in the captured PNG — wiring lands in a follow-up session before any share-card usage at AX is a real risk.
+
+### Notes
+- HEAD at session start: `eb7c2e3` (Update 1 docs commit). HEAD at session end: `9e450f8` (this session's commit). Testing 1 ahead of origin. Not pushed.
+- 4 safety refs unchanged: `v1.0.0-build12-appstore-live` (`9d617db`), `v1.0.1-build14-submitted` (`01c1d0f`), `production` (`9d617db`), `main` (`062d15b`).
+- Dead-but-harmless: the existing `Text.defaultProps.maxFontSizeMultiplier = 1.3` and `TextInput.defaultProps.maxFontSizeMultiplier = 1.3` at [App.js:54-57](App.js:54) now run against the wrapper component instead of RN's Text. With the wrapper handling all clamping in JS, these lines are redundant — `elementCap` defaults to Infinity when prop is unset, and applying `1.3` from defaultProps yields the same `min(fontScale, 1.3, 1.3)` = `min(fontScale, 1.3)` result. Left in place to keep this commit's blast radius small; clean-up is a separate tidy-up step. React 19+ has also deprecated `.defaultProps` on function components — when those lines are removed, that deprecation warning goes away too.
+- Wrapper structure picks: `React.forwardRef` on both wrappers (defensive — no current call site uses refs on Text/TextInput, but cheap insurance for future use). `StyleSheet.flatten()` resolves style refs + arrays uniformly. lineHeight scaling included so multi-line text (tagline, brief field, outfit name with `numberOfLines={2}`) doesn't overlap at AX.
+- Decision NOT to take Option B (force `allowFontScaling={false}` in wrapper pass-through): would have fixed the 4 logos without JSX changes, but requires auditing every no-own-fontSize Text in App.js to confirm no regression. Higher hidden risk than 4 small surgical JSX edits matching the proven Splash pattern.
+- Step 0 probe-fix-revert sequence proved the JS-clamp approach works before any wrapper code was written — saved the entire wrapper from being shelved if Fabric had broken the hook too.
+
+---
+
 ## Update 1 — App Store Submission — 2026-06-29 — Version 1.0.1 / Build 14 submitted to App Store
 
 **Branch:** testing (HEAD at session start: `476130c`; HEAD at session end: `01c1d0f`)
