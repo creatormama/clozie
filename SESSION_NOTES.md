@@ -10,6 +10,47 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 1 — App Store Submission — 2026-06-29 — Version 1.0.1 / Build 14 submitted to App Store
+
+**Branch:** testing (HEAD at session start: `476130c`; HEAD at session end: `01c1d0f`)
+**Commit(s):** `01c1d0f` "Bump version to 1.0.1 for Build 14 (App Store update)" — single commit on testing bumping `app.config.js` + `package.json` version from `1.0.0` → `1.0.1`. No app code touched.
+**Edge Function deploys:** 0.
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched).
+**App Store impact:** Build 14 / version 1.0.1 submitted to App Store. Currently "Waiting for Review" with **MANUAL** release. Build 12 / v1.0.0 remains the immutable production pointer (tag `v1.0.0-build12-appstore-live`, branch `production` at `9d617db`) until Build 14 is Apple-approved AND released.
+
+### What happened
+- Built Build 13 against version 1.0.0 first. App Store Connect rejected it at AUTOMATED PROCESSING (not human review) with errors **90186** ("Invalid Pre-Release Train") and **90062** — both flagging that the bundle's version string (1.0.0) collided with the already-shipped Build 12 / v1.0.0. App Store Connect requires the version string to bump for any new App Store release, even when the build number increments.
+- Fix: bumped `version` from `1.0.0` → `1.0.1` in `app.config.js` AND `package.json`. Single commit `01c1d0f` on `testing`. No app code touched.
+- Rebuilt as Build 14 via EAS against version 1.0.1. Build succeeded.
+- Uploaded the IPA to App Store Connect via **Transporter** (the standalone macOS upload app, not `eas submit`). Processing accepted cleanly — no 90186/90062 this time.
+- Submitted Build 14 for App Store review. **Status: Waiting for Review. Release method: MANUAL** (will not auto-release on approval — Grace presses Release herself).
+- Reviewer demo login confirmed working pre-submission: `hello@clozie.net` signs in cleanly, full app reachable end-to-end.
+
+### Dynamic Type cap finding (for next session — read-only investigation queued)
+- Real-iPhone test today against the 1.3× font cap shipped in Update 1 — Session 3 (`Text.defaultProps.maxFontSizeMultiplier = 1.3` and `TextInput.defaultProps.maxFontSizeMultiplier = 1.3` around App.js:52-57).
+- The cap **HOLDS** under the standard Settings > Display & Brightness > Text Size slider — text scales up to ~1.3× and stops, layouts look fine.
+- The cap **DOES NOT HOLD** under iOS Accessibility > Display & Text Size > Larger Text — text scales past 1.3× and layouts break across many screens.
+- Cross-check: other apps on the same phone DO cap correctly under accessibility mode, so this is not a global iOS bug — Clozie's cap is not being applied to the iOS accessibility text-size pipeline.
+- Conclusion: this is a "cap not holding under accessibility larger text" investigation, **NOT** a confirmed 7-screen layout rework. Next session opens with read-only diagnosis.
+
+### Tests
+- Build 14 IPA uploaded to App Store Connect via Transporter — no processing errors (vs Build 13's 90186 + 90062).
+- Submitted for review — App Store Connect accepted.
+- Reviewer demo login (hello@clozie.net) verified working from a fresh iPhone session before submission.
+
+### UNVERIFIED
+- Build 14 has not yet been reviewed by a human Apple reviewer.
+- Build 14 has not yet been released to App Store users (MANUAL release; Grace presses Release after approval).
+- All "UNVERIFIED until Build 13" items in earlier sessions (Daily Notifications firing + tap routing — Session 7; long-sleep session refresh + Apple Sign-In end-to-end — Session 1; Dynamic Type cap on TestFlight standalone — Session 3) carry forward — they will now first ship to real users via Build 14 once released.
+
+### Notes
+- Version-bump rule learned the hard way: bumping ONLY the buildNumber (`14`) without bumping the version string (`1.0.0`) is not enough for App Store Connect — every new App Store release needs a fresh version string. TestFlight tolerated this in earlier sessions; App Store submission does not.
+- Update 1 work-stream is now closed (submitted). Next active work-stream is **Update 2 = version 1.0.2**, scoped (per Grace's call) to: (a) Dynamic Type accessibility-cap fix and (b) background removal.
+- Production pointer (`production` branch, tag `v1.0.0-build12-appstore-live`, commit `9d617db`) NOT touched. Build 12 remains the immutable rollback point until Build 14 is approved + released, after which Update 1's commit gets its own immutable tag `v1.0.1-build14-appstore-live` and `production` fast-forwards.
+- Earlier Build 13 IPA was never installed anywhere (rejected at processing before TestFlight or App Store). Build 14 is the first 1.0.1 IPA that exists; it is currently sitting in App Store Connect awaiting human review.
+
+---
+
 ## Update 1 — Session B — 2026-06-28 — Hanger-icon fallback parity (Your Looks + Saved Outfits)
 
 **Branch:** testing (HEAD at session start: `e200301`)
