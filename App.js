@@ -354,10 +354,10 @@ function WelcomeScreen({ onNext, onSignIn }) {
         />
 
         <View style={welcomeStyles.logoBlock} pointerEvents="none">
-          <Text style={welcomeStyles.logoRow}>
+          <View style={welcomeStyles.logoRow}>
             <Text style={welcomeStyles.logoClo} maxFontSizeMultiplier={1.1}>Clo</Text>
             <Text style={welcomeStyles.logoZie} maxFontSizeMultiplier={1.1}>zie</Text>
-          </Text>
+          </View>
           <Text style={welcomeStyles.eyebrow} maxFontSizeMultiplier={1.15}>YOUR PERSONAL STYLIST</Text>
         </View>
 
@@ -515,10 +515,10 @@ function PeekInsideScreen({ onStartStyling, onSignIn }) {
       <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
 
         <View style={peekStyles.fixedHeader}>
-          <Text style={[styles.logo, { marginBottom: 4 }]}>
+          <View style={[styles.logo, { marginBottom: 4 }]}>
             <Text style={peekStyles.peekLogoClo}>Clo</Text>
             <Text style={peekStyles.peekLogoZie}>zie</Text>
-          </Text>
+          </View>
           <Text style={peekStyles.howLabel}>✦ YOUR OUTFIT IN 3 STEPS ✦</Text>
         </View>
 
@@ -852,10 +852,10 @@ function AuthScreen({ mode, onDone, onSwitchMode, onForgot, onBack }) {
 
             {/* Logo + heading */}
             <View style={authStyles.headerBlock}>
-              <Text style={[styles.logo, { marginBottom: 4 }]}>
+              <View style={[styles.logo, { marginBottom: 4 }]}>
                 <Text style={[styles.logoClo, { fontSize: 36, fontFamily: 'DMSerifDisplay_400Regular', color: '#2C1A0E' }]}>Clo</Text>
                 <Text style={[styles.logoZie, { fontSize: 36, fontFamily: 'DMSerifDisplay_400Regular_Italic', color: '#C87A52' }]}>zie</Text>
-              </Text>
+              </View>
               <Text style={authStyles.headingLabel}>{headingLabel}</Text>
               <Text style={authStyles.subtitle}>{subtitle}</Text>
             </View>
@@ -1128,10 +1128,10 @@ function PostLoginWelcomeScreen({ onStart }) {
 
       {/* Logo, body text, button — bottom of screen */}
       <View style={postLoginStyles.bottomBlock}>
-        <Text style={postLoginStyles.logoRow}>
+        <View style={postLoginStyles.logoRow}>
           <Text style={postLoginStyles.logoClo}>Clo</Text>
           <Text style={postLoginStyles.logoZie}>zie</Text>
-        </Text>
+        </View>
 
         <Text style={postLoginStyles.body}>
           The more you use Clozie, the better she knows you
@@ -8413,6 +8413,7 @@ const welcomeStyles = StyleSheet.create({
   },
   logoRow: {
     textAlign: 'center',
+    flexDirection: 'row',
   },
   logoClo: {
     fontFamily: 'DMSerifDisplay_400Regular',
@@ -8835,6 +8836,7 @@ const postLoginStyles = StyleSheet.create({
   logoRow: {
     textAlign: 'center',
     marginBottom: 16,
+    flexDirection: 'row',
   },
   logoClo: {
     fontFamily: 'DMSerifDisplay_400Regular',

@@ -10,6 +10,45 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 2 — Session 2 — 2026-06-30 — Nested-Text logo fix (Welcome, Sign In, Peek Inside, PostLogin Text→View)
+
+**Branch:** testing (HEAD at session start: `d4a3129`; HEAD at session end: this session's single new commit on testing — see `git log -1`)
+**Commit(s):** "Update 2 Session 2: nested-Text logo fix at AX sizes (Welcome, Sign In, Peek Inside, PostLogin — Text→View + flexDirection:row)" — single commit on testing bundling code + docs (App.js + SESSION_NOTES.md + CLAUDE.md). Not pushed.
+**Edge Function deploys:** 0.
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched).
+**App Store impact:** none — testing-only commit; reaches users when next build ships in Update 2 = v1.0.2.
+
+### Goals
+- Close the KNOWN OPEN item from Update 2 — Session 1: all 4 nested-Text logo sites overflow at AX max because iOS only honors `allowFontScaling={false}` on the outermost `<Text>` in a nested-Text tree, and the parent wrapper Text fell into the wrapper's pass-through branch (no own fontSize) — the child wrappers' `allowFontScaling={false}` was ignored by iOS.
+- Land the four fixes in the smallest possible LOW-risk steps, mirroring Splash's structurally-working pattern (`<View style={splashLogo}>` with `flexDirection: 'row'`), one screen at a time, diff-first, iPhone-verified between each.
+
+### What changed
+- **Step 0 — Branch-safety check (read-only).** Verified testing branch, clean tracked working tree, 2 ahead / 0 pushed, all 4 safety refs unchanged. Reconciled session-notes discrepancy: real HEAD at session start = `d4a3129` (Update 2 Session 1 docs commit), not `9e450f8` (wrapper code commit) — Session 1 actually shipped as two commits, not one.
+- **Step 1 — Read-only code review of all 7 logo sites.** Splash reference: `<View style={splashLogo}>` + `flexDirection: 'row'` + matching `lineHeight: 92` on both children. Peek Inside ([App.js:518-521](App.js:518)) + Sign In ([App.js:855-858](App.js:855)) share `styles.logo` which ALREADY has `flexDirection: 'row'` → Case A (tag swap only). Welcome ([App.js:357-360](App.js:357)) + PostLogin ([App.js:1131-1134](App.js:1131)) use their own per-screen `logoRow` styles which LACK `flexDirection: 'row'` → Case B (tag swap + style edit). Verified `welcomeStyles.logoRow`/`.logoClo`/`.logoZie` Welcome-exclusive and `postLoginStyles.logoRow`/`.logoClo`/`.logoZie` PostLogin-exclusive — no leak risk on the style edits. Two additional `<View>`-based logo sites (Subscription line 5658, Settings line 6305) confirmed already structurally correct and NOT in scope.
+- **Edit 1 — Peek Inside.** Outer `<Text style={[styles.logo, { marginBottom: 4 }]}>` → `<View ...>`, matching `</Text>` → `</View>`. Children byte-identical. No style edit (shared `styles.logo` already has `flexDirection: 'row'`). iPhone-verified at NORMAL + AX MAX: clean, no baseline drift at 36pt.
+- **Edit 2 — Sign In.** Same tag-swap-only pattern (shares `styles.logo`). Children with their inline DM Serif 36 / espresso / terracotta overrides byte-identical. iPhone-verified at NORMAL + AX MAX: clean, no drift at 36pt.
+- **Edit 3 — Welcome.** Tag swap (line 357 + 360) PLUS added `flexDirection: 'row'` to `welcomeStyles.logoRow` (App.js:8416). `textAlign: 'center'` left in place (no-op on View, flagged for future cleanup). `maxFontSizeMultiplier={1.1}` on both children preserved. iPhone-verified at NORMAL + AX MAX at 64pt: clean, no baseline drift between regular "Clo" and italic "zie" without any `lineHeight` addition.
+- **Edit 4 — PostLogin.** Same Case-B pattern — tag swap (line 1131 + 1134) PLUS added `flexDirection: 'row'` to `postLoginStyles.logoRow` (App.js:8839). `textAlign: 'center'` + `marginBottom: 16` preserved. Children byte-identical (no per-Text `maxFontSizeMultiplier` — inherits global 1.3× cap from `ClozieText` wrapper). iPhone-verified at NORMAL + AX MAX at 56pt: clean, no drift, no `lineHeight` needed.
+
+### Tests — iPhone, Expo Go, end-to-end at NORMAL and AX MAX
+- **NORMAL text size**, every screen after every edit: byte-visually identical to pre-edit (same centering, same spacing, same font weights). No regressions on Peek / Sign In / Welcome / PostLogin or adjacent screens.
+- **AX MAX (Accessibility > Display & Text Size > Larger Text, slider near top)**: all 4 previously-broken logos now hold cleanly. "Clo" and italic "zie" render side-by-side, horizontally centered, scaled by the global `ClozieText` 1.3× cap (or per-Text 1.1× cap on Welcome's children). The Welcome stacked-zie-below-Clo failure from the original Session 1 plain-tag-swap attempt is closed because `flexDirection: 'row'` is now present.
+- Splash retested at AX MAX as a sanity check: still caps correctly (structurally untouched this session).
+
+### UNVERIFIED
+- TestFlight standalone behavior (Build 13 or later) of the wrapper + the logo structural fix. Both proven in Expo Go on real iPhone at AX max. Standalone behavior should match (no native module, no env var, pure JS + RN built-ins) but flag if a tester reports any logo or AX text behavior diverging from Expo Go.
+- ShareCard `dontScale` opt-out wiring: prop exists in `ClozieText` wrapper but no caller uses it yet (carried forward from Session 1). ShareCard's 5 Text props still scale with AX in the captured PNG — wiring lands in a follow-up session before any share-card usage at AX is a real risk.
+
+### Notes
+- HEAD at session start: `d4a3129` (Update 2 Session 1 docs commit). HEAD at session end: single new commit on testing this session (visible via `git log -1`). Testing now 3 ahead of origin / 0 pushed after this commit.
+- 4 safety refs unchanged: `v1.0.0-build12-appstore-live` (`9d617db`), `v1.0.1-build14-submitted` (`01c1d0f`), `production` (`9d617db`), `main` (`062d15b`).
+- Total in-file logo count: 7 (1 Splash reference + 4 fixed-this-session + 2 already-correct at Subscription line 5658 and Settings line 6305).
+- Small dead-style debt accrued: `textAlign: 'center'` left in `welcomeStyles.logoRow` and `postLoginStyles.logoRow` (silent no-op on View after the swap). Kept per the no-silent-changes rule. Single-line cleanup; can ship with any future polish pass.
+- Honest pre-edit predictions ran: Welcome at 64pt was estimated ~70% clean / 30% drift-needing-lineHeight; PostLogin at 56pt ~85% clean. Both held with NO `lineHeight` needed — better than predicted. Splash's `lineHeight: 92` (72pt × 1.28) precedent remains the reactive-fix recipe if any future site does show drift.
+- No deps added, no imports changed, no Edge Function touched, no Supabase touched, no SYSTEM_PROMPT edit, no CLI deploys. Pure JSX + StyleSheet edits in App.js only.
+
+---
+
 ## Update 2 — Session 1 — 2026-06-29 — Dynamic Type AX wrapper (ClozieText + ClozieTextInput)
 
 **Branch:** testing (HEAD at session start: `eb7c2e3`; HEAD at session end: `9e450f8`)
