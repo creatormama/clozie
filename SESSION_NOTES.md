@@ -10,6 +10,58 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 2 — Session 5 — 2026-07-04 — Version bump 1.0.1 → 1.0.2 + Build 14 tag rule satisfied
+
+**Branch:** testing (HEAD at session start: `183f207`; HEAD at session end: `d5df5b2`).
+**Commit(s):** Four commits on testing, all pushed to origin/testing:
+- `3699b54` — "Update 2 — Session 5: version bump 1.0.1 → 1.0.2 (pre-Build 15)" (`app.config.js` + `package.json`)
+- `a3ccc09` — "Update 2 — Session 5: docs — Build 14 live + Update 2 v1.0.2 pointer" (`CLAUDE.md`)
+- `895ce59` — "Update 2 — Session 5: docs — production pointer moved to Build 14" (`CLAUDE.md`)
+- `d5df5b2` — "Update 2 — Session 5: docs — Build 14 tag rule SATISFIED (pushed)" (`CLAUDE.md`)
+
+**Edge Function deploys:** 0.
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched).
+**App Store impact:** version string now `1.0.2` in both files — unblocks EAS Build 15 upload for Update 2. Build 14 tag housekeeping retroactively closed on origin. No code shipped to users this session; nothing new reaches users until Grace uploads Build 15 and Apple approves it.
+
+### Goals
+- Bump the App Store version string 1.0.1 → 1.0.2 in the same two-file pattern (`app.config.js` + `package.json`) that fixed the Build 13 rejection (errors 90186 + 90062), so EAS Build 15 doesn't fail the same way at App Store Connect processing.
+- Correct CLAUDE.md's stale "Build 14 = Waiting for Review, MANUAL release" statement now that Grace confirmed Build 14 was Apple-approved and released.
+- Discharge the CLAUDE.md tag-rule debt for Build 14: annotated tag `v1.0.1-build14-appstore-live` on the build's commit `01c1d0f` + `production` fast-forwarded `9d617db → 01c1d0f`. Both pushed to origin.
+- Keep every step LOW risk; no code, no dependency, no Edge Function, no cache disturbance.
+
+### What changed
+- **Version bump (commit `3699b54`).** `app.config.js` line 7 `version: '1.0.1'` → `'1.0.2'`; `package.json` line 3 `"version": "1.0.1"` → `"1.0.2"`. One-character diff each. Both files touched together per the Build 13 rejection lesson.
+- **Docs commit 1 (`a3ccc09`).** CLAUDE.md CURRENT BUILD STATE: "Last verified" 2026-06-29 → 2026-07-04; "UPDATE 1 SUBMITTED ... Waiting for Review (manual release)" paragraph rewritten as "UPDATE 1 LIVE: Build 14 / v1.0.1 — Apple-approved and released on the App Store." Full Build 13 rejection history preserved (load-bearing lesson). Added "Tag rule OWED for Build 14" flag + "UPDATE 2 = v1.0.2 CODE COMPLETE on testing, awaiting EAS Build 15 upload" pointer. Standing fact "Production pointer ... currently at 9d617db" line deliberately UNCHANGED at this point — still accurate before the fast-forward.
+- **Annotated tag creation.** `git tag -a v1.0.1-build14-appstore-live 01c1d0f -m "..."`. Tag-object SHA `8f0a104`, distinct from commit SHA — normal, matches the Build 12 pattern (`512dbd2`/`2036b9c`) already documented in CLAUDE.md's standing facts. Tag message mirrors Build 12's factual one-paragraph style. Build 12's tag verified still at commit `9d617db` — restore point untouched.
+- **Production fast-forward.** `git update-ref refs/heads/production 01c1d0f 9d617db`. Atomic compare-and-swap: only succeeds if `production` currently at `9d617db`. Ancestor check `git merge-base --is-ancestor 9d617db 01c1d0f` returned OK first (26 commits between, linear ancestry). HEAD stayed on testing throughout — no branch checkout, no working tree change.
+- **Docs commit 2 (`895ce59`).** CLAUDE.md standing fact line 24: `9d617db` → `01c1d0f locally — origin/production still at 9d617db until pushed`. Honest local-vs-origin split disclosure until Push 2 landed.
+- **Push 1 — `git push origin testing`.** `183f207..895ce59` — 3 commits fast-forwarded (version bump + 2 docs).
+- **Push 2 — `git push origin production`.** `9d617db..01c1d0f` — 26 commits fast-forwarded. HEAD unaffected.
+- **Push 3 — `git push origin v1.0.1-build14-appstore-live`.** `* [new tag]`. Explicit single-tag push (not `--tags`, to avoid leaking any local test tags). Tag-object SHA `8f0a104` verified on origin via `git ls-remote --tags`.
+- **Docs commit 3 (`d5df5b2`).** CLAUDE.md wrap-up: standing fact line 24 stripped the "locally — until pushed" clause; "Tag rule OWED for Build 14 ... NOT been done yet" → "Tag rule SATISFIED for Build 14 (2026-07-04): annotated tag v1.0.1-build14-appstore-live (tag-object SHA 8f0a104) created on commit 01c1d0f AND production fast-forwarded 9d617db → 01c1d0f; both pushed to origin."
+- **Push 4 — `git push origin testing`.** `895ce59..d5df5b2` — wrap-up docs commit fast-forwarded.
+
+### Tests — read-only verifications throughout
+- Ancestor safety check before the production ref move — `git merge-base --is-ancestor 9d617db 01c1d0f` returned OK.
+- After every push: `git rev-parse --short <ref>` compared to `git rev-parse --short origin/<ref>` — all pushed refs converged with origin.
+- Build 12 restore point re-verified after every operation via `git rev-parse v1.0.0-build12-appstore-live^{commit}` → `9d617db`. Untouched, immutable.
+- Working tree checked after every commit: only the 12 pre-existing untracked docs/backups remain (`.claude/worktrees/`, CLAUDE backup MDs, SESSION_24A notes, `tsconfig.json`, `supabase/.temp/`, photo assets) — none swept into any Session 5 commit.
+- No iPhone / Expo Go test needed this session — pure metadata + docs, zero App.js or code changes.
+
+### UNVERIFIED
+- EAS Build 15 not triggered this session. Version string is bumped in both files, buildNumber will auto-increment (EAS never has it set manually in this repo), but `eas build --platform ios --profile preview` + App Store Connect processing + Apple review + release are Grace's next steps outside of this session.
+- If Grace inspects `Constants.expoConfig.version` in Expo Go before Metro reloads, it may still show `1.0.1` from the cached bundle — force-reload Metro if verifying the string in-app. EAS build itself is unaffected (reads `app.config.js` directly from disk at build time on Expo's remote servers).
+
+### Notes
+- Push order matched Grace's named sequence: testing → production → tag → testing-again. One-at-a-time cadence produced an auditable trail where every docs commit reads cleanly on its own.
+- `git config` NOT touched — every commit uses Grace's auto-derived committer identity (`grace@Graces-MacBook-Air.local`), matching every prior commit in this repo. Cosmetic git warning suppressed by convention. CLAUDE.md rule: NEVER update git config.
+- 4 safety refs at session close: `v1.0.0-build12-appstore-live` tag-object `512dbd2` → commit `9d617db` (unchanged); `main` `062d15b` (unchanged). The two refs that MOVED — Build 14 tag `v1.0.1-build14-appstore-live` (tag-object `8f0a104` → commit `01c1d0f`) and `production` (`9d617db` → `01c1d0f`) — both match the CLAUDE.md tag rule verbatim.
+- Zero Edge Function deploys, zero SYSTEM_PROMPT edits, cache stays at 2,510 tokens (unchanged from Session 4).
+- Zero App.js changes, zero `src/` changes, zero new dependencies, zero `node_modules` changes, zero EAS env-var changes.
+- No new KNOWN ISSUES surfaced. None carried forward from Session 4 got resolved (Analyse caret glyph pair + dormant Pro tap target both still deferred per Session 4's plan).
+
+---
+
 ## Update 2 — Session 4 — 2026-07-04 — Analyse My Wardrobe redesign (glance-first + toggle + contrast)
 
 **Branch:** testing (HEAD at session start: `6ff6cf1`; HEAD at session end: this session's single new commit — see `git log -1`)
