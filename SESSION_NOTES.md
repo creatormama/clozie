@@ -10,6 +10,51 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 2 — Session 4 — 2026-07-04 — Analyse My Wardrobe redesign (glance-first + toggle + contrast)
+
+**Branch:** testing (HEAD at session start: `6ff6cf1`; HEAD at session end: this session's single new commit — see `git log -1`)
+**Commit(s):** "Update 2 — Session 4: Analyse My Wardrobe redesign (glance-first + toggle + contrast)" — single commit on testing bundling code + docs (App.js + src/lib/wardrobeIntelligence.js + CLAUDE.md + SESSION_NOTES.md). Pushed to origin/testing.
+**Edge Function deploys:** 0.
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched).
+**App Store impact:** none — testing-only commit; reaches users when Update 2 = v1.0.2 ships.
+
+### Goals
+- Replace the vague "real depth" / "rich palette" observation padding from Update 1 — Session 9 with a truthful glance-first design: closet-at-a-glance count breakdown always visible, balance line only when a category is genuinely low, "forgot about" only when there's real wear history.
+- Deliberately kill the "never zero observations" invariant. Zero is now a valid outcome (the glance breakdown always shows).
+- Wire the accordion tap-to-toggle + caret flip so the entry card acts like a real disclosure.
+- Fix the close-hint contrast (`#A09888` on cream = 2.24:1, WCAG fail).
+- Full HIG audit of the changed area before shipping.
+
+### What changed
+- **Step 1 — `src/lib/wardrobeIntelligence.js` full rewrite.** Killed F1 encouragement fallback + all 4 strength candidates (depth / rich palette / tops collection / shoes covered). Added: glance breakdown (canonical category order Tops/Bottoms/Dresses/Outerwear/Shoes/Accessories, real counts only, singular/plural helper — `1 dress` / `1 pair of shoes` / `1 outerwear piece` / `1 accessory`), dress-aware guard (`dresses >= 3` suppresses top/bottom imbalance because the user builds outfits from dresses), forgot-about observation (`N pieces you forgot about — Worth bringing back into rotation.` — statement not question, question form deferred to v1.0.3), `wornCount + unwornCount` derived from `item.lastWorn`. Extended return shape from `{ observations, source }` to `{ observations, glance, wornCount, unwornCount, source }` — additive, Session 9 caller unaffected.
+- **Step 2 — App.js results block rewrite ([App.js:1930-1985](App.js:1930)).** Removed `Here's what stands out about your closet right now.` header. Removed "Got it" sage button. New render order via IIFE inside the conditional (so the helper only runs when the block is open): `YOUR CLOSET AT A GLANCE` terracotta eyebrow (Outfit_700Bold 11pt #A44A34 letterSpacing 2.5) → glance chips row (light espresso wash `rgba(44,26,14,0.04)` + muted border, count Outfit_700Bold 14 espresso + category Outfit_400Regular 13 body-brown, only categories with count > 0) → observations map (unchanged rendering — balance line and/or forgot-about) → E small-closet invitation `You're just getting started — add a few more pieces you love and Clozie will have far more to create with.` OR D no-history tip `✦ Tap "I wore this today" on your outfits, and Clozie can point out the pieces you forgot about.` (both gated on `observations.length === 0`, mutually exclusive on itemCount + wornCount) → close hint `Tap the card again to close ↑`. 7 new styles added to `wardrobeStyles`: `glanceLabel`, `glanceChipsRow`, `glanceChip`, `glanceChipCount`, `glanceChipCategory`, `analyseInvitation`, `analyseCloseHint`. Old dead styles (`analyseCardButton`, `analyseCardButtonText`, `analyseResultsHeader`) left in place per comment-not-delete pattern.
+- **Step 3 — Three surgical edits.** Entry-card `onPress` `setShowAnalyseMessage(true)` → `setShowAnalyseMessage((prev) => !prev)` (App.js:1918 — toggle). Caret hardcoded `▾` → `{showAnalyseMessage ? '▴' : '▾'}` (App.js:1926 — flips with state). `analyseCloseHint.color` `#A09888` → `#5C4A3A` (App.js:10055 — 2.24:1 → 6.58:1 WCAG). No conflict with the D2 useEffect (search-open one-way close at App.js:1558-1562) — confirmed by inspection.
+
+### Tests — iPhone, Expo Go
+- **Step 1 verified:** real closet (~50 items with mix of worn + unworn) rendered `19 pieces you forgot about — Worth bringing back into rotation.` + balance line as expected; strength padding lines gone. My Closet grid + progress bar + FAB + sticky pill byte-identical.
+- **Step 2 verified:** eyebrow, glance chips (real counts, correct singular/plural including `1 dress`), observation cards, close hint all render cleanly on real closet. E/D correctly suppressed when observations fire. iPhone screenshot of the block shared and approved.
+- **Step 3 verified:** entry-card tap now toggles the block open/closed (both directions); caret flips ▾ ↔ ▴ both directions; close-hint text now reads clearly in body brown at 12pt.
+
+### HIG audit (submission-readiness for the changed area)
+- **Contrast (WCAG 2.1 AA, ≥4.5:1 for normal text):** eyebrow `#A44A34` on cream `#E8E4CE` = **4.55:1 PASS** (0.05 margin, matches locked April 28 design-system colour); glance chip count `#2C1A0E` = **~12.5:1 PASS**; glance chip category + observation body + E/D + close-hint all `#5C4A3A` on cream/white = **6.5–8.4:1 PASS**; observation title `#2C1A0E` on white = **16.65:1 PASS**; dormant actionable link `#A44A34` on white = **5.82:1 PASS**. Close-hint was the only fail pre-Step 3 (2.24:1); now 6.58:1 after the colour fix.
+- **Tap targets (Apple HIG, ≥44pt):** entry card ~66pt tall × full column width — PASS. Dormant actionable link inside observation cards ~28pt vertical — FAILS but unreachable in free (helper returns `actionable: false` on every observation) — logged as KNOWN ISSUE for Pro session.
+- **Font sizes (≥11pt Apple HIG):** all elements 11-18pt — PASS across the block.
+
+### UNVERIFIED
+- TestFlight standalone (next EAS Build) behavior of the redesigned block — proven in Expo Go on real iPhone. Pure JSX + StyleSheet + pure JS helper — no native module, no env var. Standalone should match. Flag if any tester reports the block rendering differently.
+
+### Notes
+- HEAD at session start: `6ff6cf1` (Update 2 — Session 3 docs commit). HEAD at session end: single new commit this session (visible via `git log -1`).
+- 4 safety refs unchanged: `v1.0.0-build12-appstore-live` tag-object `512dbd2` → commit `9d617db`; build14 commit `01c1d0f`; `production` `9d617db`; `main` `062d15b`.
+- Two follow-up notes carried forward as KNOWN ISSUES in CLAUDE.md:
+  - **Caret glyph mismatch** — `▾` (U+25BE) and `▴` (U+25B4) render at slightly different visual weights because Outfit variable font lacks these Geometric Shapes glyphs; RN falls back per-character to SF Pro on iOS. Not a code bug. Decision **Option A** (leave as-is) confirmed for App Store submission — WCAG passes, HIG passes, users read both unambiguously as open/closed. Post-launch **Option B** as a two-line follow-up: swap to `▲`/`▼` matched pair + drop `analyseEntryCaret.fontSize` 18 → 14.
+  - **Dormant Pro-only actionable-link tap target** — TouchableOpacity at App.js:1943-1959 has ~28pt vertical hit area; fails 44pt HIG. Unreachable in free. Fix before Pro flips `actionable: true`: bump `hitSlop` from 6 to ≥15, or convert to full-width pill.
+- Deferred to v1.0.3: "Show me these" filter that turns the forgot-about observation from statement into an actionable question (`Want Clozie to build looks around them?`).
+- No deps added, no imports changed, no Edge Function touched, no Supabase touched, no SYSTEM_PROMPT edit, no CLI deploys. Pure JSX + StyleSheet + one pure-JS helper file.
+- Pre-existing untracked files (backup MDs, worktrees dir, Session 24A notes, tsconfig, photo assets) NOT swept into this commit.
+
+---
+
 ## Update 2 — Session 3 — 2026-07-04 — Land returning users on Today's Vibe
 
 **Branch:** testing (HEAD at session start: `ad026c1`; HEAD at session end: `8eae387`)

@@ -1915,7 +1915,7 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
         <TouchableOpacity
           style={wardrobeStyles.analyseEntryCard}
           activeOpacity={0.7}
-          onPress={() => setShowAnalyseMessage(true)}
+          onPress={() => setShowAnalyseMessage((prev) => !prev)}
         >
           <View style={wardrobeStyles.analyseEntryTextWrap}>
             <Text style={wardrobeStyles.analyseEntryLabel}>Analyse My Wardrobe</Text>
@@ -1923,54 +1923,68 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
               Clozie takes a look at your closet and shares what stands out
             </Text>
           </View>
-          <Text style={wardrobeStyles.analyseEntryCaret}>▾</Text>
+          <Text style={wardrobeStyles.analyseEntryCaret}>{showAnalyseMessage ? '▴' : '▾'}</Text>
         </TouchableOpacity>
       )}
 
-      {/* Update 1 Session 9: Analyse My Wardrobe results (free JS, observations from analyseWardrobe helper) */}
-      {showAnalyseMessage && !searchVisible && (
-        <View style={wardrobeStyles.analyseResultsBlock}>
-          <Text style={wardrobeStyles.analyseResultsHeader}>
-            Here's what stands out about your closet right now.
-          </Text>
-          {analyseWardrobe(items).observations.map((obs, index) => (
-            <View
-              key={`${obs.type}-${index}`}
-              style={wardrobeStyles.analyseObservationCard}
-            >
-              <Text style={wardrobeStyles.analyseObservationTitle}>{obs.title}</Text>
-              <Text style={wardrobeStyles.analyseObservationBody}>{obs.body}</Text>
-              {obs.actionable && (
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={obs.onAction || (() => {})}
-                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                  style={{ marginTop: 8 }}
-                >
-                  <Text style={{
-                    fontFamily: 'Outfit_500Medium',
-                    fontSize: 13,
-                    color: '#A44A34',
-                    textDecorationLine: 'underline',
-                  }}>
-                    {obs.actionLabel || ''}
-                  </Text>
-                </TouchableOpacity>
-              )}
+      {/* Update 2 — Session 4: Analyse My Wardrobe results — glance-first redesign. */}
+      {/* Zero observations is valid; glance always renders. E/D invitations gated on */}
+      {/* observations.length === 0 (mutually exclusive on itemCount + wornCount). */}
+      {showAnalyseMessage && !searchVisible && (() => {
+        const { observations, glance, wornCount, unwornCount } = analyseWardrobe(items);
+        const showE = items.length < 10 && wornCount < 3 && observations.length === 0;
+        const showD = items.length >= 10 && wornCount < 3 && unwornCount > 0 && observations.length === 0;
+        return (
+          <View style={wardrobeStyles.analyseResultsBlock}>
+            <Text style={wardrobeStyles.glanceLabel}>YOUR CLOSET AT A GLANCE</Text>
+            <View style={wardrobeStyles.glanceChipsRow}>
+              {glance.map((entry) => (
+                <View key={entry.category} style={wardrobeStyles.glanceChip}>
+                  <Text style={wardrobeStyles.glanceChipCount}>{entry.count}</Text>
+                  <Text style={wardrobeStyles.glanceChipCategory}>{entry.label}</Text>
+                </View>
+              ))}
             </View>
-          ))}
-          <View style={{ alignItems: 'center', marginTop: 4 }}>
-            <TouchableOpacity
-              style={wardrobeStyles.analyseCardButton}
-              activeOpacity={0.85}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-              onPress={() => setShowAnalyseMessage(false)}
-            >
-              <Text style={wardrobeStyles.analyseCardButtonText}>Got it</Text>
-            </TouchableOpacity>
+            {observations.map((obs, index) => (
+              <View
+                key={`${obs.type}-${index}`}
+                style={wardrobeStyles.analyseObservationCard}
+              >
+                <Text style={wardrobeStyles.analyseObservationTitle}>{obs.title}</Text>
+                <Text style={wardrobeStyles.analyseObservationBody}>{obs.body}</Text>
+                {obs.actionable && (
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={obs.onAction || (() => {})}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    style={{ marginTop: 8 }}
+                  >
+                    <Text style={{
+                      fontFamily: 'Outfit_500Medium',
+                      fontSize: 13,
+                      color: '#A44A34',
+                      textDecorationLine: 'underline',
+                    }}>
+                      {obs.actionLabel || ''}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+            {showE && (
+              <Text style={wardrobeStyles.analyseInvitation}>
+                You're just getting started — add a few more pieces you love and Clozie will have far more to create with.
+              </Text>
+            )}
+            {showD && (
+              <Text style={wardrobeStyles.analyseInvitation}>
+                ✦ Tap "I wore this today" on your outfits, and Clozie can point out the pieces you forgot about.
+              </Text>
+            )}
+            <Text style={wardrobeStyles.analyseCloseHint}>Tap the card again to close ↑</Text>
           </View>
-        </View>
-      )}
+        );
+      })()}
 
       {/* Session 10B Step 3: Search bar (revealed when searchVisible is true) */}
       {searchVisible && (
@@ -9989,6 +10003,58 @@ const wardrobeStyles = StyleSheet.create({
     fontSize: 13,
     color: '#5C4A3A',
     lineHeight: 20,
+  },
+  // ── Update 2 — Session 4: Analyse redesign (glance-first) ──
+  glanceLabel: {
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 11,
+    color: '#A44A34',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+  },
+  glanceChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 14,
+  },
+  glanceChip: {
+    backgroundColor: 'rgba(44,26,14,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(44,26,14,0.08)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 100,
+    marginRight: 8,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  glanceChipCount: {
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 14,
+    color: '#2C1A0E',
+  },
+  glanceChipCategory: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
+    marginLeft: 4,
+  },
+  analyseInvitation: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
+    lineHeight: 20,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  analyseCloseHint: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 12,
+    color: '#5C4A3A',
+    textAlign: 'center',
+    marginTop: 10,
   },
   vibeButton: {
     backgroundColor: '#BCC7B7',

@@ -1,16 +1,36 @@
 // Pure JS wardrobe-intelligence helper for the free "Analyse My Wardrobe" feature.
 // Returns structured observations matching the May 27 Pro spec — Pro (Update 2)
 // swaps the observation source (Sonnet/Haiku) without changing this shape or the UI.
+//
+// Update 2 — Session 4: rewrite. Killed the "never zero" F1 fallback and all
+// strength padding (depth / rich palette / tops / shoes). Zero observations is a
+// valid outcome — the glance breakdown always shows in the UI instead. Added:
+// glance breakdown, "forgot about" wear-history observation, dress-aware guard
+// on the balance line, singular/plural helper. See CLAUDE.md CURRENT BUILD
+// STATE and SESSION_NOTES.md Update 2 — Session 4.
 
-const CANDIDATE_THRESHOLDS = {
-  MIN_ITEMS: 5,
-  RICH_PALETTE: 25,
-  TOPS_COLLECTION: 8,
-  SHOES_COVERED: 4,
-  DEPTH_TOPS: 5,
-  DEPTH_BOTTOMS: 3,
-  DEPTH_SHOES: 2,
+const MIN_ITEMS = 5;
+const WEAK_SIDE_MAX = 2;
+const STRONG_SIDE_MIN = 5;
+const DRESS_AWARE_GUARD = 3;
+const FORGOT_ABOUT_MIN_WORN = 3;
+
+const CATEGORY_ORDER = ['Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories'];
+
+const CATEGORY_LABELS = {
+  Tops:        { one: 'top',             many: 'tops' },
+  Bottoms:     { one: 'bottom',          many: 'bottoms' },
+  Dresses:     { one: 'dress',           many: 'dresses' },
+  Outerwear:   { one: 'outerwear piece', many: 'outerwear pieces' },
+  Shoes:       { one: 'pair of shoes',   many: 'pairs of shoes' },
+  Accessories: { one: 'accessory',       many: 'accessories' },
 };
+
+function labelFor(category, count) {
+  const entry = CATEGORY_LABELS[category];
+  if (!entry) return category.toLowerCase();
+  return count === 1 ? entry.one : entry.many;
+}
 
 function makeObservation(type, title, body, count) {
   return { type, title, body, count, itemIds: null, actionable: false };
@@ -19,44 +39,39 @@ function makeObservation(type, title, body, count) {
 export function analyseWardrobe(items) {
   const source = 'javascript';
 
-  if (!Array.isArray(items) || items.length < CANDIDATE_THRESHOLDS.MIN_ITEMS) {
-    return { observations: [], source };
+  if (!Array.isArray(items) || items.length < MIN_ITEMS) {
+    return { observations: [], glance: [], wornCount: 0, unwornCount: 0, source };
   }
 
-  const itemCount = items.length;
-  const tops = items.filter((i) => i?.category === 'Tops').length;
+  const tops    = items.filter((i) => i?.category === 'Tops').length;
   const bottoms = items.filter((i) => i?.category === 'Bottoms').length;
   const dresses = items.filter((i) => i?.category === 'Dresses').length;
-  const shoes = items.filter((i) => i?.category === 'Shoes').length;
+
+  // Wear history — item.lastWorn is null until "I wore this today" bumps it.
+  const wornCount   = items.filter((i) => i?.lastWorn).length;
+  const unwornCount = items.filter((i) => !i?.lastWorn).length;
+
+  // Glance — real counts only, canonical order, categories with count > 0.
+  const counts = {};
+  for (const item of items) {
+    const cat = item?.category;
+    if (!cat) continue;
+    counts[cat] = (counts[cat] || 0) + 1;
+  }
+  const glance = CATEGORY_ORDER
+    .filter((cat) => counts[cat] > 0)
+    .map((cat) => ({
+      category: cat,
+      count: counts[cat],
+      label: labelFor(cat, counts[cat]),
+    }));
 
   const observations = [];
-  const usedKeys = new Set();
 
-  // Slot 1 — at most one balance/structural observation. Branches are mutually
-  // exclusive by construction.
-  if (tops >= 5 && bottoms <= 2) {
-    observations.push(
-      makeObservation(
-        'imbalance',
-        'Your top game is strong',
-        `${tops} tops and ${bottoms === 0 ? 'no bottoms yet' : `only ${bottoms} ${bottoms === 1 ? 'bottom' : 'bottoms'}`}. A few more bottoms would multiply your outfit possibilities.`,
-        tops,
-      ),
-    );
-    usedKeys.add('tops');
-    usedKeys.add('bottoms');
-  } else if (bottoms >= 5 && tops <= 2) {
-    observations.push(
-      makeObservation(
-        'imbalance',
-        'Your bottoms are well-stocked',
-        `${bottoms} bottoms and ${tops === 0 ? 'no tops yet' : `only ${tops} ${tops === 1 ? 'top' : 'tops'}`}. A few more tops would let Clozie pair them in fresh ways.`,
-        bottoms,
-      ),
-    );
-    usedKeys.add('bottoms');
-    usedKeys.add('tops');
-  } else if (bottoms === 0 && dresses === 0) {
+  // Balance line — at most one. Ordered by severity: gap first (no way to
+  // complete an outfit), then dress-aware imbalance. Dress-aware guard
+  // suppresses top/bottom imbalance when the user builds outfits from dresses.
+  if (bottoms === 0 && dresses === 0) {
     observations.push(
       makeObservation(
         'gap',
@@ -65,81 +80,44 @@ export function analyseWardrobe(items) {
         null,
       ),
     );
-    usedKeys.add('bottoms');
-    usedKeys.add('dresses');
-  }
-
-  // Slots 2-3 — strengths in order: depth → rich palette → tops → shoes.
-  // Skip any whose primary data already appeared in slot 1 to keep observations distinct.
-  const strengthCandidates = [
-    {
-      fires:
-        tops >= CANDIDATE_THRESHOLDS.DEPTH_TOPS &&
-        bottoms >= CANDIDATE_THRESHOLDS.DEPTH_BOTTOMS &&
-        shoes >= CANDIDATE_THRESHOLDS.DEPTH_SHOES,
-      keys: ['tops', 'bottoms', 'shoes'],
-      build: () =>
+  } else if (dresses < DRESS_AWARE_GUARD) {
+    if (tops >= STRONG_SIDE_MIN && bottoms <= WEAK_SIDE_MAX) {
+      const weakClause = bottoms === 0 ? 'no bottoms yet' : `only ${bottoms} ${labelFor('Bottoms', bottoms)}`;
+      observations.push(
         makeObservation(
-          'strength',
-          'Your closet has real depth',
-          'Tops, bottoms, and shoes all have options. Clozie has plenty to work with.',
-          null,
-        ),
-    },
-    {
-      fires: itemCount >= CANDIDATE_THRESHOLDS.RICH_PALETTE,
-      keys: ['itemCount'],
-      build: () =>
-        makeObservation(
-          'strength',
-          'A rich palette to play with',
-          `${itemCount} pieces gives Clozie plenty to mix and match across the week.`,
-          itemCount,
-        ),
-    },
-    {
-      fires: tops >= CANDIDATE_THRESHOLDS.TOPS_COLLECTION,
-      keys: ['tops'],
-      build: () =>
-        makeObservation(
-          'strength',
-          'A beautiful collection of tops',
-          `${tops} tops means plenty of starting points for any look.`,
+          'imbalance',
+          'Light on bottoms',
+          `You've got ${tops} tops but ${weakClause} — a couple more bottoms would unlock a lot more combinations.`,
           tops,
         ),
-    },
-    {
-      fires: shoes >= CANDIDATE_THRESHOLDS.SHOES_COVERED,
-      keys: ['shoes'],
-      build: () =>
+      );
+    } else if (bottoms >= STRONG_SIDE_MIN && tops <= WEAK_SIDE_MAX) {
+      const weakClause = tops === 0 ? 'no tops yet' : `only ${tops} ${labelFor('Tops', tops)}`;
+      observations.push(
         makeObservation(
-          'strength',
-          'Your shoes have you covered',
-          `${shoes} pairs means every outfit gets the right finish.`,
-          shoes,
+          'imbalance',
+          'Light on tops',
+          `You've got ${bottoms} bottoms but ${weakClause} — a couple more tops would unlock a lot more combinations.`,
+          bottoms,
         ),
-    },
-  ];
-
-  for (const candidate of strengthCandidates) {
-    if (observations.length >= 3) break;
-    if (!candidate.fires) continue;
-    if (candidate.keys.some((k) => usedKeys.has(k))) continue;
-    observations.push(candidate.build());
-    candidate.keys.forEach((k) => usedKeys.add(k));
+      );
+    }
   }
 
-  // Fallback — encouragement when nothing else fires. Never return zero observations.
-  if (observations.length === 0) {
+  // Forgot-about — fires at ANY closet size when there's real wear history
+  // (>= 3 worn items) AND at least one unworn item. C and E are mutually
+  // exclusive on wornCount; C and D are mutually exclusive on wornCount.
+  if (wornCount >= FORGOT_ABOUT_MIN_WORN && unwornCount > 0) {
+    const pieceLabel = unwornCount === 1 ? 'piece' : 'pieces';
     observations.push(
       makeObservation(
-        'encouragement',
-        'Your closet is coming together',
-        'Clozie has a nice range of pieces to work with.',
-        null,
+        'forgot',
+        `${unwornCount} ${pieceLabel} you forgot about`,
+        'Worth bringing back into rotation.',
+        unwornCount,
       ),
     );
   }
 
-  return { observations, source };
+  return { observations, glance, wornCount, unwornCount, source };
 }
