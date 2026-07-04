@@ -10,6 +10,45 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 2 — Session 3 — 2026-07-04 — Land returning users on Today's Vibe
+
+**Branch:** testing (HEAD at session start: `ad026c1`; HEAD at session end: `8eae387`)
+**Commit(s):** "Update 2 — Session 3: land returning users on Today's Vibe" — single commit on testing (App.js only, +2 / -2 lines). Pushed to origin/testing.
+**Edge Function deploys:** 0.
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched).
+**App Store impact:** none — testing-only commit; reaches users when next build ships in Update 2 = v1.0.2.
+
+### Goals
+- Change the returning-user landing tab from My Closet (tab 1) to Today's Vibe (tab 2). Motivation: the My Closet grid briefly flashes empty/hanger placeholders while wardrobe thumbnails signed-URL-batch resolves (~200-800ms per pre-existing Known Issue), producing a weak first-impression moment on every app open. Today's Vibe composes cleanly (weather chips + occasion chips + Brief, no async media) and is the core daily action.
+- Leave the new-user signup path completely untouched — Post-Login Welcome → My Style must still land on tab 0.
+
+### What changed
+- **Read-only investigation (prior session, HEAD `ad026c1`)** confirmed: landing is decided by a single `mainInitialTab` state in `App()` at App.js:8069; `MainAppScreen` reads it once as `initialTab` at App.js:7513-7514. Three separate entry points set the tab explicitly before flipping `currentScreen` to `'main'`: auto-resume (App.js:8110), explicit Sign In (App.js:8219), new-user signup via Post-Login Welcome (App.js:8201). The new-user path at line 8201 is on a structurally isolated branch — reached only from `PostLoginWelcomeScreen`'s `onStart`, which is only mounted when `currentScreen === 'postlogin'`. It cannot be reached from lines 8110 or 8219. Tab index 2 confirmed as `TodaysVibeTab` at App.js:8000.
+- **Edit 1 — App.js:8110 (cold-launch auto-resume).** `setMainInitialTab(wasNotifTap ? 2 : 1)` → `setMainInitialTab(wasNotifTap ? 2 : 2)`. Comment updated: "notif tap → Today's Vibe, else Today's Vibe (returning user landing, Update 2 — Session 3)". Redundant ternary preserved deliberately — one-character diff, keeps `wasNotifTap` variable declaration + notification `Promise.all` intact for future re-differentiation. Applied first, iPhone-verified in isolation before Edit 2.
+- **Edit 2 — App.js:8219 (explicit Sign In in AuthScreen).** `setMainInitialTab(1)` → `setMainInitialTab(2)`. Comment updated: "returning user signing in → Today's Vibe (Update 2 — Session 3)". Applied second, after Edit 1 was iPhone-verified.
+- **Not touched:** App.js:8201 (`setMainInitialTab(0)` new-user path) verified absent from the diff.
+- **Apple Sign-In inherits behaviour:** the Session 22 (2026-06-03) Apple Sign-In handler routes through the same AuthScreen `onDone` callback — first-time Apple signups → `mode: 'signup'` → PostLogin → tab 0 (unchanged); returning Apple sign-ins → `mode: 'login'` → tab 2 (Today's Vibe). Consistent with password sign-in.
+
+### Tests — iPhone, Expo Go
+- **Edit 1 in isolation:** close and reopen (still signed in, auto-resume) → landed on Today's Vibe. Sign in with password → still landed on My Closet (correct — Edit 2 not yet applied).
+- **Edit 2 applied:** sign out from Settings → sign in with email + password → landed on Today's Vibe. Cold-launch auto-resume rechecked → still landed on Today's Vibe (Edit 1 behaviour unchanged after Edit 2).
+
+### UNVERIFIED
+- New-user signup path (email or Apple, both `mode: 'signup'`) landing on My Style (tab 0): verified STRUCTURALLY (line 8201 not in the diff, isolated branch, no regression path from 8110 or 8219). NOT end-to-end tested this session because no fresh signup was performed. Zero regression risk given the structural isolation.
+- TestFlight standalone (Build 15 or later) behaviour of the landing change: proven in Expo Go on real iPhone across both returning paths. Standalone behaviour should match (pure JS + RN built-in state) — flag if any tester reports a different landing tab.
+- Notification-tap cold-launch routing: now routes to Today's Vibe regardless of `wasNotifTap` value (both branches → 2). Pre-existing Session 7 notification-tap destination (tab 2) preserved. Cross-reference the pre-existing UNVERIFIED item for Daily Notifications firing on TestFlight standalone.
+
+### Notes
+- HEAD at session start: `ad026c1` (Update 2 Session 2 code+docs commit). HEAD at session end: `8eae387` (this session's single commit).
+- Pushed to origin/testing this session (unlike Session 2 which was local only). Fast-forward `ad026c1..8eae387`.
+- 4 safety refs unchanged: build12 tag object `512dbd2` → commit `9d617db`; build14 commit `01c1d0f` (no tag — Build 14 awaiting Apple approval per CLAUDE.md tag rule); `production` `9d617db`; `main` `062d15b`.
+- No safety tag created this session (per Grace's directive — one anchor before background removal instead).
+- Pre-existing working-tree modifications in CLAUDE.md and SESSION_NOTES.md (Session 2 tag-SHA annotation lines) preserved, not staged, not committed with the landing change — separate notes-save handles them.
+- Redundant ternary at App.js:8110 (`wasNotifTap ? 2 : 2`) is semantically identical to `setMainInitialTab(2)`. Kept as-is for minimal diff and future-proofing. Cleanup candidate for any future polish session that touches the notification-tap block.
+- No deps added, no imports changed, no Edge Function touched, no Supabase touched, no SYSTEM_PROMPT edit, no CLI deploys.
+
+---
+
 ## Update 2 — Session 2 — 2026-06-30 — Nested-Text logo fix (Welcome, Sign In, Peek Inside, PostLogin Text→View)
 
 **Branch:** testing (HEAD at session start: `d4a3129`; HEAD at session end: this session's single new commit on testing — see `git log -1`)
@@ -42,6 +81,7 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 ### Notes
 - HEAD at session start: `d4a3129` (Update 2 Session 1 docs commit). HEAD at session end: single new commit on testing this session (visible via `git log -1`). Testing now 3 ahead of origin / 0 pushed after this commit.
 - 4 safety refs unchanged: `v1.0.0-build12-appstore-live` (`9d617db`), `v1.0.1-build14-submitted` (`01c1d0f`), `production` (`9d617db`), `main` (`062d15b`).
+- Annotated-tag SHA note (so no future session mistakes it for drift): safety tags `v1.0.0-build12-appstore-live` and `v1.0.1-build14-submitted` are ANNOTATED tags. `git ls-remote` returns the TAG-OBJECT SHA (`512dbd2` for build12, `2036b9c` for build14), which differs from the COMMIT SHA the safety refs track (`9d617db` for build12, `01c1d0f` for build14). This is normal git behavior, NOT drift. Safety checks verify the COMMIT SHAs: build12 `9d617db`, build14 `01c1d0f`, production `9d617db`, main `062d15b`.
 - Total in-file logo count: 7 (1 Splash reference + 4 fixed-this-session + 2 already-correct at Subscription line 5658 and Settings line 6305).
 - Small dead-style debt accrued: `textAlign: 'center'` left in `welcomeStyles.logoRow` and `postLoginStyles.logoRow` (silent no-op on View after the swap). Kept per the no-silent-changes rule. Single-line cleanup; can ship with any future polish pass.
 - Honest pre-edit predictions ran: Welcome at 64pt was estimated ~70% clean / 30% drift-needing-lineHeight; PostLogin at 56pt ~85% clean. Both held with NO `lineHeight` needed — better than predicted. Splash's `lineHeight: 92` (72pt × 1.28) precedent remains the reactive-fix recipe if any future site does show drift.

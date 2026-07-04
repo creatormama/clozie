@@ -23,6 +23,7 @@ Standing facts:
 
 - Production pointer: branch `production` (tracking `origin/production`), currently at `9d617db`.
 - Going-forward build convention: every App Store build gets (a) an annotated tag `vX.Y.Z-buildN-appstore-live` pinned to that commit forever, AND (b) `production` fast-forwarded to point at that commit. Tags never move; `production` moves only with each new shipped build.
+- Annotated tags show tag-object SHAs (`512dbd2`/`2036b9c`) via `git ls-remote` — differs from commit SHAs, normal, not drift. See SESSION_NOTES Update 2 — Session 2.
 - Main branch (THIS repo, `creatormama/clozie.git`): stale at `062d15b` (March 30 Phase 1 snapshot, 107 commits behind testing). Nothing deploys off it. Safe to leave alone — decision on whether to fast-forward main to Build 12 deferred.
 - Latest TestFlight standalone (Update 0): Build 12.
 - Edge Function `generate-outfits` SYSTEM_PROMPT cache: 2,510 tokens (verified via Supabase Logs `cache_read_input_tokens` round-trip). 462 tokens of headroom above the 2,048 caching threshold.
@@ -479,10 +480,10 @@ All error messages in warm terracotta Outfit font — below the relevant field �
 
 Tab 1: My Style (star SVG)   Tab 2: My Closet (hanger SVG, shows item count)   Tab 3: Today's Vibe (sun SVG)   Tab 4: My Looks (mirror SVG)
 
-Landing screen behaviour (locked Update 1 — Session 1, 2026-06-21):
+Landing screen behaviour (locked Update 1 — Session 1, 2026-06-21; returning users → Today's Vibe, Update 2 — Session 3, 2026-07-04):
 - New signup → PostLoginWelcomeScreen → **My Style** tab (so they go through the style profile flow first).
-- Returning user explicit Sign In → **My Closet** tab.
-- Returning user cold launch with auto-resumed session → **My Closet** tab.
+- Returning user explicit Sign In → **Today's Vibe** tab.
+- Returning user cold launch with auto-resumed session → **Today's Vibe** tab.
 - Tab switching after landing is fully under the user's control via the bottom tab bar.
 
 ## My Style Tab (was 'profile' in code)
@@ -982,7 +983,7 @@ On cold launch, the root `App()` component calls `supabase.auth.getSession()` on
 
 Separately, an `AppState` listener registered in `App()` calls `supabase.auth.startAutoRefresh()` on `'active'` and `stopAutoRefresh()` on background — canonical Supabase RN pattern that prevents iOS from silently missing token refreshes during deep sleep (the JS timer is throttled when backgrounded; without this listener, returning from long sleep can present an expired-token failure on the next Supabase call).
 
-Which tab `MainAppScreen` lands on is controlled by a single `mainInitialTab` state in `App()`, set explicitly by each entry point BEFORE the `setCurrentScreen('main')` flip. Three entry points: auto-resume → `1` (My Closet), explicit Sign In → `1` (My Closet), Signup → PostLoginWelcome → `0` (My Style — defensive explicit reset so a leftover `1` from a prior in-app login cannot leak into a new account). `MainAppScreen` accepts `initialTab` (default `0`) and reads it once via `useState(initialTab)` at mount. `MainAppScreen` unmounts on Sign Out (gated by `currentScreen === 'main'`) so it picks up a fresh prop on every transition into main.
+Which tab `MainAppScreen` lands on is controlled by a single `mainInitialTab` state in `App()`, set explicitly by each entry point BEFORE the `setCurrentScreen('main')` flip. Three entry points: auto-resume → `2` (Today's Vibe), explicit Sign In → `2` (Today's Vibe), Signup → PostLoginWelcome → `0` (My Style — defensive explicit reset so a leftover tab index from a prior in-app login cannot leak into a new account). `MainAppScreen` accepts `initialTab` (default `0`) and reads it once via `useState(initialTab)` at mount. `MainAppScreen` unmounts on Sign Out (gated by `currentScreen === 'main'`) so it picks up a fresh prop on every transition into main.
 
 ---
 
