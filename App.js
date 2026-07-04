@@ -8107,7 +8107,7 @@ export default function App() {
       if (data?.session) {
         const wasNotifTap =
           lastResponse?.notification?.request?.content?.data?.kind === 'daily';
-        setMainInitialTab(wasNotifTap ? 2 : 1); // notif tap → Today's Vibe, else My Closet
+        setMainInitialTab(wasNotifTap ? 2 : 2); // notif tap → Today's Vibe, else Today's Vibe (returning user landing, Update 2 — Session 3)
         setCurrentScreen('main');
       } else {
         setCurrentScreen('splash');
@@ -8216,7 +8216,7 @@ export default function App() {
               setCurrentScreen('postlogin');
             } else {
               // Returning users skip straight to main app
-              setMainInitialTab(1); // returning user signing in → My Closet
+              setMainInitialTab(2); // returning user signing in → Today's Vibe (Update 2 — Session 3)
               setCurrentScreen('main');
             }
           }}
