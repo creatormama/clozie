@@ -21,7 +21,7 @@ Last verified: 2026-07-04.
 
 Standing facts:
 
-- Production pointer: branch `production` (tracking `origin/production`), currently at `9d617db`.
+- Production pointer: branch `production` (tracking `origin/production`), currently at `01c1d0f` locally — `origin/production` still at `9d617db` until pushed.
 - Going-forward build convention: every App Store build gets (a) an annotated tag `vX.Y.Z-buildN-appstore-live` pinned to that commit forever, AND (b) `production` fast-forwarded to point at that commit. Tags never move; `production` moves only with each new shipped build.
 - Annotated tags show tag-object SHAs (`512dbd2`/`2036b9c`) via `git ls-remote` — differs from commit SHAs, normal, not drift. See SESSION_NOTES Update 2 — Session 2.
 - Main branch (THIS repo, `creatormama/clozie.git`): stale at `062d15b` (March 30 Phase 1 snapshot, 107 commits behind testing). Nothing deploys off it. Safe to leave alone — decision on whether to fast-forward main to Build 12 deferred.
