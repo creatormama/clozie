@@ -10,6 +10,114 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 3 — Session 1 — 2026-07-05 — Background Removal (Plan A: npm publish) — STRIKE 1 of 2 on module registration
+
+**Branch:** testing (HEAD at session start: `ea8f0ca` = Update 2 — Session 5 end; HEAD at session end: `3f45855`, pushed to origin/testing).
+
+**Commit(s):** Two commits on testing, both pushed to origin/testing:
+- `af1ee17` — "Background Removal: publish expo-background-removal@0.1.0 + wire root dep" (`.gitignore` + `package.json` + `package-lock.json`, 13 insertions / 2 deletions)
+- `3f45855` — "Background Removal: wire VIP-gated Settings DEVELOPER test surface (App.js)" (App.js only, 312 insertions / 1 deletion)
+
+Plus one annotated tag pushed: `v1.0.2-build15-submitted` on `ea8f0ca` (Build 15's commit, verified via EAS API `gitCommitHash` field — not `d5df5b2` as brief initially assumed, one docs commit newer). Anchor for Build 15 hotfix fallback while Apple review is pending.
+
+**Edge Function deploys:** 0.
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched).
+**App Store impact:** Zero this session. Build 15 (v1.0.2) remains in Apple review — untouched by this work. Background removal will ship in Update 3 (v1.0.3) IF strike-2 clears next session; otherwise shelved and Update 3 ships without it.
+
+### Goals
+- Tag Build 15 for hotfix fallback while Apple review is pending.
+- Ship Session 24A's shelved Apple Vision background removal via Plan A: publish local module to npm so EAS Build's autolinking finds it via `node_modules/` like every other Expo module (Session 24A Builds 8-11 failed because local `./modules/` modules aren't reliably discovered on EAS in SDK 54).
+- Faithfully re-implement the shelved App.js integration (VIP-gated DEVELOPER test surface in Settings) on TODAY's App.js — reference-read only from `session-24a-shelved`, never checkout/cherry-pick App.js (which predates ~700 lines of intervening Update 1+2 work including ClozieText/ClozieTextInput wrapper at ~389 call sites + nested-Text logo fixes).
+- One EAS preview build. Strike-gate on `Installing ExpoBackgroundRemoval` in pod install log + expo-doctor no-duplicate-error. Transporter-upload only if gate passes. Two-strike rule.
+
+### What changed
+- **Build 15 tag** — `git tag -a v1.0.2-build15-submitted ea8f0ca` + push. Tag object SHA `c95a2ac5` on origin, dereferences to commit `ea8f0ca`. Matches Build 14 pattern (`8f0a104` → `01c1d0f`) from Session 5.
+- **PART 1 reality check** — `session-24a-shelved` branch (tip `2084032`) recovered as READ-ONLY reference. Current tree clean of BR residue (no `modules/`, no `.npmrc`, no `expo-background-removal` in package.json, no BackgroundRemoval hits in App.js grep). `npm view expo-background-removal` → E404 (name free). `npm whoami` = `clozie`.
+- **PART 2 module recovery** — `git checkout session-24a-shelved -- <12 files>`: `.gitignore` + 11 module files. Deliberately SKIPPED App.js (trap avoidance) and `.npmrc` (would be removed in PART 5, cleaner to skip). 196 insertions, 1 deletion staged. App.js / root package.json / package-lock.json UNCHANGED throughout.
+- **PART 3 — 6 module edits** each diff-first, iPhone-approvable, Swift `Name("BackgroundRemoval")` runtime bridge UNTOUCHED (verified explicitly at Swift file line 7):
+  1. package.json: remove `"private": true` + drop trailing comma on `"license"`
+  2. podspec: `s.name = 'BackgroundRemoval'` → `'ExpoBackgroundRemoval'` + `git mv` file rename to `ExpoBackgroundRemoval.podspec`
+  3. package.json: add `"types": "src/BackgroundRemovalModule.ts"` after `"main"`
+  4. package.json: add `"peerDependencies": { "expo": "*" }` block
+  5. expo-module.config.json: drop `"android"` block + change `platforms: ["apple", "android"]` → `["apple"]`
+  6. podspec: add `s.swift_version = '5.9'` between `s.platforms` block and `s.source`
+  
+  `android/` directory left as-is per Grace's call (faithful recovery; harmless ~2KB in tarball).
+- **PART 4 shape check + publish** — `npx expo-modules-autolinking resolve -p ios` returned 19 modules including `expo-background-removal` with pod `ExpoBackgroundRemoval` and podspecDir `modules/expo-background-removal/ios/`. `npm pack --dry-run` → 11-file tarball, 3.2kB compressed / 6.5kB unpacked, no sensitive files. Grace ran `npm publish --access public` from Terminal: `+ expo-background-removal@0.1.0`. Verified via `npm view`: SHA `a1aea3e87e5614e1eaeecde0c27e36e0e34eca76` byte-for-byte matches dry-run.
+- **PART 5 cleanup + commit** (5 substeps):
+  - 5.1 Root package.json: added `"expo-background-removal": "~0.1.0"` at line 23 (alphabetical, `~` matches Expo dep convention)
+  - 5.2 `git rm -rf modules/expo-background-removal/` + `rmdir modules/` — initial `-r` failed (staged files needed `-f` confirmation), retried with `-rf`. Files gone; from HEAD's perspective they never existed.
+  - 5.3 `npm install`: `added 1 package, and audited 731 packages in 5s` (clean signal — no unrelated drift). Vulnerability count 15 → 20 (+5 from unrelated transitive deps, NOT from our zero-dep package). NOT running `npm audit fix` per SDK 54 Known Issue. Lockfile integrity `sha512-S2rDiCE/...` matches `npm view` exactly.
+  - 5.4 Re-ran shape check: `podspecDir` now points at `node_modules/expo-background-removal/ios/`. Exactly ONE entry, no duplicates.
+  - 5.5 **DEFERRED** (not cancelled): Local `expo prebuild --clean` + `pod install --dry-run` — Grace's decision rule: `pod --version` returned "command not found" (CocoaPods absent). Installing just for a weak gate added Homebrew + Ruby + gem install failure surface for minimal confidence gain. Skipped in favor of the real EAS strike-gate.
+  - 5.6 Commit `af1ee17`: `.gitignore` reverted to HEAD pre-PART-2 state (Grace's call for cleanest end state), `package.json` +1 line, `package-lock.json` +12/-2.
+- **App.js re-implementation** (8 hunks between PART 5 commit and EAS build). Each hunk diff-first, iPhone-approvable, **strict Dynamic Type protection check after every single hunk** (`^[+-].*(ClozieText|ClozieTextInput|maxFontSizeMultiplier|dontScale)` grep — zero matches, every time):
+  1. `ActivityIndicator` added to react-native destructure (line 21) — +1
+  2. `import BackgroundRemoval from 'expo-background-removal'` (registry path — the SOLE intentional deviation from faithful recovery) at line 44 — +1
+  3. `SettingsScreen({ ..., isVip })` prop destructure at line 5967 — ±1
+  4. 5 useState hooks + `openTestModal` + `closeTestModal` + `handlePickTestPhoto` after `signOutError` state — +63
+  5. VIP-gated DEVELOPER card JSX (Test Background Removal row + gold Test link) after LEGAL card, before Sign Out error — +19 (reuses `settingsStyles` — zero new styles)
+  6. Test modal JSX (idle/picking/processing/done/unavailable states + picker + Original preview + APPLE VISION preview) inside SettingsScreen after last existing Modal — +87
+  7. `isVip={isVip}` drilled to `<SettingsScreen>` render at line 8231 — +1
+  8. `testModalStyles` StyleSheet 21 entries after `consentStyles` at line 11522 — +139 (locked palette, Apple HIG 4.5:1 contrast)
+  
+  Net App.js diff +312/-1. `node --check App.js` passes.
+- **Expo Go smoke test (Grace on iPhone) — PASSED**: app boots clean, VIP sign-in works, Settings scroll shows DEVELOPER card with correct copy, Test modal opens with picker + Original preview, APPLE VISION section correctly shows "Background removal not available on this device" fallback panel (expected in Expo Go — no native binary; `requireOptionalNativeModule('BackgroundRemoval')` returns null → `status='unavailable'`). Regression checks clean. Non-VIP path: card correctly hidden.
+- **Commit `3f45855`** (App.js only, +312/-1). Both commits pushed to `origin/testing`. `production` (`01c1d0f`) + `main` (`062d15b`) + all 4 anchor tags UNTOUCHED.
+- **PART 6 — EAS Build 16 (v1.0.2, preview profile) — STRIKE 1**:
+  - Preflight: `eas whoami` = clozie, Build 15 FINISHED, HEAD `3f45855`, clean tree, correct branch — all ✓.
+  - `eas build --profile preview --platform ios --non-interactive`: buildNumber 15 → 16 auto-increment, credentials valid through June 2027, 9.8 MB tarball in 2s, `Build finished` ~5 min. IPA URL `https://expo.dev/artifacts/eas/Luyk1KsN9cqRoFgfWfNqxZCBjWce4W9DJsjpeWE2Fos.ipa`. Build ID `dd6e0cd3-6897-4e58-8876-559b308e8ab0`. Fingerprint changed vs Build 15 (`d7e0904756413fde...` vs `834256930b3c7677...`) — proves EAS saw our new commit.
+  - **Strike-gate on decoded worker log (1062 lines) + xcode log (38841 lines):**
+    - **Check A** (`grep "Installing ExpoBackgroundRemoval"`) → **ZERO HITS.** Alphabetical position would have been between `Installing ExpoAppleAuthentication (8.0.8)` (L305) and `Installing ExpoAsset (12.0.13)` (L306) among 93 total `Installing X` lines. Absent.
+    - **Check B** (`grep "duplicates for expo-background-removal"`) → zero. NOT the Build 11 duplicate-detection pattern.
+    - expo-doctor L121: `18/18 checks passed. No issues detected!`
+  - Same failure signature as Session 24A Builds 8-11: module IS in root package.json (L87 READ_PACKAGE_JSON dump), IS in the tarball on the EAS builder disk (npm ci L90, npm install L142 says "up to date, audited 731 packages"), but NEVER appears in `Installing X` list from `use_expo_modules!` macro.
+
+### Deep investigation before invoking two-strike rule
+- **Local reproduction of EAS's exact autolinker command**: `node --no-warnings --eval "require('expo/bin/autolinking')" expo-modules-autolinking resolve --platform apple --project-root . --json` (extracted from `node_modules/expo-modules-autolinking/scripts/ios/autolinking_manager.rb`) — locally returns 19 modules INCLUDING `expo-background-removal` with pod name `ExpoBackgroundRemoval`. Same command, same code, same expo-modules-autolinking@3.0.26. EAS Build's cloud pipeline behavior diverges from local for reasons NOT YET DIAGNOSED.
+- **L139 "Updated package.json" red flag CHASED — resolved as red herring.** Source: `node_modules/expo/node_modules/@expo/cli/build/src/prebuild/updatePackageJson.js` (`updatePackageJSONAsync` → `modifyPackageJson` → `updatePkgDependencies`). Only ADDS from template (scripts + missing deps like `expo`/`react-native`, both already present). Never REMOVES or FILTERS user deps. Cannot be the cause.
+- **Autolinker filter is NOT the cause.** `defaultShouldIncludeDependency` at `node_modules/expo-modules-autolinking/build/dependencies/utils.js:16` excludes `@babel/*`, `@types/*`, `@eslint/*`, `@typescript-eslint/*`, `@testing-library/*`, `@aws-*`, and specific CLI/config packages. `expo-background-removal` is not on that list.
+- **Not a stale-cache issue.** RESTORE_CACHE phase took 0ms (L159-160) — no cache hit. Fingerprint changed cleanly.
+
+### Tests
+- Local Expo Go smoke test on iPhone — PASSED.
+- EAS Build 16 pod install log analysis — Check A FAILED, Check B PASSED, expo-doctor PASSED. Net: STRIKE 1 of 2 spent.
+- No Transporter upload attempted (per two-strike rule — no point uploading a build that failed the strike-gate).
+- `git diff v1.0.2-build15-submitted..HEAD -- App.js` = exactly the 312-line integration (no other drift).
+
+### UNVERIFIED
+- **Whether the SDK 54 autolinking graph-walk change is the root cause.** New input from Grace's planning chat: SDK 54 changed autolinking discovery from `node_modules/` directory scanning (SDK ≤53 default) to dependency-graph traversal from the app's `package.json`. Documented at `docs.expo.dev/modules/autolinking` — "Before SDK 54, this list defaulted to your app's node_modules directory". Opt-back exists via `expo.autolinking.searchPaths: ["./node_modules"]` in `package.json` (verified as valid SDK 54 option in `node_modules/expo-modules-autolinking/build/commands/autolinkingOptions.d.ts` lines 15 + 37). The `include` option is SDK 55+ only — REJECTED.
+- **Whether local `expo prebuild --no-install` reproduces EAS's Podfile.** Not run this session (5.5 deferred). Recommended next-session diagnostic: `npx expo prebuild --clean --platform ios --no-install` + `grep "pod 'ExpoBackgroundRemoval'" ios/Podfile` — if generated Podfile locally OMITS our module (matching EAS behavior), we've reproduced the failure locally and can bisect without another EAS build slot.
+- **Native module registration on standalone IPA.** By definition unverifiable this session because Build 16 has no pod for our module. Even if Transporter-uploaded, `requireOptionalNativeModule('BackgroundRemoval')` returns null → `status='unavailable'` panel → indistinguishable from Expo Go's fallback → no signal.
+
+### EAS worker environment (captured from build16_logs/worker.log for reproducibility)
+- macOS Sequoia 15.6 + Xcode 26.0 (L73 `builderEnvironment.image: "macos-sequoia-15.6-xcode-26.0"`)
+- Node.js 20.19.4 (L7)
+- npm 10.9.3 (L11)
+- pnpm 10.16.1 (L10, unused — we use npm)
+- expo-modules-autolinking 3.0.26 (same as local)
+- Two-phase install: `npm ci --include=dev` in INSTALL_DEPENDENCIES (L90), then `npm install --include=dev` again in PREBUILD (L142, reports "up to date")
+
+### RESUME BLOCK — read this first next session
+- **Strike 1 of 2 spent.** Build 16 (v1.0.2, preview) IPA at `https://expo.dev/artifacts/eas/Luyk1KsN9cqRoFgfWfNqxZCBjWce4W9DJsjpeWE2Fos.ipa` — NEVER uploaded to Transporter (module doesn't register — no point).
+- **Candidate Strike 2** = add `expo.autolinking.searchPaths: ["./node_modules"]` block to root `package.json`. Bump `expo-background-removal` to 0.1.1 is optional; the searchPaths change alone doesn't require re-publish. Run one EAS build, same strike-gate check. `include` option = SDK 55+ only, REJECTED.
+- **Next session first step: local repro via `npx expo prebuild --clean --platform ios --no-install`**, then re-run the exact autolinker command from a state that matches EAS Build's context. If the generated `ios/Podfile` locally OMITS our module, we've reproduced the failure — investigate WHY the graph walk misses our node without another EAS build slot spent.
+- **Decision point after local repro:** either take Strike 2 with `searchPaths` opt-back (if hypothesis confirmed) OR shelve Plan A entirely (invoke two-strike rule early). Grace calls this shot.
+- **State to check first:**
+  - `git branch --show-current` = testing
+  - `git rev-parse HEAD` = `3f45855`
+  - `git rev-parse production` = `01c1d0f` (Build 14, unchanged)
+  - Anchor tag `v1.0.2-build15-submitted` on `ea8f0ca` (Build 15 restore)
+  - `expo-background-removal@0.1.0` on npm (permanent; 72h unpublish window closed by then)
+  - Build 15 (v1.0.2) status in App Store Connect (approved / in review / rejected). If rejected, hotfix takes priority over background removal.
+- **Raw EAS logs preserved:** `~/Desktop/Clozie\ Native/build16_logs/` (gitignored via `build*_logs/` in `.gitignore`).
+
+### Notes
+- Two mid-session honest recalibrations: (1) "PART 5 step 1 = swap file: dep" was wrong — we never wired a `file:` dep in root package.json, so Step 5.1 was ADDING the registry dep fresh, not swapping. (2) Session 24A findings claimed "85% confidence" Plan A would fix autolinking discovery — that estimate was overconfident and I underweighted the 15% uncertainty when confirming to Grace. Own it: today's failure is inside that 15%. Not doubling down without new information.
+- SDK 54 autolinking's documented change (graph-walk vs directory scan) is the strongest candidate cause identified so far. Session 24A predates this being surfaced in the plan; the earlier assumption was that publishing to npm makes our module "structurally identical" to working modules, which we've now proven isn't sufficient in the SDK 54 graph-walk world.
+
+---
+
 ## Update 2 — Session 5 — 2026-07-04 — Version bump 1.0.1 → 1.0.2 + Build 14 tag rule satisfied
 
 **Branch:** testing (HEAD at session start: `183f207`; HEAD at session end: `d5df5b2`).

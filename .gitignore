@@ -7,6 +7,7 @@
 .expo/
 dist/
 node_modules/
+build*_logs/
 
 # iOS / Android builds
 ios/
