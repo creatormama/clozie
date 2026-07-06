@@ -10,6 +10,50 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 3 — Session 2 — 2026-07-06 — Background Removal Strike-2 local diagnostic (zero builds, zero code changes)
+
+**Branch:** testing (HEAD `5f8c483` at session start AND end — the Session 1 docs commit; zero code commits this session).
+
+**Commit(s):** One documentation-only commit (SESSION_NOTES.md + CLAUDE.md pointer — this entry). No code committed. No pushes to production/main. No tags.
+
+**Edge Function deploys:** 0.
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched).
+**App Store impact:** Zero. Build 15 (v1.0.2) remains in Apple review, untouched. **No EAS build spent — Strike 2 still available.**
+
+### Goals
+- Reproduce the EAS Build 16 autolinking failure locally for FREE, to test the `searchPaths` hypothesis (expo/expo#40323) without spending the last strike.
+- Hard rules honored: no fix applied (beyond one Grace-authorized reverted-in-a-minute local experiment), no EAS builds, no CocoaPods/Homebrew installs, no commits until this authorized docs commit.
+
+### What changed (evidence chain — all phases Grace-approved individually)
+- **Phase 0** — two starter mismatches surfaced and accepted: HEAD is `5f8c483` not `3f45855` (one docs-only commit ahead — starter error), and 12 pre-existing untracked files (no modified tracked files). production `01c1d0f` / main `062d15b` / tag `v1.0.2-build15-submitted` → `ea8f0ca` all correct.
+- **Phase 1 baseline** — module intact in node_modules (expo-module.config.json `platforms: ["apple"]` + ios/ExpoBackgroundRemoval.podspec). Exact EAS resolver command → 19 modules incl. ours. `verify` subcommand EXISTS in autolinking 3.0.26: "Found 24 modules in dependencies", ours at node_modules/expo-background-removal, "Everything is fine!".
+- **Phase 1 source read** (resolution.js / utils.js / CachedDependenciesLinker.js / autolinkingOptions.js / findModules.js) — four findings:
+  - **(A)** Graph-walk drops are SILENT by design: each dependency name is checked with `fs.realpath`; any failure → skipped with no warning/error. Matches EAS's no-error signature exactly.
+  - **(B)** Only OUR module vanished on EAS while 18 Expo modules survived → the walk ran fine there; our package was either absent on disk or realpath-dropped.
+  - **(C)** package-lock.json (v3) pins the module to exact path `node_modules/expo-background-removal` (normal registry entry, integrity verified) → `npm ci` must place it correctly → lowered repro odds, honestly flagged in advance.
+  - **(D)** The `searchPaths` fix is ADDITIVE: directory scan merges WITH the graph walk; same-path double-discovery merges cleanly (duplicates recorded only when paths DIFFER — Build 11's `./modules` copy is gone). **The fix cannot break the 18 working modules.**
+- **Phase 2 prebuild repro** — `npx expo prebuild --clean --platform ios --no-install`. Generated Podfile uses `use_expo_modules!` with NO arguments — no per-pod lines (greps structurally meaningless, as predicted); NO search paths anywhere in Podfile or Podfile.properties.json (options come solely from package.json `expo.autolinking`). Post-prebuild resolver: 19 incl. ours with full pod metadata. Also mimicked EAS's exact pod-install context (cwd=`ios/`, no `--project-root`): 19 incl. ours. verify passes. Drift: package.json scripts only (2 lines, `expo start --android/--ios` → `expo run:android/run:ios`). `ios/`+`android/` confirmed gitignored (.gitignore:13-14). **NO REPRO.**
+- **Phase 3 npm ci clean-room** (after confirming no Metro/Expo process, port 8081 free) — `rm -rf node_modules` + `npm ci --include=dev` (exit 0; `npm audit fix` NOT run per locked rule). Module on disk; resolver from project root AND from ios/ cwd: 19 incl. ours; verify passes. **NO REPRO.**
+- **Phase 3b (Grace-authorized, repurposed as harmlessness proof)** — temporarily added `"expo": { "autolinking": { "searchPaths": ["./node_modules"] } }` to package.json (md5-verified scratchpad backup first). Resolver: exactly 19 modules, ZERO duplicate entries (checked programmatically per module). **KEY EVIDENCE:** `verify -v` flipped from "Found 24 modules in dependencies" to **"Found 21 modules in search paths"** (ours listed) + "Found 3 modules in dependencies" (the 3 nested at node_modules/expo/node_modules — expo-asset / expo-file-system / expo-keep-awake — which a top-level scan correctly can't see; merge handled cleanly). The bypass mechanism observed working locally. Reverted immediately; md5 byte-identical to backup; git diff showed only the 2-line prebuild drift.
+- **Phase 4 cleanup** — `rm -rf ios/` (android/ never created); `git checkout -- package.json`. Final proof: clean tracked-file status, HEAD `5f8c483`, no ios/ or android/, resolver still 19 incl. ours on fully restored state.
+
+### Tests
+- Resolver (exact EAS command): 4 contexts (baseline, post-prebuild, ios/-cwd EAS-style, npm-ci clean-room) — module found in ALL.
+- `verify -v`: baseline, post-prebuild, npm-ci, and searchPaths-active — passed in ALL, zero warnings.
+- searchPaths experiment: 19 modules, zero duplicates, bypass mechanism confirmed, revert proven by md5 + git diff.
+
+### UNVERIFIED
+- The actual EAS worker pod-install behavior — unreproducible locally without CocoaPods (deliberately not installed). By elimination, the failure is confined to that stage on the EAS worker (its env/PATH/Node context inside the CocoaPods Ruby process).
+- Whether searchPaths fixes Build 17 — **assessed 70–80%**: signature match with expo/expo#40323 + the fix bypasses the failing graph walk entirely via a directory scan observed working locally + module provably on the EAS disk (npm package counts include it). Residual 20–30%: module genuinely absent from the EAS disk, or an unknown Ruby-side cause.
+
+### Notes / RESUME BLOCK
+- **Strike 2 status: EVIDENCE-COMPLETE, awaiting Grace's go.** The move when authorized: add the exact `expo.autolinking.searchPaths: ["./node_modules"]` block tested today to root package.json, commit, one EAS preview build (Build 17), same strike-gate (`Installing ExpoBackgroundRemoval` in the pod install log). No republish of expo-background-removal@0.1.0 needed; App.js untouched.
+- Check Build 15's Apple review status BEFORE spending Strike 2 — a rejection hotfix takes priority.
+- node_modules is now npm-ci-built (functionally identical — strictly lockfile-driven; Expo Go unaffected).
+- State at close: testing @ `5f8c483` (+ this docs commit); production `01c1d0f`; main `062d15b`; tag `v1.0.2-build15-submitted` → `ea8f0ca`.
+
+---
+
 ## Update 3 — Session 1 — 2026-07-05 — Background Removal (Plan A: npm publish) — STRIKE 1 of 2 on module registration
 
 **Branch:** testing (HEAD at session start: `ea8f0ca` = Update 2 — Session 5 end; HEAD at session end: `3f45855`, pushed to origin/testing).
