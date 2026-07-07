@@ -10,6 +10,42 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 3 — Session 4 — 2026-07-06 — Cleanup: remove Background Removal leftovers + verify identical to Build 15 + Build-15 tag ritual
+
+**Branch:** testing (HEAD at session start: `7fdb14d`; two cleanup commits below, then this docs commit). `production` fast-forwarded to `ea8f0ca`.
+
+**Commit(s):**
+- `1f1c380` — "Cleanup: remove Background Removal Strike-1 test surface from App.js" — reverses the exact 8 App.js hunks (ActivityIndicator + BackgroundRemoval imports, SettingsScreen `isVip` prop + drill, VIP-gated DEVELOPER card, test modal, state/handlers, `testModalStyles`). App.js only, 1 ins / 312 del.
+- `3c059c6` — "Cleanup: remove expo-background-removal dependency" — `npm uninstall expo-background-removal` (no npm audit fix). package.json + package-lock.json, 11 del.
+- (this docs commit) — SESSION_NOTES + CLAUDE.md.
+
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched).
+
+### Goals
+Remove the two shelved-feature leftovers (App.js test surface + npm dependency), prove app code is byte-identical to Build 15, then perform the now-due Build-15 tag ritual.
+
+### What changed (every phase Grace-approved individually)
+- **Ordering: App.js first, dependency second** — so nothing ever imported a missing package.
+- **App.js removal** — reversed the exact 8-hunk delta computed via `git diff v1.0.2-build15-submitted..HEAD -- App.js` (ground truth, not prose). Hand-edited today's App.js only — never checked out from any branch. Per-hunk Dynamic Type protection grep (`ClozieText|ClozieTextInput|maxFontSizeMultiplier|dontScale`) = zero matches. `node --check` passed. Expo Go smoke test (Grace, iPhone): boots clean, sign-in, all 4 tabs, Settings scrolls with NO DEVELOPER card, generate end-to-end — all pass.
+- **Dependency removal** — `npm uninstall` touched ONLY the two `expo-background-removal` blocks; no other packages/hashes/ordering changed (16→20 audit count is advisory-DB drift, not a tree change; `npm audit fix` never run).
+- **Identity proof** — `git diff v1.0.2-build15-submitted..HEAD` for App.js + package.json + app.config.js + eas.json = **completely empty** (byte-identical to Build 15). App.js line count 11348 = Build 15's 11348 (was 11659). package-lock.json diff = ONLY `version 1.0.0 → 1.0.2` (harmless — Build 15's lockfile was stale at 1.0.0 while its package.json already declared 1.0.2). Full `--stat` vs Build 15: only `.gitignore` + `CLAUDE.md` + `SESSION_NOTES.md` (docs) + `package-lock.json` (version).
+- **Build-15 release ritual** (matching the Build 14 pattern): annotated tag `v1.0.2-build15-appstore-live` (tag-object `09b5ad1`) on `ea8f0ca`, pushed; `production` fast-forwarded `01c1d0f` → `ea8f0ca` via `--ff-only` (through the 12 Update 2 Session 1–5 commits), pushed. Returned to testing.
+
+### Tests
+- App.js identity vs Build 15: empty diff. `node --check` passed. Dynamic Type grep clean.
+- Expo Go end-to-end (Grace): pass.
+- Ritual: `production` == `ea8f0ca` == Build 15 commit; both build15 tags deref to `ea8f0ca`.
+
+### UNVERIFIED / open questions
+None new. Background Removal remains SHELVED (Update 3 — Session 3); future path = inline module on the SDK 56 upgrade.
+
+### Notes / decisions
+- **npm KEEP recorded:** `expo-background-removal@0.1.0` stays PUBLISHED on npm (Grace's call). The ~July 8 free-unpublish window is allowed to lapse — harmless; package.json no longer references it, so keeping it published breaks nothing.
+- **Both Session-3 open items now CLOSED:** (a) App.js test surface + dependency removed; (b) keep-vs-unpublish decided (KEEP).
+- **State at close:** testing @ `3c059c6` (+ this docs commit); production @ `ea8f0ca` (Build 15); main `062d15b` untouched; tags `v1.0.2-build15-appstore-live` (new) + `v1.0.2-build15-submitted` both → `ea8f0ca`; live App Store build = Build 15 (v1.0.2).
+
+---
+
 ## Update 3 — Session 3 — 2026-07-06 — Background Removal STRIKE 2 (Build 17) — FAILED — feature SHELVED per two-strike rule
 
 **Branch:** testing (HEAD at session start: `01a9b38`; HEAD at session end: `127aee2` + this docs commit, pushed to origin/testing).
