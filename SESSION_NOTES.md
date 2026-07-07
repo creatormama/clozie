@@ -10,6 +10,52 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 3 — Session 3 — 2026-07-06 — Background Removal STRIKE 2 (Build 17) — FAILED — feature SHELVED per two-strike rule
+
+**Branch:** testing (HEAD at session start: `01a9b38`; HEAD at session end: `127aee2` + this docs commit, pushed to origin/testing).
+
+**Commit(s):** Two code commits on testing, both pushed, plus this docs commit:
+- `1e4b0ea` — "Background Removal Strike 2: opt back into node_modules searchPaths autolinking (package.json)" — the Phase-3b-proven `"expo": { "autolinking": { "searchPaths": ["./node_modules"] } }` block, 5 insertions, package.json only.
+- `127aee2` — Revert of `1e4b0ea` via `git revert` as a NEW commit (never reset, never amend), after the strike-gate failed. package.json byte-identical to pre-Strike-2 state.
+
+**Edge Function deploys:** 0.
+**Cache token count:** 2,510 (unchanged — SYSTEM_PROMPT not touched).
+**App Store impact:** Zero. Build 15 (v1.0.2) is the live App Store build (Apple-approved and released — review gate from Session 2's RESUME BLOCK cleared before this session). Build 17 was NOT uploaded anywhere.
+
+### Goals
+- Spend the one remaining strike: apply the searchPaths fix, run EAS Build 17, check the three-check strike gate.
+
+### What changed (all phases Grace-approved individually)
+- **Phase 0/1** — all safety checks passed; buildNumber confirmed remote + autoIncrement (eas.json `appVersionSource: "remote"`, preview `ios.autoIncrement: true`); App.js integration from `3f45855` confirmed intact by reading.
+- **Phase 2** — fix applied (5-line diff above), JSON validated.
+- **Phase 3 local proof on the committed state** — resolver (exact EAS command): 19 modules incl. ours (pod `ExpoBackgroundRemoval`), ZERO duplicates; `verify -v`: **"Found 21 modules in search paths"** (ours listed) + "Found 3 modules in dependencies" + "Everything is fine!" — byte-exact match with Session 2's Phase 3b. (Transient scare resolved: running verify with `--platform apple` lists 17 expo-only modules; without the flag it lists 21 incl. the 4 RN native libs — same tree, different listing scope. Disk truth: exactly 19 expo-module.config.json files anywhere in node_modules, all discovered.)
+- **Phase 4** — commit `1e4b0ea` pushed to origin/testing.
+- **Phase 5** — Build 17 triggered with the exact Strike-1 command (`eas build --profile preview --platform ios --non-interactive`). buildNumber auto-incremented 16 → 17 as predicted. Build ID `6fd1cca5-a12c-4380-9fdf-ff5df75ede23`, commit `1e4b0ea`, fingerprint computed, build FINISHED clean (~6 min), IPA produced.
+- **Phase 6 — STRIKE GATE: FAILED.** Logs fetched via pre-signed URLs (15-min expiry) and preserved in `build17_logs/` (untracked, same convention as `build16_logs/`; worker.log 1,053 lines + xcode.log 39,791 lines, brotli-decoded).
+  - **CHECK A — ❌ FAIL (the strike gate):** `grep "Installing ExpoBackgroundRemoval" worker.log` → zero occurrences (exit 1). Total "Installing " pod lines: **93** (identical to Build 16; a pass would have been ~94). Alphabetical neighborhood shows the gap directly: line 296 `"Installing ExpoAppleAuthentication (8.0.8)"` → line 297 `"Installing ExpoAsset (12.0.13)"`, both phase INSTALL_PODS. Byte-for-byte the Build 16 / Session 24A Builds 8–11 failure signature.
+  - **CHECK B — ✅ PASS:** `grep -c "duplicates for expo-background-removal" worker.log` → 0. No duplicate-detection regression from searchPaths.
+  - **CHECK C — ✅ PASS:** expo-doctor ran (line 119, phase RUN_EXPO_DOCTOR) and passed 18/18 checks, same as Build 16.
+  - **Key diagnostic fact:** worker.log line 87 (phase READ_PACKAGE_JSON) shows the EAS worker received our committed package.json **with the searchPaths block intact, verbatim**. The fix was delivered to the worker and still did not take effect at the pod-install stage. npm install on the worker: "added 730 packages, and audited 731 packages in 7s" (INSTALL_DEPENDENCIES, line 98).
+- **Post-gate (Grace-approved):** revert commit `127aee2` pushed. FULL STOP honored — no upload, no retry, no fix-piling, no source-code investigation beyond the gate greps (one investigation thread into how relative searchPaths resolve against cwd was started and STOPPED on Grace's order before completion — recorded here as unfinished, not as a finding).
+
+### Tests
+- Phase 3 local proof: resolver + verify -v on the committed fix — all pass (see above).
+- Phase 6 strike gate: CHECK A FAIL / CHECK B PASS / CHECK C PASS → gate FAILED.
+
+### UNVERIFIED / open questions
+- WHY the search-path directory scan found the module locally but not on the EAS worker remains undiagnosed. Untested-locally combination flagged during the session: EAS's pod-install runs from cwd=`ios/`; whether the relative `"./node_modules"` search path resolves against cwd (→ `ios/node_modules`, which doesn't exist) rather than project root was NOT verified (investigation stopped per two-strike rule). Recorded as a hypothesis only, for whoever revisits this on SDK 56.
+
+### Notes / decisions
+- **SHELVED: Background Removal Plan A (npm-published expo-background-removal module) — two-strike rule invoked 2026-07-06.** Both strikes spent (Build 16 = Strike 1, Build 17 = Strike 2). Same silent autolinking-drop signature across Builds 8–11, 16, 17.
+- **Future path = SDK 56:** revisit as an inline local module when the coordinated Expo SDK 54 → 56 upgrade session happens (SDK 55+ also has the `include` autolinking option that was rejected as SDK-55-only this round).
+- **TWO OPEN ITEMS from the shelving:**
+  - **(a) Remove the App.js background-removal test surface + the `expo-background-removal: ~0.1.0` dependency BEFORE the next App Store build.** App.js still contains the VIP-gated Settings DEVELOPER test surface + `expo-background-removal` import from `3f45855`; package.json still carries the dependency. Harmless in Expo Go and in builds (module simply never links), but must not ship in a store submission. Deliberately NOT removed tonight.
+  - **(b) Decide keep-vs-unpublish for `expo-background-removal@0.1.0` on npm.** The free unpublish window closes ~July 8, 2026 (72h after the 2026-07-05 publish). Do NOT unpublish while package.json still references the package — item (a) must land first if unpublishing, or npm installs break. If the window lapses, keeping it published is harmless (it's a working, non-sensitive module).
+- `build17_logs/` preserved locally, untracked (worker.log, xcode.log, raw .br originals via urls.txt). Build 17 IPA artifact exists on EAS but was never uploaded to TestFlight/App Store.
+- State at close: testing @ `127aee2` (+ this docs commit); production `01c1d0f`; main `062d15b`; tags untouched; live App Store build = Build 15 (v1.0.2).
+
+---
+
 ## Update 3 — Session 2 — 2026-07-06 — Background Removal Strike-2 local diagnostic (zero builds, zero code changes)
 
 **Branch:** testing (HEAD `5f8c483` at session start AND end — the Session 1 docs commit; zero code commits this session).
