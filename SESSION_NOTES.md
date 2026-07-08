@@ -10,6 +10,66 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 3 — Session 5 — 2026-07-08 — SDK 54→56 upgrade — Session 1 (reality check + HOP 1: SDK 54→55)
+
+**Branch:** `sdk56-upgrade` (NEW, branched off `testing` at `21e5db1`). `testing` UNTOUCHED at `21e5db1`; `main` `062d15b`, `production` `ea8f0ca` (Build 15 live), both build tags — all unchanged. Nothing pushed.
+
+**Commit(s):**
+- `3a3cce9` — "chore(sdk): hop 1 — Expo SDK 54 → 55 (expo install --fix)" — package.json + package-lock.json ONLY (explicit staging, never `-A`). +1017 / −1796.
+- (this docs commit) — SESSION_NOTES + CLAUDE.md.
+
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (SYSTEM_PROMPT untouched).
+
+### Goals
+Reality-check the codebase for SDK 56 blockers (read-only), then execute HOP 1 of the one-hop-at-a-time 54→55→56 upgrade on an isolated branch. testing stays clean until a Build 18 TestFlight proves 56.
+
+### Reality check (read-only, no edits) — key findings
+- No `expo-router`, no `@react-navigation/*` (manual App.js screens) → the biggest SDK 56 breaker misses us.
+- No `expo-file-system` import anywhere. No `@expo/vector-icons` (not a direct dep, not imported).
+- Node `nvm use 20` = v20.20.2 (≥ 20.19.4 floor ✓).
+- Already on New Architecture (SDK 54 default, no opt-out) — proven by live Build 15 → SDK 55's New-Arch-only gate already satisfied.
+- eas.json build image NOT pinned (EAS auto-selects Xcode 26 for SDK 56 → Liquid-Glass `UIDesignRequiresCompatibility` opt-out survives). iOS min bumps 15.1 → 16.4 (Grace approved as a business decision).
+- Zero background-removal remnants (no ./modules/, no dep, no .npmrc, no autolinking block).
+- expo-doctor at SDK 54 baseline: 18/18 pass.
+
+### What changed (HOP 1, every command Grace-approved)
+- `npx expo install expo@^55.0.0` → expo **55.0.27** (stable, no prerelease).
+- `npx expo install --check` (preview) confirmed NO forbidden packages touched (ngrok / fonts / view-shot).
+- `npx expo install --fix` → react 19.2.0, react-native 0.83.6, svg 15.15.3, datetimepicker 8.6.0, babel-preset-expo ~55.0.8, all 11 expo-* to ~55.x. `--fix` exited 1 ONLY on the dynamic-config plugin-write (expected; deferred — see below).
+- **dotenv root cause + fix:** `--fix` pruned 110 pkgs incl. the *transitive* `dotenv`; `app.config.js:1 import 'dotenv/config'` then threw `Cannot find module 'dotenv/config'`, crashing all config evaluation (doctor/start/export). `expo install dotenv` deadlocked (it must read the config it can't load). FIX: `npm install dotenv@16.4.7` — the exact version present transitively under SDK 54 (v17 avoided — it prints a banner). **npm used instead of `expo install` as a justified one-off:** the deadlock made expo-install impossible, and dotenv is a pure-JS non-SDK package so the result is identical. `app.config.js` kept BYTE-IDENTICAL (Option 1).
+- **@types/react detour:** doctor then flagged `@types/react` 19.1.17 vs expected ~19.2.10 (dev-only; app is JS → harmless). Attempted `npx expo install @types/react` but it wrongly added a SECOND `@types/react` to `dependencies` (~19.2.10) while the devDependencies one (~19.1.10) remained → duplicate/misplaced, npm still resolved 19.1.17. Per Rule 10 (revert, don't pile fixes) chose **Option A**: `npm pkg delete dependencies.@types/react` + `npm install` → back to clean known-good state; ACCEPT doctor 18/19 with the one cosmetic mismatch.
+- **Bundle-check method:** used `npx expo export --platform ios` (full Metro compile to a 2.8MB Hermes `.hbc` bundle, deterministic pass/fail) rather than a background-dev-server bundle-URL fetch — same bundler/resolution, more robust. `dist-bundlecheck/` deleted after. Zero resolution/import errors.
+
+### Tests
+- expo-doctor: 18/19 (only the accepted `@types/react` dev-only mismatch; the 3 deferred plugins NOT flagged).
+- iOS bundle: fully compiled, zero resolution/import errors.
+- No device test at SDK 55 (Expo Go runs latest SDK only = 56) — accepted transient checkpoint; real device testing happens after HOP 2.
+- Git: only package.json + package-lock.json in `3a3cce9`; `testing` pointer unchanged.
+
+### UNVERIFIED / open questions
+- Everything runtime at SDK 55/56 — no iPhone test yet. Full app regression happens on iPhone at SDK 56 (after HOP 2), then a Build 18 TestFlight before any merge to testing.
+
+### Deferred to Build 18 EAS prep (logged to memory: sdk56-deferred-plugins)
+- 3 config plugins recommended by SDK 55 `--fix`, deliberately NOT added: `@react-native-community/datetimepicker`, `expo-sharing`, `expo-web-browser`. Rationale: web-browser skipped since Session 14A (openBrowserAsync only), datetimepicker is time-mode not calendar-mode, sharing needs no plugin, and Build 15 shipped with none. Evaluate empirically at Build 18.
+- `import 'dotenv/config'` in app.config.js is likely REDUNDANT (Expo native .env loading covers the EXPO_PUBLIC_ vars app.config.js reads). Evaluate REMOVING it at Build 18 as a separate deliberate change — never bundled with the upgrade.
+- `react-native-view-shot@4.0.3` New-Arch compat to verify at HOP 2 (Step 3 addition b).
+
+### Notes / decisions
+- Hard rules honored: no `npm audit fix` (advisory count drifted 16→19→18, ignored); no manual package.json version edits (all via `expo install` / `npm install` / `npm pkg` — the dotenv npm exception justified above); no `--yes`; Edge Function + SYSTEM_PROMPT untouched; `@expo/ngrok*` + font packages untouched.
+- **State at close:** `sdk56-upgrade` @ `3a3cce9` (+ this docs commit); `testing` @ `21e5db1` (frozen); `main` `062d15b`; `production` `ea8f0ca` (Build 15 live). Nothing pushed.
+
+### NEXT SESSION — HOP 2 (SDK 55 → 56) — verbatim plan
+Risk MEDIUM (RN 0.83→0.85, React 19.2, Hermes v1 default). Command-by-command, pause after each, on `sdk56-upgrade`:
+1. `npx expo install expo@^56.0.0` → verify resolved to a STABLE 56.x (no beta/canary/preview).
+2. `npx expo install --check` (read-only preview) → confirm BEFORE mutating that no forbidden packages (`@expo/ngrok*`, 4 font packages) are touched; note the `react-native-view-shot` expected version.
+3. `npx expo install --fix` → align to SDK 56 pins. EXPECT the plugin-write exit-1 to recur (known/deferred — confirm it's ONLY that, then continue). dotenv is now a direct dep so the hop-1 config crash will NOT recur. `@types/react` will likely mismatch again → leave it (accepted). react-native-view-shot: report whether `--fix` bumped it; if not and SDK 56 wants newer, SHOW the proposed `npx expo install react-native-view-shot` + target version and WAIT for YES before running it.
+4. `npx expo-doctor` → full output. Any failure OTHER than the accepted `@types/react` or the 3 deferred plugins → STOP and show Grace.
+5. iOS bundle compile via `npx expo export --platform ios` (delete dist/ after).
+6. STOP before commit → show `git status` (expect only package.json + package-lock.json) → propose hop-2 commit for approval.
+Then STOP + full state report for iPhone testing via Expo Go (SDK 56 = latest, so Expo Go CAN run it) BEFORE discussing Build 18. Hard stop: any error expo-doctor can't explain → STOP, no fixes without approval.
+
+---
+
 ## Update 3 — Session 4 — 2026-07-06 — Cleanup: remove Background Removal leftovers + verify identical to Build 15 + Build-15 tag ritual
 
 **Branch:** testing (HEAD at session start: `7fdb14d`; two cleanup commits below, then this docs commit). `production` fast-forwarded to `ea8f0ca`.
