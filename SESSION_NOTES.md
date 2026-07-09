@@ -10,6 +10,64 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 3 — Session 6 — 2026-07-09 — SDK 55→56 upgrade — HOP 2 (SDK 55→56)
+
+**Branch:** `sdk56-upgrade` (HEAD at session start `6c7c728`). `testing` UNTOUCHED at `21e5db1`; `main` `062d15b`, `production` `ea8f0ca` (Build 15 live), all build tags — unchanged. Nothing pushed.
+
+**Commit(s):**
+- `7be9d27` — "chore(sdk): hop 2 — Expo SDK 55 → 56 (expo install --fix)" — package.json + package-lock.json ONLY (explicit staging, never `-A`). +799 / −2144.
+- (this docs commit) — SESSION_NOTES + CLAUDE.md.
+
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (SYSTEM_PROMPT untouched).
+
+### Goals
+Execute HOP 2 (SDK 55→56) on the isolated branch, one command at a time, each Grace-approved. Land a compile-verified 56 checkpoint with its OWN separate commit. Do NOT roll into hop 3.
+
+### Reality check at session start (read-only) — the SDK 57 finding
+- **SDK 57 shipped since hop 1's plan was written.** npm `latest` = `57.0.4`, `sdk-56` = `56.0.15` (both stable). SDK 57 = RN 0.86, same React 19.2 — a small, non-breaking release over 56.
+- **Consequence:** Expo Go supports the LATEST SDK only, and on a physical iPhone only the latest Expo Go is installable. Grace's iPhone Expo Go = SDK 57 → an SDK 56 project CANNOT run in it. Hop 1's assumption ("SDK 56 = latest, Expo Go CAN run it") is now FALSE.
+- **Decision (Grace, Option 1):** land 56 as a compile-only checkpoint now, then a small non-breaking hop 3 → 57, and device-test in Expo Go at 57. Two conditions: (1) hop 2 gets its own separate commit before hop 3 begins; (2) hop 3 runs identical discipline, and if hop 2 has ANY surprise, hop 3 does NOT start — plan it fresh.
+- Verified ready: `dotenv ^16.4.7` direct; view-shot 4.0.3; no expo-router / @react-navigation / @expo/vector-icons; Node v20.20.2 (≥ SDK 56 floor 20.19.4, verified from changelog).
+
+### What changed (HOP 2, every command Grace-approved)
+- **Step 1** `npx expo install expo@^56.0.0` → expo **56.0.15** (stable; caret correctly refused 57 + all canaries). Forbidden pkgs untouched.
+- **Step 2** `npx expo install --check` (read-only) → NO forbidden packages in update list (ngrok ×2, 4 fonts, dotenv, supabase, async-storage, url-polyfill all absent). Surfaced the one item needing approval: `react-native-view-shot 4.0.3 → 5.1.0` (MAJOR — Share Card library).
+- **view-shot decision (Grace-approved):** let `--fix` take it to **5.1.0**. v5 is the New-Architecture migration line (app already on New Arch); Expo SDK 56 pins exactly 5.1.0 (validated vs RN 0.85); holding 4.0.3 would be the riskier path. Share Card put on the mandatory iPhone test list.
+- **Step 3** `npx expo install --fix` → react-native **0.83.6→0.85.3**, react 19.2.0→19.2.3, svg 15.15.4, datetimepicker 9.1.0, babel-preset-expo ~56.0.0, all 11 expo-* to ~56.x, view-shot **5.1.0**. Exit-1 was ONLY the deferred plugin-write (app.config.js untouched). **Hop-1 misplaced-package incident did NOT recur** — `@types/react` + `typescript` both stayed in devDependencies, no duplicate in dependencies. `dotenv` unchanged/not pruned (direct dep) — hop-1 config crash did not recur.
+
+### The TWO divergences from hop 1's record (both benign, neither a breakage)
+- **(a) Deferred plugin list grew 3 → 4.** Hop 1 recorded 3 (`@react-native-community/datetimepicker`, `expo-sharing`, `expo-web-browser`). SDK 56's `--fix` now also suggests **`expo-status-bar`** — NEW in SDK 56. All 4 remain DEFERRED to Build 18 (NOT written into app.config.js). Memory `sdk56-deferred-plugins` updated 3→4.
+- **(b) expo-doctor now also flags `typescript`.** Doctor's one failed check (20/21 pass) lists **two** dev-only items: `@types/react` 19.1.17 vs ~19.2.14 (accepted, from hop 1) AND **`typescript` 5.9.3 vs ~6.0.3** (major — NEW). Both dev-only; app is plain JS → zero runtime effect. **NOT fixed** (no manual version edit; TS 6 buys nothing for a JS app). Accepted like @types/react.
+
+### Tests
+- **Step 4** expo-doctor: **20/21** (only the version-match check, containing the two accepted dev-only mismatches; the 4 deferred plugins NOT flagged).
+- **Step 5** iOS bundle: `npx expo export --platform ios` → clean 2.7MB Hermes `.hbc`, zero resolution/"cannot find module" errors. RN 0.83→0.85 proven at bundle level. `dist-hop2check/` deleted after.
+- Git: `7be9d27` contains only package.json + package-lock.json; `testing` pointer unchanged.
+- **No device test** — impossible at SDK 56 (iPhone Expo Go = 57). Runtime testing happens at SDK 57 (after hop 3).
+
+### UNVERIFIED / mandatory at the SDK 57 device-test stage
+- **`expo/fetch` swap:** SDK 56 replaces global `fetch` with `expo/fetch` (opt-out `EXPO_PUBLIC_USE_RN_FETCH=1`, NOT applied). Every Supabase call routes through it. Exercise: **sign-in, photo upload, Generate.**
+- **Share Card:** `react-native-view-shot` 4→5 major bump. Exercise: **Share Outfit → capture → share sheet.**
+- All other runtime behavior at 56/57 — untested until iPhone at 57.
+
+### Notes / decisions
+- Hard rules honored: no `npm audit fix` (advisory count drifted 19→18, ignored); no manual package.json version edits; no `--yes`; Edge Function + SYSTEM_PROMPT + app.config.js + app code untouched; ngrok + fonts untouched.
+- **Per Grace's condition #2, hop 3 does NOT start this session** — divergences (a)+(b) count as surprises; hop 3 planned fresh below.
+- **State at close:** `sdk56-upgrade` @ `7be9d27` (+ this docs commit); `testing` @ `21e5db1` (frozen); `main` `062d15b`; `production` `ea8f0ca` (Build 15 live). Nothing pushed.
+
+### NEXT SESSION — HOP 3 (SDK 56 → 57) — verbatim plan
+Risk LOW (RN 0.85→0.86, same React 19.2 — Expo calls 57 a small non-breaking release). Command-by-command, pause after each, on `sdk56-upgrade`. Its OWN separate commit, never blended with hop 2.
+0. Branch safety: confirm `sdk56-upgrade` @ `7be9d27`; `testing` `21e5db1`, `main` `062d15b`, `production` `ea8f0ca` unchanged. Any drift → STOP.
+1. `npx expo install expo@^57.0.0` → verify resolved to a STABLE 57.x (no beta/canary/preview). Show + WAIT.
+2. `npx expo install --check` (read-only preview) → confirm BEFORE mutating that no forbidden packages (`@expo/ngrok*`, 4 font packages) are touched; note the react-native-view-shot expected version (may bump past 5.1.0). Show + WAIT.
+3. `npx expo install --fix` → align to SDK 57 pins. EXPECT the plugin-write exit-1 to recur — now expect **4** deferred plugins (datetimepicker, expo-sharing, expo-status-bar, expo-web-browser); confirm it's ONLY that. dotenv is direct (no config crash). `@types/react` + `typescript` will mismatch again → LEAVE both (accepted). If `--fix` bumps view-shot again, report the version; a change needing a separate `expo install` → show it + WAIT for YES. Any package landing in the wrong dependency section → revert immediately, don't repair in place, show. Show summary + WAIT.
+4. `npx expo-doctor` → full output. Any failure OTHER than the accepted `@types/react` + `typescript` version-match items or the 4 deferred plugins → STOP and show.
+5. iOS bundle compile via `npx expo export --platform ios` (delete dist/ after). "cannot find module" = pruned transitive dep → STOP, diagnose exact package + importing file, WAIT.
+6. STOP before commit → `git status` (expect only package.json + package-lock.json) → propose hop-3 commit for approval. Commits to `sdk56-upgrade` only.
+Then STOP + full state report. SDK 57 = latest, so Expo Go on the physical iPhone CAN run it → device testing via Expo Go is the next stage (Grace's decision, not automatic), and MUST include the two UNVERIFIED items above (fetch swap + Share Card). Only after iPhone pass → Build 18 EAS prep (eval the 4 deferred plugins empirically, evaluate removing `import 'dotenv/config'`, pin eas.json build image / Xcode 26.4). Hard stop: any error expo-doctor can't explain → STOP, no fixes without approval.
+
+---
+
 ## Update 3 — Session 5 — 2026-07-08 — SDK 54→56 upgrade — Session 1 (reality check + HOP 1: SDK 54→55)
 
 **Branch:** `sdk56-upgrade` (NEW, branched off `testing` at `21e5db1`). `testing` UNTOUCHED at `21e5db1`; `main` `062d15b`, `production` `ea8f0ca` (Build 15 live), both build tags — all unchanged. Nothing pushed.
