@@ -10,6 +10,14 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## CORRECTION — 2026-07-10 — the "Expo Go = SDK 57" claim in Sessions 6 & 7 was FALSE
+
+Sessions 6 (reality check) and 7 (Goals + NEXT) recorded as fact: *"Grace's iPhone Expo Go = SDK 57 → Expo Go device testing becomes possible."* This was an unverified inference, disproven by Grace's App Store + Expo Go screenshots (2026-07-09): App Store Expo Go shows **Supported SDK: 54** (latest installable 54.0.2, ~9 months old, button reads "Open" — no update available); in-app Settings: Supported SDK 54, Client version 1017756. **No SDK 57 Expo Go exists in the App Store.** The npm fact (SDK 57 = latest *published* SDK) was true; the leap to "Grace's Expo Go therefore runs 57" was never checked — Expo Go's App Store release lags the npm SDK.
+
+**Consequence:** the `sdk56-upgrade` branch CANNOT run in Expo Go on Grace's iPhone. The only device-test path is **TestFlight (Build 18)** via EAS + Transporter. The frozen `testing` branch (SDK 54) still matches Expo Go 54 → fallback intact. No commit, branch pointer, or Build-18 conclusion changes — only the stated testing path (Expo Go → TestFlight). Sessions 6 & 7 prose is left as written; this note supersedes their Expo Go claims.
+
+---
+
 ## Update 3 — Session 7 — 2026-07-09 — SDK 56→57 upgrade — HOP 3 (SDK 56→57)
 
 **Branch:** `sdk56-upgrade` (HEAD at session start `c799c90`). `testing` UNTOUCHED at `21e5db1`; `main` `062d15b`, `production` `ea8f0ca` (Build 15 live), all build tags — unchanged. Nothing pushed.
