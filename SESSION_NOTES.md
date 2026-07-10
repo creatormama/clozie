@@ -10,6 +10,48 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 3 — Session 8 — 2026-07-10 — Build 18 prep + EAS build (SDK 57, TestFlight path)
+
+**Branch:** `sdk56-upgrade` (HEAD at session start `7b38cba`). `testing` UNTOUCHED at `21e5db1`; `main` `062d15b`, `production` `ea8f0ca` (Build 15 live), all build tags — unchanged. Nothing pushed.
+
+**Commit(s):**
+- `356a301` — "docs: correct false Expo Go SDK 57 claim (Sessions 6 & 7) — upgrade is TestFlight-only" — SESSION_NOTES.md + CLAUDE.md only.
+- (this docs commit) — SESSION_NOTES + CLAUDE.md, this Session 8 entry.
+
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (SYSTEM_PROMPT untouched).
+
+### Goals
+Take the compile-only SDK 57 checkpoint (hop 3, `23fc763`) to a real TestFlight-capable iOS binary. Correct the false "Expo Go = SDK 57" record from Sessions 6 & 7 first, then produce EAS Build 18 with zero app/config changes.
+
+### The record correction (Step 1)
+Sessions 6 & 7 asserted as fact that Grace's iPhone Expo Go runs SDK 57 and device testing was possible. FALSE — App Store Expo Go is capped at Supported SDK 54 (Grace's screenshots 2026-07-09; latest installable 54.0.2, client 1017756). No SDK 57 Expo Go exists. Consequence: the upgrade is TestFlight-only; `testing` (SDK 54) still matches Expo Go 54 so the fallback is intact. Full detail in the "CORRECTION — 2026-07-10" note below + CLAUDE.md SDK bullet / Last-updated line.
+
+### Build 18 prep — evidence-based, zero edits
+- **Deferred plugins (3): added NONE.** Read each plugin's on-disk source: `expo-sharing`/`withShareExtension` only builds an iOS share-INTO extension when `ios.enabled:true` (Clozie shares OUT via `Sharing.shareAsync`, needs no config); `expo-status-bar`/`withStatusBar` writes nothing to Info.plist with a bare entry; `expo-web-browser`/`withWebBrowser` is `if(!props) return config` and only touches Android. All iOS no-ops as bare entries — writing them buys nothing and breaks the app.config.js-untouched discipline. datetimepicker already auto-handled by SDK 57. app.config.js untouched.
+- **`import 'dotenv/config'`: LEFT.** Needed for local `expo start` to resolve `extra.supabaseUrl`; harmless no-op on EAS. Removal risks local dev for zero build benefit.
+- **eas.json image pin: SKIPPED.** EAS default image is SDK-aware; capture-from-log-and-pin-later deferred.
+- **buildNumber: no edit possible.** `appVersionSource: remote` + `autoIncrement:true` → server-side. `eas build:version:get` read 17 → auto-incremented to 18. Version stays 1.0.2.
+- **eas-cli:** left at 20.0.0 (latest 20.5.1, same major — negligible risk; Grace's call).
+
+### Tests
+- expo-doctor: **19/20** — the one fail is only the two accepted dev-only mismatches (`typescript` 5.9.3, `@types/react` 19.1.17). No plugins flagged.
+- iOS bundle: `npx expo export --platform ios` → clean 2.7MB Hermes `.hbc`, zero resolution errors. `dist-build18check/` deleted.
+- **EAS Build 18 — SUCCEEDED (exit 0).** buildNumber auto 17→18; remote iOS credentials reused non-interactively (dist cert serial `33BF3C…` to 2027-06-02, provisioning profile active); env vars EXPO_PUBLIC_SUPABASE_URL + ANON_KEY loaded from production environment. IPA: `https://expo.dev/artifacts/eas/vif5gWWX5_5gt9DID7FolsaqA5XXO-onxvSuy4YRnIM.ipa`. Build ID `cc112717-db23-4c22-955e-33543f8e3aa3`. Build page: `https://expo.dev/accounts/clozie/projects/clozie/builds/cc112717-db23-4c22-955e-33543f8e3aa3`.
+- **SDK 54→57 now proven at binary/package level** — biggest upgrade unknown closed. Runtime unproven until TestFlight.
+
+### UNVERIFIED / mandatory on the Build 18 TestFlight
+- **`expo/fetch` swap** (every Supabase call): exercise **sign-in, photo upload, Generate.**
+- **Share Card** (`react-native-view-shot` 4→5, 5.1.0): **Share Outfit → capture → share sheet.**
+- General walkthrough: all 4 tabs + Settings. Any runtime regression at SDK 57 surfaces here first.
+
+### Notes / decisions
+- Hard rules honored: no `npm audit fix`, no `--yes`, no manual package.json edits; Edge Function + SYSTEM_PROMPT + app.config.js + eas.json + app code + ngrok + fonts all untouched. Only writes this session = docs correction (`356a301`) + this docs entry.
+- Transporter upload of the IPA + TestFlight install are Grace's (not automated).
+- **Merging `sdk56-upgrade` → `testing` is a SEPARATE future decision** — deferred until a Build 18 TestFlight passes on iPhone. `testing` stays frozen at `21e5db1`.
+- **State at close:** `sdk56-upgrade` @ `356a301` (+ this docs commit); `testing` `21e5db1` (frozen); `main` `062d15b`; `production` `ea8f0ca` (Build 15 live). Nothing pushed.
+
+---
+
 ## CORRECTION — 2026-07-10 — the "Expo Go = SDK 57" claim in Sessions 6 & 7 was FALSE
 
 Sessions 6 (reality check) and 7 (Goals + NEXT) recorded as fact: *"Grace's iPhone Expo Go = SDK 57 → Expo Go device testing becomes possible."* This was an unverified inference, disproven by Grace's App Store + Expo Go screenshots (2026-07-09): App Store Expo Go shows **Supported SDK: 54** (latest installable 54.0.2, ~9 months old, button reads "Open" — no update available); in-app Settings: Supported SDK 54, Client version 1017756. **No SDK 57 Expo Go exists in the App Store.** The npm fact (SDK 57 = latest *published* SDK) was true; the leap to "Grace's Expo Go therefore runs 57" was never checked — Expo Go's App Store release lags the npm SDK.
