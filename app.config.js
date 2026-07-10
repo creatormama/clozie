@@ -4,7 +4,7 @@ export default {
   expo: {
     name: 'Clozie',
     slug: 'clozie',
-    version: '1.0.2',
+    version: '1.0.3',
     icon: "./assets/clozie-icon-sage-larger-1024.png",
     orientation: 'portrait',
     userInterfaceStyle: 'light',
