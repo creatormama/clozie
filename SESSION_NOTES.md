@@ -53,6 +53,18 @@ Sessions 6 & 7 asserted as fact that Grace's iPhone Expo Go runs SDK 57 and devi
 ### POST-BUILD CORRECTION — Build 18 (v1.0.2) REJECTED → Build 19 (v1.0.3) supersedes
 Build 18 was DELIVERED via Transporter but **rejected at App Store Connect processing** (Transporter evidence): **90062** (CFBundleShortVersionString 1.0.2 must be higher than the already-approved 1.0.2) + **90186** (train version 1.0.2 closed for new build submissions). Root cause: Build 15 is LIVE at 1.0.2, so the 1.0.2 version train is closed — **the "version stays 1.0.2 / buildNumber: no edit possible" conclusion in the Build-18-prep section above was WRONG.** Same failure + fix as the Build 13 rejection (CLAUDE.md CURRENT BUILD STATE). Fix: bumped `version` 1.0.2 → 1.0.3 in BOTH `app.config.js` + `package.json` (commit `84a620a`, the documented two-file pattern from Build 13→14 and Session 5). **EAS Build 19 SUCCEEDED (exit 0)** at v1.0.3 / buildNumber auto 18→19; credentials + env identical to Build 18. IPA: `https://expo.dev/artifacts/eas/NFjENU6AK9p2ALDZeEG9ZNj4tcQWPgyXNxEhCekYBXA.ipa`. Build ID `1b33064c-b5b0-46b2-aaa8-a0db40557a52`. **Build 18 (1.0.2) is dead — never re-uploads; Build 19 (1.0.3) is the TestFlight candidate.** UNVERIFIED runtime list (fetch swap + Share Card) unchanged — carries to the Build 19 TestFlight. **Lesson: every new App Store submission needs a version string higher than the last SHIPPED build (train-closure rule) — check the live App Store version before concluding "version stays."** (New CLAUDE.md VERSION RULE added this session.)
 
+### Build 19 (v1.0.3) TestFlight — VERIFIED PASS on iPhone — 2026-07-10/11
+Build 19 IPA uploaded via Transporter, accepted at App Store Connect processing (v1.0.3 clears the closed 1.0.2 train), installed via TestFlight, and passed a full on-device walkthrough. **SDK 54→57 is now proven at runtime, not just compile/package level.** Verified PASS:
+- **Auth:** sign-in, new account creation, and **Sign in with Apple** all work end-to-end — clears the Session 22 "Apple Sign-In UNVERIFIED on TestFlight" flag (KNOWN ISSUES item 22).
+- **`expo/fetch` swap** (every Supabase call): exercised via sign-in, **photo upload**, **camera** capture, and **Generate** — the fetch swap is proven; outfits generate normally.
+- **Share Card** (`react-native-view-shot` 4→5, 5.1.0): Share Outfit → capture → share sheet works — view-shot 5 proven.
+- **Landing:** kill + reopen lands on Today's Vibe (as designed).
+- **Navigation:** all 4 tabs + Settings walk clean, no runtime regressions.
+- **Dynamic Type:** holds at the cap — no new SDK-57 layout breakage observed.
+- **Overnight token refresh:** app left open overnight, returned next morning with no re-sign-in required — clears the Session 22-era "Long-sleep session refresh UNVERIFIED on TestFlight" flag (KNOWN ISSUES item 21).
+
+Net: the entire "UNVERIFIED / mandatory on the Build 19 TestFlight" list above (fetch swap + Share Card) is now cleared, plus KNOWN ISSUES items 21 and 22. **Build 19 (v1.0.3) is the proven SDK 57 runtime baseline.** (Daily Notifications, KNOWN ISSUES item 29, was NOT part of this pass — stays UNVERIFIED.)
+
 ---
 
 ## CORRECTION — 2026-07-10 — the "Expo Go = SDK 57" claim in Sessions 6 & 7 was FALSE
