@@ -10,6 +10,39 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 3 — Session 9 — 2026-07-11 — Merge sdk56-upgrade → testing (SDK 57 goes official)
+
+**Branch:** work committed on `sdk56-upgrade`, then `testing` fast-forwarded onto it. `main` `062d15b` / `production` `ea8f0ca` (Build 15 live) / all build tags UNCHANGED.
+
+**Commit(s):**
+- `9f070c7` — docs: KNOWN ISSUES — undo/untag feature request + backlog-migration housekeeping note (CLAUDE.md).
+- `bdfb0d2` — docs: SESSION_NOTES — Build 19 (v1.0.3) TestFlight VERIFIED PASS (SESSION_NOTES.md).
+- (this docs commit) — CLAUDE.md CURRENT BUILD STATE + this Session 9 entry.
+
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (SYSTEM_PROMPT untouched).
+
+### Goals
+Take the TestFlight-verified SDK 57 branch official: record the Build 19 pass, merge `sdk56-upgrade` → `testing`, and lay down two safety-net tags.
+
+### What changed
+- **Merge:** `testing` fast-forwarded `21e5db1` → `bdfb0d2` (pure FF, no merge commit; `testing` == `sdk56-upgrade`). Carried the 10 SDK-hop/version commits + 2 docs commits. `sdk56-upgrade` left at `bdfb0d2` as an extra safety pointer — NOT deleted.
+- **Tags (annotated, local until pushed):** `sdk54-final` @ `21e5db1` = last SDK 54 / Expo Go-compatible state (Door 2); `sdk57-clean-baseline` @ `bdfb0d2` = proven Build 19 state / pre-background-removal revert point (Door 3).
+- **Docs:** CLAUDE.md SDK bullet rewritten (merge done, `testing` = SDK 57, Expo Go can't run `testing`, both tag meanings); Last verified 2026-07-06 → 2026-07-11; Last updated prepended.
+
+### Tests
+Read-only pre-merge: clean fast-forward confirmed (`testing` was the merge-base), zero background-removal residue (no `modules/`, no `.npmrc`, `expo-background-removal` absent from package.json + lock, none in App.js). Post-merge verify: `testing` HEAD == `sdk56-upgrade` == `bdfb0d2`, single-parent (no merge commit), tracked tree clean, `main` + `production` untouched.
+
+### UNVERIFIED
+- Daily Notifications firing + tap routing (KNOWN ISSUES item 29) — NOT part of the Build 19 pass, still TestFlight-pending.
+- **Consequence of the merge: Expo Go (SDK 54) can no longer run `testing`.** All future device testing is TestFlight until Expo Go ships SDK 57. `sdk54-final` is the Expo Go fallback if ever needed.
+
+### Notes / decisions
+- Hard rules honored: no `npm audit fix`, no `--yes`, no package.json edits; Edge Functions / SYSTEM_PROMPT / eas.json / app code untouched; named-file commits only; no branch/tag/file deleted; no amend.
+- Promoting SDK 57 to `production` (the live App Store branch) is a SEPARATE future release decision — not done this session. Any future build follows the VERSION RULE.
+- Pushes to origin (`testing` branch, tag `sdk54-final`, tag `sdk57-clean-baseline`) follow this docs commit — three separate pushes.
+
+---
+
 ## Update 3 — Session 8 — 2026-07-10 — Build 18 prep + EAS build (SDK 57, TestFlight path)
 
 **Branch:** `sdk56-upgrade` (HEAD at session start `7b38cba`). `testing` UNTOUCHED at `21e5db1`; `main` `062d15b`, `production` `ea8f0ca` (Build 15 live), all build tags — unchanged. Nothing pushed.
