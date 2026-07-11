@@ -10,6 +10,49 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 1 — 2026-07-11 — Background Removal on SDK 57 — root cause found + FIXED, on-device VERIFIED (v1.0.4 Build 23)
+
+**Branch:** testing. `main` `062d15b` / `production` `ea8f0ca` (Build 15 live) / all build tags UNCHANGED. Six new commits, ALL LOCAL (unpushed) as of this entry.
+
+**Commit(s):**
+- `4478ade` — recover `expo-background-removal` as a local `./modules` module (11 files, faithful from `session-24a-shelved`, zero shape edits).
+- `446a85b` — App.js: VIP-gated Settings DEVELOPER test surface (8 hunks from ref `3f45855`, +312/-1; only deviation = relative import into `./modules/expo-background-removal`).
+- `7bc1cac` — bump version 1.0.3 → 1.0.4.
+- `af89d30` — temporary `eas-build-post-install` diagnostic hook [reverted by `eaa46d1`].
+- `e145753` — **THE FIX**: anchor `.gitignore` `ios/` + `android/` → `/ios/` `/android/`.
+- `eaa46d1` — revert the diagnostic commit (clean ship state).
+
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (SYSTEM_PROMPT untouched).
+
+### Goals
+Ship the shelved Apple Vision background removal on SDK 57 as a local `./modules` module (Plan A); after Strike 1 failed, diagnose and fix the worker-only module drop that killed six prior builds (Session 24A 8–11, Update 3 16/17, and now 20).
+
+### What changed
+- **Plan A wired + local pre-gate:** module recovered to `./modules`; SDK 57's `nativeModulesDir './modules'` scan discovers it via the **search-paths** channel (verified). CocoaPods 1.17.0 installed 2026-07-11 → local `pod install` pre-gate showed `Installing BackgroundRemoval` (first time this stage was ever testable locally).
+- **Strike 1 (Build 20) FAILED** — same silent signature: module absent from the worker's 102 pods, referenced nowhere.
+- **Diagnosis (read-only + one instrumentation build):** ruled OUT the EAS precompile-cache theory (cache-miss modules build from source and still install — RNSVG/RNCAsyncStorage), the cwd/app-root theory (worker resolved all 21 Expo deps; local scan works from `ios/`), and version/config divergence (autolinking **57.0.5 identical**; no `eas.json`/hook/`expo.autolinking` injection; only delta = worker Node 22 vs local 20). Added a temporary `eas-build-post-install` hook (Build 21) printing the worker's own `verify -v` + `ls modules/.../ios`.
+- **ROOT CAUSE (Build 21 diagnostic):** `modules/expo-background-removal/ios/` was **EMPTY on the worker** — podspec + Swift missing. `.gitignore` `ios/` + `android/` (unanchored → match at any depth) matched the nested module dirs; EAS's **pure-pattern uploader stripped them** (the files are git-tracked, so `git archive` kept them — but EAS doesn't use git's tracked-file awareness). `verify` found the module (config survived) but `resolve` dropped it (no podspec) → never in the Podfile → never installed. Cleanly explains "works locally, fails on worker, verify-yes/resolve-no," and almost certainly Builds 8–11 too.
+- **THE FIX (`e145753`):** `/ios/` `/android/` — root prebuild dirs still ignored, nested module native files ship. Confirmed via `git check-ignore --no-index` (module KEPT, root still IGNORED).
+- **Build 22 (fix + diagnostic):** worker `ls` now shows podspec (810 B) + Swift (1810 B); `Installing BackgroundRemoval (0.1.0)` — **CHECK A PASS**; 103 pods.
+- **Build 23 (clean, diagnostic reverted):** CHECK A/B PASS, doctor 19/20 (known benign `typescript`/`@types/react` dev mismatch), no diagnostic block. **This is the shipped build.**
+
+### Tests
+- Local pre-gate: `Installing BackgroundRemoval` (CocoaPods 1.17.0) — pass.
+- Builds 20 (fail) / 21 (diagnostic) / 22 (fix, pass) / 23 (clean, pass) — all v1.0.4, buildNumbers 20–23; logs preserved in `build2{0,1,2,3}_logs/` (gitignored).
+- **On-device TestFlight (Build 23) — VERIFIED PASS twice on iPhone:** busy Persian rug → pink striped pants + green floral tee both returned clean Apple Vision cutouts (backgrounds fully removed, garments intact, edges clean).
+
+### UNVERIFIED / known issues
+- **Cutout returns ~90° rotated** (systematic, both tests) — likely EXIF orientation not normalized before the Vision request in `BackgroundRemovalModule.swift`. Logged to `Clozie_Known_Issues_Backlog.md`; fix in next BR polish pass.
+- Builds 16/17 (old npm-registry route) failure remains separately unexplained — moot; Plan A (local module) is the shipped approach.
+
+### Notes / decisions
+- Two-strike rule: only Build 20 counts as a failure (Strike 1). The fix passed → Strike 2 never needed. Builds 21/22/23 = instrumentation/fix/clean, not strikes.
+- CocoaPods 1.17.0 installed via Homebrew 2026-07-11 (pre-gate tooling; no repo changes).
+- Hard rules honored: no `npm audit fix`, no `--yes`; Edge Functions / SYSTEM_PROMPT (cache 2,510) / `eas.json` / Supabase untouched; named-file commits only; no branch/tag deleted; revert via `git revert` (never reset/amend); Transporter upload only.
+- OPEN: push `testing` to origin (6 commits still local); promoting v1.0.4 to `production` / App Store is a separate future release decision.
+
+---
+
 ## Update 3 — Session 9 — 2026-07-11 — Merge sdk56-upgrade → testing (SDK 57 goes official)
 
 **Branch:** work committed on `sdk56-upgrade`, then `testing` fast-forwarded onto it. `main` `062d15b` / `production` `ea8f0ca` (Build 15 live) / all build tags UNCHANGED.
