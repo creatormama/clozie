@@ -9,9 +9,10 @@ dist/
 node_modules/
 build*_logs/
 
-# iOS / Android builds
-ios/
-android/
+# iOS / Android builds (root-anchored so nested module dirs like
+# modules/expo-background-removal/ios are NOT stripped from the EAS upload)
+/ios/
+/android/
 *.jks
 *.p8
 *.p12
