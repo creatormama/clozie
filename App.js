@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
+  ActivityIndicator,
   View,
   TouchableOpacity,
   StyleSheet,
@@ -37,6 +38,7 @@ import * as Sharing from 'expo-sharing';
 import * as Haptics from 'expo-haptics';
 import * as WebBrowser from 'expo-web-browser';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import BackgroundRemoval from './modules/expo-background-removal';
 import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -5962,7 +5964,7 @@ const subStyles = StyleSheet.create({
 });
 
 // ── Settings Screen ─────────────────────────────────────────────────────────
-function SettingsScreen({ onClose, onSignOut, onRevokeConsent, onClearMemory }) {
+function SettingsScreen({ onClose, onSignOut, onRevokeConsent, onClearMemory, isVip }) {
   // Real user data — pulled from Supabase auth session on mount
   const [displayName, setDisplayName] = useState('');
   const [userEmail, setUserEmail] = useState('');
@@ -6303,6 +6305,69 @@ function SettingsScreen({ onClose, onSignOut, onRevokeConsent, onClearMemory }) 
 
   // Sign Out error state
   const [signOutError, setSignOutError] = useState('');
+
+  // DEVELOPER — Background Removal Test (Phase A, VIP-gated)
+  const [testModalVisible, setTestModalVisible] = useState(false);
+  const [testOriginalUri, setTestOriginalUri] = useState(null);
+  const [testCutoutUri, setTestCutoutUri] = useState(null);
+  const [testStatus, setTestStatus] = useState('idle'); // 'idle' | 'picking' | 'processing' | 'done' | 'unavailable'
+  const [testError, setTestError] = useState('');
+
+  const openTestModal = () => {
+    setTestOriginalUri(null);
+    setTestCutoutUri(null);
+    setTestStatus('idle');
+    setTestError('');
+    setTestModalVisible(true);
+  };
+
+  const closeTestModal = () => {
+    setTestModalVisible(false);
+  };
+
+  const handlePickTestPhoto = async () => {
+    try {
+      setTestError('');
+      setTestStatus('picking');
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        setTestStatus('idle');
+        setTestError('Photo library access denied. Enable in iPhone Settings.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 1,
+      });
+      if (result.canceled || !result.assets?.[0]) {
+        setTestStatus(testOriginalUri ? 'done' : 'idle');
+        return;
+      }
+      const original = result.assets[0].uri;
+      setTestOriginalUri(original);
+      setTestCutoutUri(null);
+      setTestStatus('processing');
+
+      let cutout = null;
+      try {
+        cutout = await BackgroundRemoval.removeBackground(original);
+      } catch (err) {
+        console.warn('[BG removal] threw:', err);
+        cutout = null;
+      }
+
+      if (cutout) {
+        setTestCutoutUri(cutout);
+        setTestStatus('done');
+      } else {
+        setTestStatus('unavailable');
+      }
+    } catch (err) {
+      console.warn('[BG removal] picker error:', err);
+      setTestStatus('idle');
+      setTestError('Something went wrong picking a photo.');
+    }
+  };
 
   return (
     <View style={settingsStyles.container}>
@@ -6714,6 +6779,25 @@ function SettingsScreen({ onClose, onSignOut, onRevokeConsent, onClearMemory }) 
           </View>
         </View>
 
+        {/* DEVELOPER card — Phase A test surface, VIP-gated, remove when Phase A wraps */}
+        {isVip && (
+          <View style={settingsStyles.card}>
+            <View style={settingsStyles.cardRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={settingsStyles.cardRowLabel}>Test Background Removal</Text>
+                <Text style={settingsStyles.cardRowValue}>Apple Vision cutout preview</Text>
+              </View>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={openTestModal}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={settingsStyles.goldLink}>Test</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* Sign Out error — terracotta inline message */}
         {signOutError ? (
           <Text style={settingsStyles.signOutError}>{signOutError}</Text>
@@ -6945,6 +7029,93 @@ function SettingsScreen({ onClose, onSignOut, onRevokeConsent, onClearMemory }) 
           </View>
         </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* DEVELOPER — Background Removal Test Modal (Phase A) */}
+      <Modal
+        visible={testModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={closeTestModal}
+      >
+        <View style={testModalStyles.overlay}>
+          <View style={testModalStyles.sheet}>
+            <View style={testModalStyles.handleBar} />
+            <View style={testModalStyles.headerRow}>
+              <Text style={testModalStyles.title}>Test Background Removal</Text>
+              <TouchableOpacity
+                style={testModalStyles.closeButton}
+                onPress={closeTestModal}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={testModalStyles.closeX}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={testModalStyles.subtitle}>
+              Pick any photo to preview Apple Vision's cutout. iOS 17+ on a real device only.
+            </Text>
+
+            <ScrollView contentContainerStyle={testModalStyles.scrollContent}>
+              <TouchableOpacity
+                style={[
+                  testModalStyles.pickButton,
+                  (testStatus === 'picking' || testStatus === 'processing') && testModalStyles.pickButtonDisabled,
+                ]}
+                onPress={handlePickTestPhoto}
+                disabled={testStatus === 'picking' || testStatus === 'processing'}
+                activeOpacity={0.85}
+              >
+                <Text style={testModalStyles.pickButtonText}>
+                  {testStatus === 'picking' ? 'Opening picker…' :
+                   testStatus === 'processing' ? 'Processing…' :
+                   testOriginalUri ? 'Pick Another Photo' : 'Pick a Photo'}
+                </Text>
+              </TouchableOpacity>
+
+              {testError ? (
+                <Text style={testModalStyles.errorText}>{testError}</Text>
+              ) : null}
+
+              {testOriginalUri ? (
+                <View style={testModalStyles.previewBlock}>
+                  <Text style={testModalStyles.eyebrow}>ORIGINAL</Text>
+                  <Image source={{ uri: testOriginalUri }} style={testModalStyles.previewImage} resizeMode="contain" />
+                </View>
+              ) : null}
+
+              {testStatus === 'processing' ? (
+                <View style={testModalStyles.previewBlock}>
+                  <Text style={testModalStyles.eyebrow}>APPLE VISION</Text>
+                  <View style={[testModalStyles.previewImage, testModalStyles.processingBox]}>
+                    <ActivityIndicator color="#A44A34" size="large" />
+                    <Text style={testModalStyles.processingText}>Removing background…</Text>
+                  </View>
+                </View>
+              ) : null}
+
+              {testStatus === 'done' && testCutoutUri ? (
+                <View style={testModalStyles.previewBlock}>
+                  <Text style={testModalStyles.eyebrow}>APPLE VISION</Text>
+                  <Image source={{ uri: testCutoutUri }} style={testModalStyles.previewImage} resizeMode="contain" />
+                </View>
+              ) : null}
+
+              {testStatus === 'unavailable' ? (
+                <View style={testModalStyles.previewBlock}>
+                  <Text style={testModalStyles.eyebrow}>APPLE VISION</Text>
+                  <View style={[testModalStyles.previewImage, testModalStyles.unavailableBox]}>
+                    <Text style={testModalStyles.unavailableText}>
+                      Background removal not available on this device.
+                    </Text>
+                    <Text style={testModalStyles.unavailableHint}>
+                      Requires iOS 17+ on a real iPhone. Won't work in Expo Go or Simulator.
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -8057,6 +8228,7 @@ function MainAppScreen({ onSignOut, initialTab = 0 }) {
           onSignOut={onSignOut}
           onRevokeConsent={handleRevokeConsent}
           onClearMemory={handleClearMemory}
+          isVip={isVip}
         />
       </Modal>
 
@@ -11344,5 +11516,144 @@ const consentStyles = StyleSheet.create({
     fontFamily: 'Outfit_400Regular',
     fontSize: 14,
     color: '#5C4A3A',
+  },
+});
+
+// ── DEVELOPER — Background Removal Test Modal styles ─────────────────────────
+// Phase A test surface only. Remove this block + the JSX when Phase A wraps.
+const testModalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(44,26,14,0.35)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: '90%',
+    paddingBottom: 24,
+  },
+  handleBar: {
+    width: 36,
+    height: 4,
+    backgroundColor: 'rgba(44,26,14,0.15)',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  title: {
+    fontFamily: 'DMSerifDisplay_400Regular',
+    fontSize: 20,
+    color: '#2C1A0E',
+    flex: 1,
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(44,26,14,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeX: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 18,
+    color: '#2C1A0E',
+    lineHeight: 20,
+  },
+  subtitle: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    lineHeight: 18,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  pickButton: {
+    backgroundColor: '#BCC7B7',
+    borderRadius: 100,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  pickButtonDisabled: {
+    opacity: 0.45,
+  },
+  pickButtonText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 15,
+    color: '#2C1A0E',
+  },
+  errorText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: 'rgba(164,74,52,0.88)',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  previewBlock: {
+    marginTop: 18,
+  },
+  eyebrow: {
+    fontFamily: 'Outfit_700Bold',
+    fontSize: 11,
+    color: '#A44A34',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  previewImage: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 12,
+    backgroundColor: '#F5F0E8',
+  },
+  processingBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  processingText: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 13,
+    color: '#5C4A3A',
+    marginTop: 12,
+  },
+  unavailableBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  unavailableText: {
+    fontFamily: 'Outfit_500Medium',
+    fontSize: 15,
+    color: '#5C4A3A',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  unavailableHint: {
+    fontFamily: 'Outfit_400Regular',
+    fontSize: 12,
+    color: '#A09888',
+    textAlign: 'center',
+    lineHeight: 17,
   },
 });
