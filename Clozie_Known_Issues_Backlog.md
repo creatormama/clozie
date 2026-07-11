@@ -13,6 +13,7 @@ Deferred, non-blocking issues. Newest at top. Reconcile with the backlog kept in
 ## Background Removal
 
 - **Cutout returned rotated (~90°)** — normalize EXIF orientation before the Vision request in `BackgroundRemovalModule.swift`. Systematic (observed on both on-device TestFlight tests, Build 23, 2026-07-11 — pink striped pants + green floral tee both came back rotated while cutout quality was otherwise clean). Fix in next BR polish pass. Target: v1.0.4+ BR polish.
+  - **Safety tag:** `v1.0.4-build23-br-verified` (annotated, pushed to origin, on commit `dd3b6fb`) marks the verified-working Build 23 state — restore point before any rotation fix. Code diagnosis 2026-07-11: root cause is `input.cgImage` at `BackgroundRemovalModule.swift:18` dropping `UIImage.imageOrientation`. Only the VIP test surface hits it today — the real Add Item path already hands the module an upright image via `ImageManipulator.manipulateAsync` (App.js:1765 camera / 1797 library), so deferral is safe as long as future wiring runs BR on `fixed.uri`, not the raw pick. Chosen fix approach when picked up: normalize the UIImage to an upright bitmap before the Vision request (not passing orientation into Vision).
 
 ## v1.0.4 train — cross-reference (tracked elsewhere, not duplicated here)
 
