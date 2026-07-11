@@ -5,8 +5,7 @@
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
-    "ios": "expo start --ios",
-    "eas-build-post-install": "bash scripts/eas-autolink-diagnostic.sh || true"
+    "ios": "expo start --ios"
   },
   "dependencies": {
     "@expo-google-fonts/dm-mono": "^0.4.2",
