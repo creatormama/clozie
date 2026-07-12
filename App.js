@@ -1441,7 +1441,7 @@ const WEEK_DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 // Order locked by spec — "All" is the sentinel for "no category filter".
 const CATEGORY_CHIPS = ['All', 'Tops', 'Bottoms', 'Dresses', 'Outerwear', 'Shoes', 'Accessories'];
 
-function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
+function WardrobeTab({ items, setItems, onGoToVibe, isVip, wardrobeLoaded }) {
   const [showAddPanel, setShowAddPanel] = useState(false);
   const [newItemName, setNewItemName] = useState('');
   const [newItemCategory, setNewItemCategory] = useState('');
@@ -1829,7 +1829,7 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
 
   // Session 10A Step 4: Empty state — full-screen centered view when closet has 0 items.
   // Falls through to normal render once user taps "+ Add Your First Item" (showAddPanel → true).
-  if (itemCount === 0 && !showAddPanel) {
+  if (wardrobeLoaded && itemCount === 0 && !showAddPanel) {
     return (
       <KeyboardAvoidingView
         style={{ flex: 1, backgroundColor: '#E8E4CE' }}
@@ -2507,7 +2507,7 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
 }
 
 // ── Today's Vibe Tab ────────────────────────────────────────────────────────
-function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate, onGoToCloset }) {
+function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate, onGoToCloset, wardrobeLoaded }) {
   const [selectedTemperature, setSelectedTemperature] = useState(null);
   const [selectedCondition, setSelectedCondition] = useState(null);
   const [selectedOccasion, setSelectedOccasion] = useState(null);
@@ -2562,7 +2562,7 @@ function TodaysVibeTab({ wardrobeItemCount, wardrobeItems, onGenerate, onGoToClo
   // Empty wardrobe: show warm guidance instead of weather/occasion/Generate UI.
   // Generate path is unreachable from this state — gate 4 (not_enough_items) would
   // reject anyway, but the empty state is a friendlier UX than letting them tap and fail.
-  if (wardrobeItems.length === 0) {
+  if (wardrobeLoaded && wardrobeItems.length === 0) {
     return (
       <View style={vibeStyles.emptyContainer}>
         <Text style={vibeStyles.emptyText}>
@@ -7717,6 +7717,7 @@ function ConsentModal({ visible, onAccept, onDecline }) {
 function MainAppScreen({ onSignOut, initialTab = 0 }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [wardrobeItems, setWardrobeItems] = useState([]);
+  const [wardrobeLoaded, setWardrobeLoaded] = useState(false);
   // Generation status drives Your Looks: 'idle' | 'loading' | 'success' | 'error'
   const [generationStatus, setGenerationStatus] = useState('idle');
   const [generatedOutfits, setGeneratedOutfits] = useState([]);
@@ -7785,6 +7786,8 @@ function MainAppScreen({ onSignOut, initialTab = 0 }) {
         if (!cancelled) setWardrobeItems(itemsWithUrls);
       } catch (err) {
         console.warn('Failed to load wardrobe items:', err?.message);
+      } finally {
+        if (!cancelled) setWardrobeLoaded(true);
       }
     };
 
@@ -7795,6 +7798,7 @@ function MainAppScreen({ onSignOut, initialTab = 0 }) {
         setWardrobeItems([]);
         setSavedOutfits([]); // Session 12 S1b: also reset saved outfits on sign-out
         setWornOutfits([]); // Session 20: also reset worn outfits on sign-out
+        setWardrobeLoaded(false);
       }
     });
 
@@ -8200,8 +8204,8 @@ function MainAppScreen({ onSignOut, initialTab = 0 }) {
 
       {/* Tab content area */}
       {activeTab === 0 && <StyleDNATab onBuildCloset={() => setActiveTab(1)} />}
-      {activeTab === 1 && <WardrobeTab items={wardrobeItems} setItems={setWardrobeItems} onGoToVibe={() => setActiveTab(2)} isVip={isVip} />}
-      {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} onGenerate={handleGenerate} onGoToCloset={() => setActiveTab(1)} />}
+      {activeTab === 1 && <WardrobeTab items={wardrobeItems} setItems={setWardrobeItems} onGoToVibe={() => setActiveTab(2)} isVip={isVip} wardrobeLoaded={wardrobeLoaded} />}
+      {activeTab === 2 && <TodaysVibeTab wardrobeItemCount={wardrobeItems.length} wardrobeItems={wardrobeItems} onGenerate={handleGenerate} onGoToCloset={() => setActiveTab(1)} wardrobeLoaded={wardrobeLoaded} />}
       {activeTab === 3 && <YourLooksTab onGoToVibe={() => setActiveTab(2)} generationStatus={generationStatus} outfits={generatedOutfits} generationError={generationError} recoveryMode={generationRecoveryMode} wardrobeItems={wardrobeItems} onRegenerate={handleRegenerate} onPersistInteraction={handlePersistInteraction} onMarkItemsWorn={handleMarkItemsWorn} savedOutfits={savedOutfits} setSavedOutfits={setSavedOutfits} wornOutfits={wornOutfits} setWornOutfits={setWornOutfits} generationContext={lastPayload} sessionsUsedThisWeek={sessionsUsedThisWeek} isVip={isVip} />}
 
       {/* Bottom tab bar */}
