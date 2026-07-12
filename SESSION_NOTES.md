@@ -10,6 +10,41 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 3 — 2026-07-12 — Background Removal polish + cold-launch flash fix (v1.0.4 Build 25)
+
+**Branch:** testing. `main` `062d15b` / `production` `ea8f0ca` (Build 15 live) / existing build tags UNCHANGED. Three new commits, pushed to `origin/testing`. New safety tag `v1.0.4-build25-br-polish-verified` (annotated, on `f711c5d`, pushed).
+
+**Commit(s):**
+- `951baa9` — `BackgroundRemovalModule.swift`: flip `croppedToInstancesExtent: false → true` so the Vision cutout crops to the garment bounding box.
+- `f6a39ed` — App.js: reword Add-item Best Results tip → "hang your item against a white or light wall".
+- `f711c5d` — App.js: gate both empty states (My Closet + Today's Vibe) behind a new `wardrobeLoaded` flag to stop the cold-launch empty-state flash.
+- (this docs commit) — SESSION_NOTES entry + CLAUDE.md CURRENT BUILD STATE pointer + `Clozie_Known_Issues_Backlog.md` updates.
+
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (SYSTEM_PROMPT untouched).
+
+### Goals
+Land three low-risk polish items in one build: (1) auto-crop cutouts so items fill their closet cards, (2) reword the photo hint, (3) kill the cold-launch flash where returning users briefly saw "add your first item" before their closet loaded.
+
+### What changed
+- **Auto-crop (Swift, 1 word):** `generateMaskedImage(..., croppedToInstancesExtent: true)`. Downstream compositing reads `foreground.extent`, so it adapts with no other change. Cutout now crops tight to the garment; `resizeMode="contain"` on the white card renders it larger/centered. No padding added (verified not needed).
+- **Hint reword (App.js:2309):** "photograph on a white or light background" → "hang your item against a white or light wall". 💡 kept, em-dash + UK "colours" preserved.
+- **Cold-launch flash (App.js, 7 edits):** new `wardrobeLoaded` state (false → true in loadItems `finally`, reset false on SIGNED_OUT). Both empty-state early returns now require `wardrobeLoaded &&`. Prop drilled into WardrobeTab + TodaysVibeTab. Returning-user-with-items no longer flashes the empty state; genuinely-empty closets get a brief harmless fall-through (accepted, Decision B).
+- **EAS Build 25** (`preview`, iOS, from `f711c5d`) — SUCCEEDED first try, buildNumber auto-incremented 24→25, no version bump (v1.0.4 train). No `eas submit`; IPA for Transporter.
+
+### Tests
+**On-device TestFlight (Build 25) — PASS on iPhone:** auto-crop — items fill cards, nothing clipped, no padding needed; hint text correct; cold-launch flash gone; Today's Vibe lands clean; add-item regression passes.
+
+### UNVERIFIED / known issues
+- None new. Remaining BR polish (soft shadow, re-process existing items) + Swift EXIF rotation fix stay in `Clozie_Known_Issues_Backlog.md`.
+
+### Notes / decisions
+- **Soft shadow DEFERRED** — looked at auto-crop on-device first; auto-crop alone reads clean, so shadow is now "decide after living with Build 25." Possible Build 26, not committed.
+- **Padding follow-up NOT needed** — tight crop verified clean (no cramped sleeves/straps).
+- **Hanger-in-frame policy DECIDED** — Policy A with B's common sense: a hanger in a cutout is embraced as a signature look, NOT engineered out.
+- Three separate named-file commits so any one is revertible alone; testing branch only; `main`/`production`/existing tags untouched; no Edge Function / SYSTEM_PROMPT / eas.json / Supabase changes.
+
+---
+
 ## Update 4 — Session 2 — 2026-07-11 — Background Removal wired into the REAL Add Item flow (v1.0.4 Build 24)
 
 **Branch:** testing. `main` `062d15b` / `production` `ea8f0ca` (Build 15 live) / all build tags UNCHANGED.
