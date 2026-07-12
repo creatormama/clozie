@@ -10,6 +10,43 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 2 — 2026-07-11 — Background Removal wired into the REAL Add Item flow (v1.0.4 Build 24)
+
+**Branch:** testing. `main` `062d15b` / `production` `ea8f0ca` (Build 15 live) / all build tags UNCHANGED.
+
+**Commit(s):**
+- `d845438` — App.js: wire background removal into the real Add Item flow (camera + library). Pushed to `origin/testing`.
+- (this docs commit) — CLAUDE.md CURRENT BUILD STATE + this entry + `Clozie_Known_Issues_Backlog.md` BR polish section.
+
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (SYSTEM_PROMPT untouched).
+
+### Goals
+Move Apple Vision background removal off the hidden VIP test surface and into the real Add Item flow so every user's wardrobe photo gets a clean cutout — without reintroducing the deferred ~90° rotation bug.
+
+### What changed
+Five surgical App.js edits (read-only reality check first; Swift/Edge/SYSTEM_PROMPT/eas.json/Supabase/wardrobeItems.js all untouched):
+1. New `isRemovingBg` state in WardrobeTab.
+2. New `applyBackgroundRemoval(uprightUri)` helper — calls `BackgroundRemoval.removeBackground` on the **EXIF-normalized `fixed.uri`** (never the raw pick, which is what sidesteps the rotation bug), `setPhotoUri(cutout)` on success, `finally` always clears the flag.
+3. `handleTakePhoto`: `await runRecognition(fixed.uri)` → `await Promise.all([runRecognition(fixed.uri), applyBackgroundRemoval(fixed.uri)])`.
+4. `handleUploadFile`: identical Promise.all swap.
+5. Add-to-Closet button gated on `isRemovingBg` in all 3 spots (disabled style, activeOpacity, disabled prop) — Add stays disabled until the cutout is ready, so tap-immediately users can never save the original.
+- Reality-check finding: the module returns a **white-background JPEG** (not a transparent PNG) — no alpha, so `uploadWardrobePhoto`'s hardcoded `image/jpeg` and all display surfaces already handle it byte-for-byte; nothing downstream needed changing. Recognition deliberately kept on `fixed.uri` (known-good input). Fallback: null/throw → `photoUri` stays `fixed.uri`, item saves normally, no error/blank.
+- **EAS Build 24** (`preview`, iOS, from `d845438`) — SUCCEEDED, buildNumber auto-incremented 23→24, no version bump (v1.0.4 train). No `eas submit`; IPA for Transporter.
+
+### Tests
+**On-device TestFlight (Build 24) — PASS on iPhone:** camera path AND library path both produce a background-removed cutout; 512px quality is clean (edges + print preservation held — newly proven at this size, Build 23 had tested on the raw full-res pick); the SAVED closet item is the cutout (not just the preview); recognition fields still auto-fill on both paths; BG removal finishes before recognition in practice, so the Add button re-enables with the cutout already in place → the bad-save race is closed.
+
+### UNVERIFIED / known issues
+- None new this session. (BR polish backlog — auto-crop, re-process existing items, soft shadow, hint text — plus the deferred Swift EXIF rotation fix are logged in `Clozie_Known_Issues_Backlog.md` as a future bundled "BR polish" pass.)
+
+### Notes / decisions
+- **Edit 6 (bar-mask) deliberately DROPPED** — forcing the recognition bar to `'scanning'` while `isRemovingBg` would have hidden real `error`/`no-key`/`offline` messages until BG finished. The button-gate alone closes the race; the rare cosmetic photo-swap glimpse while the button is greyed out is accepted.
+- **Serial deliberately replaced by PARALLEL** (`Promise.all`) at Grace's direction — users tap Add the instant it's tappable, so the serial version's post-recognition swap window would have been hit constantly. Verified `Promise.all` can never reject from BG (both `applyBackgroundRemoval` and `runRecognition` swallow their own errors), so recognition always lands.
+- **VIP-surface ~90° rotation accepted** as deferred — the real flow runs on the upright `fixed.uri`, so it's unaffected; the Swift EXIF fix stays backlogged.
+- Hard rules honored: no version bump, no `eas submit`, named-file commit only, testing branch only, `main`/`production`/tags untouched.
+
+---
+
 ## Update 4 — Session 1 — 2026-07-11 — Background Removal on SDK 57 — root cause found + FIXED, on-device VERIFIED (v1.0.4 Build 23)
 
 **Branch:** testing. `main` `062d15b` / `production` `ea8f0ca` (Build 15 live) / all build tags UNCHANGED. Six new commits, ALL LOCAL (unpushed) as of this entry.
