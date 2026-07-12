@@ -27,7 +27,7 @@ public class BackgroundRemovalModule: Module {
         let maskedPixelBuffer = try result.generateMaskedImage(
           ofInstances: result.allInstances,
           from: handler,
-          croppedToInstancesExtent: false
+          croppedToInstancesExtent: true
         )
 
         let foreground = CIImage(cvPixelBuffer: maskedPixelBuffer)
