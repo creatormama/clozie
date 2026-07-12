@@ -2306,7 +2306,7 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
           {/* Tip box */}
           <View style={wardrobeStyles.tipBox}>
             <Text style={wardrobeStyles.tipText}>
-              💡 Best results: photograph on a white or light background — Clozie reads colours more accurately.
+              💡 Best results: hang your item against a white or light wall — Clozie reads colours more accurately.
             </Text>
           </View>
 
