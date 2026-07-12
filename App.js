@@ -1452,6 +1452,7 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
   const [isSaving, setIsSaving] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [recognitionStatus, setRecognitionStatus] = useState(null);
+  const [isRemovingBg, setIsRemovingBg] = useState(false);
   const [autoFilledFields, setAutoFilledFields] = useState({});
   // Session 10B: search + category filter state
   const [searchVisible, setSearchVisible] = useState(false);
@@ -1745,6 +1746,24 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
     }
   };
 
+  // Background removal runs on the EXIF-normalized upright image (fixed.uri),
+  // NEVER the raw pick — feeding the raw pick reintroduces the ~90° rotation bug.
+  // Returns a white-background JPEG cutout, or null (iOS<17, Expo Go, Vision throw).
+  // isRemovingBg disables Add until this finishes, so the cutout is ready before the
+  // user can tap Add (no bad-save race). finally guarantees the flag always clears.
+  // On null/throw we leave photoUri as fixed.uri — user never sees an error or blank.
+  const applyBackgroundRemoval = async (uprightUri) => {
+    setIsRemovingBg(true);
+    try {
+      const cutout = await BackgroundRemoval.removeBackground(uprightUri);
+      if (cutout) setPhotoUri(cutout);
+    } catch (e) {
+      console.warn('[BG removal] threw, keeping original:', e);
+    } finally {
+      setIsRemovingBg(false);
+    }
+  };
+
   const handleTakePhoto = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -1769,7 +1788,7 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
       );
       clearStaleClozieFills();
       setPhotoUri(fixed.uri);
-      await runRecognition(fixed.uri);
+      await Promise.all([runRecognition(fixed.uri), applyBackgroundRemoval(fixed.uri)]);
     } catch (e) {
       console.log('Take photo error:', e);
       Alert.alert('Something went wrong', 'Please try again.', [{ text: 'OK' }]);
@@ -1801,7 +1820,7 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
       );
       clearStaleClozieFills();
       setPhotoUri(fixed.uri);
-      await runRecognition(fixed.uri);
+      await Promise.all([runRecognition(fixed.uri), applyBackgroundRemoval(fixed.uri)]);
     } catch (e) {
       console.log('Upload file error:', e);
       Alert.alert('Something went wrong', 'Please try again.', [{ text: 'OK' }]);
@@ -2377,10 +2396,10 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip }) {
           <TouchableOpacity
             style={[
               wardrobeStyles.addToClosetButton,
-              (!newItemName.trim() || isSaving || isScanning) && wardrobeStyles.addToClosetButtonDisabled,
+              (!newItemName.trim() || isSaving || isScanning || isRemovingBg) && wardrobeStyles.addToClosetButtonDisabled,
             ]}
-            activeOpacity={newItemName.trim() && !isSaving && !isScanning ? 0.8 : 1}
-            disabled={!newItemName.trim() || isSaving || isScanning}
+            activeOpacity={newItemName.trim() && !isSaving && !isScanning && !isRemovingBg ? 0.8 : 1}
+            disabled={!newItemName.trim() || isSaving || isScanning || isRemovingBg}
             onPress={editingItemId ? handleSaveEdit : handleAddItem}
           >
             <Text style={wardrobeStyles.addToClosetButtonText}>
