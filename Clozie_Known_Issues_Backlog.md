@@ -23,12 +23,20 @@ Deferred after Build 24 (2026-07-11) shipped background removal into the real Ad
 
 1. **AUTO-CROP (biggest visual win)** — ✅ DONE Build 25 (2026-07-12). Flipped `croppedToInstancesExtent: false → true` in `BackgroundRemovalModule.swift` (commit `951baa9`) so the Vision cutout crops to the garment bounding box; `resizeMode="contain"` then renders items larger/centered on the white card. On-device verified: items fill cards, nothing clipped — **padding follow-up NOT needed.**
 2. **RE-PROCESS EXISTING ITEMS (cheap — reuses shipped machinery)** — add a "Remove background" button in the Edit Item panel that runs the existing `applyBackgroundRemoval` helper on an item's current photo and re-saves. Fixes the mixed-background look of items added before Build 24 (puffer coat, raincoat, bracelet, etc.) without re-photographing. Same fallback rules: null/throw keeps the current photo.
-3. **SOFT SHADOW** — DEFERRED, decide after living with Build 25 (2026-07-12). Subtle drop shadow under the garment so it doesn't look pasted onto the white card. Pure cosmetic. Held because auto-crop alone (Build 25) already reads clean; possible Build 26 if still wanted. Native-only — would need its own build to tune.
+3. **SOFT SHADOW** — DEFERRED, now gated on TRANSPARENT PNG CUTOUTS shipping first (see Ideas / unscoped). Research (2026-07-12) upgraded this from "if still wanted" to EXPECTED COMPANION of transparency: cutouts without a shadow read as floating; a shadow baked into a white JPEG would be redone after the PNG switch, while a shadow under a transparent cutout works on every background. Subtle, one consistent recipe across all items. Pure cosmetic. Native-only — needs its own build to tune.
 4. **HINT TEXT (near-zero cost)** — ✅ DONE Build 25 (2026-07-12). Reworded the Best Results tip (App.js:2309) "photograph on a white or light background" → "hang your item against a white or light wall" (commit `f6a39ed`). Note: this shipped a BACKGROUND reword, NOT the original "smooth the garment flat" wrinkle idea — the wrinkle tip stays OPEN as a separate micro-item (wrinkles are the main remaining photo-quality limiter for flat-lay users).
 
 ## v1.0.4 train — cross-reference (tracked elsewhere, not duplicated here)
 
 - **Scheduled in `Clozie_NewFeatures_Roadmap_July4_2026.md`:** Nope reason chip + color learning Layers 2 & 3 + Manual Swap land in the v1.0.4 train; per-item rating lands around Pro.
+
+## Ideas / unscoped
+
+- **AUTO-ENHANCE LIGHTING** — strong Build 26 candidate (priority). Real-user photos in bad light look dim/muddy even after background removal; good-light photos look great (on-device verified by Grace, 2026-07-12). Research on-device Core Image auto-enhance (autoAdjustmentFilters: exposure/contrast/vibrance) applied in `BackgroundRemovalModule.swift` before or after the composite. Competitor context: Indyx "Enhance" (PhotoRoom API) and Whering "Enhance — fix bad lighting and creased fabric" both ship exactly this — table stakes. Read-only feasibility first.
+- **TRANSPARENT PNG CUTOUTS** — strong Build 26 candidate; pairs with Auto-Enhance (same Swift file). Research replacing the white-JPEG composite with an alpha-transparent PNG (the Vision mask already produces alpha — the white composite is the extra step). Fixes the white-rectangle-on-cream flaw on Mood Board polaroids + Hanger View. Trade-offs to audit: PNG file size, Supabase storage/load, mixed old+new item formats, every surface assuming white photos. Ships WITH a subtle soft shadow (see item 3 above) — transparent without shadow reads as floating.
+- **BULK ADD** — batch photo upload with queued recognition + BR and a review-later flow. Onboarding friction killer (adding 60 items one at a time). Medium feature, Pro-era candidate.
+- **PRODUCT-LINK IMPORT (someday)** — paste a retailer URL to import the official product photo for newly bought items (Indyx/Whering pattern). Cheap way to get perfect images for new purchases.
+- **OUTFIT PHOTO → ITEMS (someday, parked)** — extract garments from a photo of a worn outfit. Not feasible on-device today: needs server-side garment segmentation, and occlusion produces poor cutouts. Revisit only if we ever go server-side for other reasons.
 
 ---
 

@@ -10,6 +10,12 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — App Store Submission — 2026-07-12 — v1.0.4 (Build 25) submitted
+
+CORRECTION: live App Store version is 1.0.2 (Build 15), NOT 1.0.3/Build 19 — 1.0.3 (19) only ever reached TestFlight internal testing. Build 25 IPA (delivered via Transporter Jul 12, 8:34 AM) attached to new App Store Connect version 1.0.4; What's New used softened wording ("closet opens up smoother and cleaner", not "loads faster"); reviewer demo login re-verified on device pre-submit; Business Model note confirmed present. Submitted ~4:51 PM — Waiting for Review. Release: MANUAL. Keep existing rating. On approval: press Release, then tag v1.0.4-build25-appstore-live and fast-forward production. Zero code changes, zero deploys, cache 2,510.
+
+---
+
 ## Update 4 — Session 3 — 2026-07-12 — Background Removal polish + cold-launch flash fix (v1.0.4 Build 25)
 
 **Branch:** testing. `main` `062d15b` / `production` `ea8f0ca` (Build 15 live) / existing build tags UNCHANGED. Three new commits, pushed to `origin/testing`. New safety tag `v1.0.4-build25-br-polish-verified` (annotated, on `f711c5d`, pushed).
