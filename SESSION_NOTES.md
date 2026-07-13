@@ -49,6 +49,11 @@ Occasion-scoped (`.eq('occasion', occasion)`) + combination-level (whole `item_i
 - **All four outfit-quality issues from the 2026-07-12 diagnostic are now resolved** (Deploys 1–3 + Deploy 4).
 - **Reuse:** ~75% of this plumbing (rating+occasion history read → suppression block) is the foundation for the planned Nope-reason-chip feature (adds a `reason` column + reason-scoping to the same query/block). Not throwaway.
 
+### Release ritual (Build 25 → App Store LIVE, same session)
+- Apple approved v1.0.4 (Build 25); Grace pressed Release ~3 PM — **Build 25 / v1.0.4 is now the LIVE App Store build** (prior live was Build 15 / v1.0.2). The 1.0.4 train is CLOSED (next app code change → bump to 1.0.5 in `app.config.js` + `package.json`).
+- Git bookkeeping done: annotated tag `v1.0.4-build25-appstore-live` (tag-object `d219721`) on Build 25 commit `f711c5d` + `production` fast-forwarded `ea8f0ca` → `f711c5d` (clean ff through 37 commits, ff-enforced via `git push . f711c5d:production`), both pushed to origin. `main` `062d15b` untouched; stayed on `testing` throughout.
+- CLAUDE.md CURRENT BUILD STATE updated to match (bookkeeping DONE, production pointer `f711c5d`, Build 15 → was-live, running-log blob slimmed + archived to CLAUDE_ARCHIVE.md). Repo commits this session: `7f238d5` (Deploy 4 code + docs) → `28d45f1` (doc-accuracy edits).
+
 ---
 
 ## Update 4 — Session 4 — 2026-07-12 — Outfit-generation quality fixes (Edge Function Deploys 1–3)
