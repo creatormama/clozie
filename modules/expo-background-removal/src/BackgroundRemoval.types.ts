@@ -22,7 +22,9 @@ export interface RemoveBackgroundOptions {
   shadowOffsetX?: number;
   shadowOffsetY?: number;
   // Shadow tint, each channel 0..1. Soft gray, never pure black.
-  shadowColor?: { r: number; g: number; b: number };
+  shadowColorR?: number;
+  shadowColorG?: number;
+  shadowColorB?: number;
   // 'jpeg-white' (default) = today's composite-over-white JPEG.
   // 'png' = transparent cutout, no white composite.
   outputFormat?: 'jpeg-white' | 'png';
