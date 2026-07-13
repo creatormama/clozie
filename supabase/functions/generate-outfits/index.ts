@@ -586,11 +586,12 @@ function buildFreshContent(args: {
   items: Item[]
   recoveryMode: boolean
   recentOutfits: { name: string; vibe: string; itemNames: string[] }[]
+  dislikedOutfits: { name: string; itemNames: string[] }[]
   currentOutfits: { name: string; vibe: string; itemNames: string[] }[]
   styleNotesBlock: string | null
   displayNameById: Map<string, string>
 }): string {
-  const { styleProfile, temperature, condition, occasion, indoors, brief, briefFamily, pinned, items, recoveryMode, recentOutfits, currentOutfits, styleNotesBlock, displayNameById } = args
+  const { styleProfile, temperature, condition, occasion, indoors, brief, briefFamily, pinned, items, recoveryMode, recentOutfits, dislikedOutfits, currentOutfits, styleNotesBlock, displayNameById } = args
 
   const styles = styleProfile?.styles?.length ? styleProfile.styles.join(', ') : 'Not specified'
   const colours = styleProfile?.colours?.length ? styleProfile.colours.join(', ') : 'Not specified'
@@ -680,6 +681,20 @@ function buildFreshContent(args: {
     ? ['RECENT OUTFITS — already styled, avoid repeating these combinations:', ...recentLines].join('\n')
     : null
 
+  // Deploy 4 (Issue 2): occasion-scoped disliked combinations. Header carries the
+  // per-item guard so individual pieces stay available in other combinations.
+  // Item names ARE the pairing; name only as fallback when items are unresolved.
+  const dislikedLines = dislikedOutfits
+    .map(o => {
+      if (o.itemNames.length > 0) return `- ${o.itemNames.join(', ')}`
+      if (o.name) return `- "${o.name}"`
+      return null
+    })
+    .filter((line): line is string => line !== null)
+  const dislikedBlock = dislikedLines.length > 0
+    ? [`AVOID — she rated these ${occasion} combinations "not for me". Do not repeat these exact pairings (individual pieces are fine in different combinations):`, ...dislikedLines].join('\n')
+    : null
+
   return [
     `Style she loves: ${styles}`,
     `Colors she loves: ${colours}`,
@@ -697,6 +712,7 @@ function buildFreshContent(args: {
     '',
     ...(styleNotesBlock ? [styleNotesBlock, ''] : []),
     ...(currentBlock ? [currentBlock, ''] : []),
+    ...(dislikedBlock ? [dislikedBlock, ''] : []),
     ...(recentBlock ? [recentBlock, ''] : []),
     'WARDROBE POOL (sorted by preference):',
     buildCompressedPool(items, briefFamily, displayNameById),
@@ -1537,6 +1553,28 @@ Deno.serve(async (req) => {
     })
     console.log('[generate-outfits] recent outfit history:', recentOutfits.length, 'rows')
 
+    // Deploy 4 (Issue 2): Occasion-scoped Nope suppression. Reads the combinations
+    // she rated "not for me" FOR THIS OCCASION only (recent window of 8), so a combo
+    // disliked for e.g. Work · Office is advised against on the next Work · Office
+    // generate — but NOT for Going Out. Advisory only; fallback builders never see it.
+    // NEVER per-item (whole combination), NEVER permanent (occasion-scoped + limit 8).
+    const { data: dislikedRows } = await userClient
+      .from('outfit_history')
+      .select('name, item_ids')
+      .eq('rating', 'nope')
+      .eq('occasion', occasion)
+      .order('rated_at', { ascending: false })
+      .limit(8)
+    const dislikedOutfits = (dislikedRows || []).map(r => {
+      const ids = Array.isArray(r.item_ids) ? r.item_ids : []
+      const itemNames = ids
+        .map(id => wardrobeNameById.get(id))
+        .filter((n): n is string => Boolean(n))
+        .slice(0, 4)
+      return { name: r.name || '', itemNames }
+    }).filter(o => o.name || o.itemNames.length > 0)
+    console.log('[generate-outfits] disliked outfits (this occasion):', dislikedOutfits.length, 'rows')
+
     // Just-shown outfits (sent from client on regenerate). Names resolved against
     // the same wardrobeNameById Map as recent history — no extra DB query.
     const resolvedCurrentOutfits = currentOutfits.map((o: any) => {
@@ -1743,7 +1781,7 @@ Deno.serve(async (req) => {
     // 7. Try Anthropic. On any failure, fall back to stub silently.
     if (anthropicKey) {
       const userContent = buildFreshContent({
-        styleProfile, temperature, condition, occasion, indoors, brief, briefFamily, pinned, items: filteredItems, recoveryMode, recentOutfits, currentOutfits: resolvedCurrentOutfits, styleNotesBlock, displayNameById,
+        styleProfile, temperature, condition, occasion, indoors, brief, briefFamily, pinned, items: filteredItems, recoveryMode, recentOutfits, dislikedOutfits, currentOutfits: resolvedCurrentOutfits, styleNotesBlock, displayNameById,
       })
 
       const aiResult = await callAnthropic({

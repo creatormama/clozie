@@ -10,6 +10,47 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 4 (Deploy 4) — 2026-07-13 — Occasion-scoped Nope suppression (Issue 2)
+
+**Branch:** testing. `main` `062d15b` / `production` `ea8f0ca` (Build 15) / all build tags UNCHANGED. `index.ts` + docs to `origin/testing`.
+
+**Commit(s):**
+- (this commit) — `index.ts` (Deploy 4) + SESSION_NOTES entry + CLAUDE.md CURRENT BUILD STATE update.
+
+**Edge Function deploys:** 1 (`generate-outfits`, CLI `--use-api`, no `--yes`) — **Version 61**. **Cache token count:** 2,510 — SYSTEM_PROMPT byte-identical (lines 198–413 diffed IDENTICAL vs HEAD); `cache_read_input_tokens: 2510` verified on every usage line in Supabase Logs, `cache_creation 0`.
+
+### Goals
+Build the deferred Issue 2 from Session 4 (2026-07-12): make a "not for me" rating actually suppress that combination on the next generation — occasion-scoped, combination-level, advisory, zero SYSTEM_PROMPT touch. Full design in `DEPLOY4_HANDOFF.md`.
+
+### What changed (`index.ts` only — 6 edits, +38 net lines / +40 −2)
+- **New query (1556–1576):** reads `outfit_history` `.eq('rating','nope').eq('occasion', occasion).order('rated_at' desc).limit(8)`; maps `item_ids` → names via `wardrobeNameById` (the unfiltered pool, same as recent history); drops empties; logs `disliked outfits (this occasion): N`.
+- **`buildFreshContent` args (589) + destructure (594):** new `dislikedOutfits: { name; itemNames }[]`.
+- **AVOID block builder (684–696):** item names ARE the pairing (name as fallback); header carries the per-item guard "individual pieces are fine in different combinations"; omitted entirely when empty (same pattern as `recentBlock`).
+- **Placement (715):** in the user message between `currentBlock` and `recentBlock`.
+- **Handler wiring (1784):** `dislikedOutfits` threaded into the `buildFreshContent(...)` call.
+
+### Tests (iPhone + Supabase Logs) — PASS
+- Nope'd combo did NOT return on same-occasion regenerate; individual items still appear freely on other occasions; outfits look normal everywhere.
+- Logs: `disliked outfits (this occasion): 8 rows` firing on every generation (Work · Office, Going Out, Casual Day); `success — sonnet, 3 outfits` every call; `cache_read_input_tokens: 2510` on ALL usage lines; `cache_creation 0`.
+- The `8 rows` appearing on all occasions *before* today's Nope = pre-existing Nope history from weeks of testing already filling the limit-8 window. Expected, not a bug.
+
+### Constraints honored
+Occasion-scoped (`.eq('occasion', occasion)`) + combination-level (whole `item_ids` list, never a single piece) + never permanent (`.limit(8)` rolling window that decays naturally as new nopes arrive) + zero SYSTEM_PROMPT touch (user-message/JS only) → cache stayed 2,510.
+
+### UNVERIFIED / known limitations (conscious, accepted)
+- **Plain names in the AVOID line** (`wardrobeNameById`), NOT Deploy 3's disambiguated `displayNameById` — matches the recent-block precedent; advisory-only so identical-named twins reading slightly less precisely is acceptable.
+- **Legacy NULL-occasion rows** don't match `.eq('occasion', …)` → no-op, harmless. A nope only suppresses if that row recorded its occasion (normal in-session generate → rate does; a rate after a fresh reload where context was lost may not).
+- **Fallback path never sees the AVOID text** — `buildSmartFallback` / `buildStubOutfits` build from Item objects, not `buildFreshContent`. Rare degraded path; accepted.
+- **No dedup vs the recent-outfits block** — a nope'd combo may appear in both AVOID and RECENT blocks; both say "don't repeat," so it only reinforces. Left as-is (smaller change).
+
+### Notes / decisions
+- **July-12 deploy-state lesson applied:** verified live NOT by dashboard timestamp — pulled the deployed source back down from Supabase and grepped it, found all three markers (`disliked outfits (this occasion)`, `AVOID — she rated these…`, `.eq('rating','nope')`), byte-identical to the working copy. Working copy backed up + restored (sha match) around the download.
+- **SHA caveat:** the 198–413 region SHA came out `447bd72…`, not the handoff's noted `ce2cc53…` — a tooling/line-range mismatch, NOT a change. Authoritative proof = the byte-for-byte diff vs HEAD (IDENTICAL) + live `cache_read 2510`.
+- **All four outfit-quality issues from the 2026-07-12 diagnostic are now resolved** (Deploys 1–3 + Deploy 4).
+- **Reuse:** ~75% of this plumbing (rating+occasion history read → suppression block) is the foundation for the planned Nope-reason-chip feature (adds a `reason` column + reason-scoping to the same query/block). Not throwaway.
+
+---
+
 ## Update 4 — Session 4 — 2026-07-12 — Outfit-generation quality fixes (Edge Function Deploys 1–3)
 
 **Branch:** testing. `main` `062d15b` / `production` `ea8f0ca` (Build 15 live) / all build tags UNCHANGED. Docs + `index.ts` pushed to `origin/testing`.
