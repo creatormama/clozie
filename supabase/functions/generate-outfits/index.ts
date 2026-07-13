@@ -474,7 +474,44 @@ function findFabric(text: string | null | undefined): string | null {
 // Format: Name | Category | Colour [| fabric] [| Warmth]
 // Fabric only when NOT already in the name (else it doubles up). Warmth only on Outerwear.
 // Today's uploads get a "* " prefix.
-function buildCompressedPool(items: Item[], briefFamily: ColorFamily | null = null): string {
+// Issue 3: build a stable id → display-name map. When 2+ items share the same
+// (trimmed, lowercased) name, Sonnet can't tell them apart and the name→id mapper
+// collapses them — one twin becomes unreachable. Disambiguate collided names with the
+// colour (falling back to a numeric suffix when the colours also match). Computed once
+// over the FULL item set so the pool renderer and the mapper agree on every display name.
+function disambiguateNames(items: Item[]): Map<string, string> {
+  const groups = new Map<string, Item[]>()
+  for (const item of items) {
+    const key = (item.name || '').trim().toLowerCase()
+    if (!key) continue
+    const arr = groups.get(key)
+    if (arr) arr.push(item)
+    else groups.set(key, [item])
+  }
+  const displayById = new Map<string, string>()
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      displayById.set(group[0].id, group[0].name)
+      continue
+    }
+    const colourCounts = new Map<string, number>()
+    for (const g of group) {
+      const c = (g.colour || '').trim().toLowerCase()
+      colourCounts.set(c, (colourCounts.get(c) || 0) + 1)
+    }
+    let n = 0
+    for (const g of group) {
+      n += 1
+      const c = (g.colour || '').trim()
+      const colourUnique = c.length > 0 && colourCounts.get(c.toLowerCase()) === 1
+      const suffix = colourUnique ? ` (${c})` : ` (#${n})`
+      displayById.set(g.id, `${g.name}${suffix}`)
+    }
+  }
+  return displayById
+}
+
+function buildCompressedPool(items: Item[], briefFamily: ColorFamily | null = null, displayNameById: Map<string, string> | null = null): string {
   const sorted = [...items].sort((a, b) => {
     // Session 6 (Update 1): Brief color lift. When the user names a color in
     // their Brief (e.g. "navy"), items whose COLOUR field resolves to that
@@ -494,7 +531,7 @@ function buildCompressedPool(items: Item[], briefFamily: ColorFamily | null = nu
 
   return sorted.map(item => {
     const todayMark = isToday(item.createdAt) ? '* ' : ''
-    const parts = [item.name, item.category, item.colour || '—']
+    const parts = [displayNameById?.get(item.id) ?? item.name, item.category, item.colour || '—']
 
     // Fabric: only if NOT already in the name. Try notes if name has none.
     const nameFabric = findFabric(item.name)
@@ -551,8 +588,9 @@ function buildFreshContent(args: {
   recentOutfits: { name: string; vibe: string; itemNames: string[] }[]
   currentOutfits: { name: string; vibe: string; itemNames: string[] }[]
   styleNotesBlock: string | null
+  displayNameById: Map<string, string>
 }): string {
-  const { styleProfile, temperature, condition, occasion, indoors, brief, briefFamily, pinned, items, recoveryMode, recentOutfits, currentOutfits, styleNotesBlock } = args
+  const { styleProfile, temperature, condition, occasion, indoors, brief, briefFamily, pinned, items, recoveryMode, recentOutfits, currentOutfits, styleNotesBlock, displayNameById } = args
 
   const styles = styleProfile?.styles?.length ? styleProfile.styles.join(', ') : 'Not specified'
   const colours = styleProfile?.colours?.length ? styleProfile.colours.join(', ') : 'Not specified'
@@ -650,18 +688,18 @@ function buildFreshContent(args: {
     `Occasion: ${occasion}`,
     `Indoor: ${indoors ? 'Yes' : 'No'}`,
     `Brief: ${brief && brief.trim() ? brief.trim() : 'None'}`,
-    `Must Include: ${pinned ? pinned.name : 'None'}`,
+    `Must Include: ${pinned ? (displayNameById.get(pinned.id) ?? pinned.name) : 'None'}`,
     '',
     'STYLING NOTES:',
     stylingLines,
     '',
-    'DRESS RULE: A dress is a complete outfit. Never pair a dress with bottoms. Shoes and outerwear are fine with a dress.',
+    'DRESS RULE: A dress is a complete outfit. Never pair a dress with bottoms, and never add a separate top over or under a dress unless the Brief clearly asks for layering. Shoes and outerwear are fine with a dress.',
     '',
     ...(styleNotesBlock ? [styleNotesBlock, ''] : []),
     ...(currentBlock ? [currentBlock, ''] : []),
     ...(recentBlock ? [recentBlock, ''] : []),
     'WARDROBE POOL (sorted by preference):',
-    buildCompressedPool(items, briefFamily),
+    buildCompressedPool(items, briefFamily, displayNameById),
   ].join('\n')
 }
 
@@ -786,8 +824,9 @@ function validateAndMapOutfits(args: {
   aiOutfits: any[]
   items: Item[]
   pinned: Item | null
+  displayNameById: Map<string, string>
 }): Array<{ id: string; vibe: string; name: string; description: string; items: string[]; styleMatchScore: number }> | null {
-  const { aiOutfits, items, pinned } = args
+  const { aiOutfits, items, pinned, displayNameById } = args
 
   if (aiOutfits.length < REQUESTED_OUTFITS) {
     console.log('[generate-outfits] AI returned fewer than', REQUESTED_OUTFITS, 'outfits:', aiOutfits.length)
@@ -796,11 +835,22 @@ function validateAndMapOutfits(args: {
   // Take exactly REQUESTED_OUTFITS, even if AI returned more.
   const limited = aiOutfits.slice(0, REQUESTED_OUTFITS)
 
-  // Build lowercase-trimmed name → UUID lookup.
+  // Build lowercase-trimmed name → UUID lookup. Issue 3: prefer disambiguated display
+  // names so twins with the same base name each resolve to the correct item. Keep the
+  // plain name as a fallback key (pinned twin preferred) so a suffix Sonnet forgot to
+  // echo still resolves instead of failing the whole generation into a fallback.
   const nameToId = new Map<string, string>()
   for (const item of items) {
     const key = (item.name || '').trim().toLowerCase()
-    if (key) nameToId.set(key, item.id)
+    if (key && !nameToId.has(key)) nameToId.set(key, item.id)
+  }
+  if (pinned) {
+    const pk = (pinned.name || '').trim().toLowerCase()
+    if (pk) nameToId.set(pk, pinned.id)
+  }
+  for (const item of items) {
+    const display = (displayNameById.get(item.id) ?? item.name ?? '').trim().toLowerCase()
+    if (display) nameToId.set(display, item.id)
   }
 
   const mapped: Array<{ id: string; vibe: string; name: string; description: string; items: string[]; styleMatchScore: number }> = []
@@ -839,8 +889,12 @@ function validateAndMapOutfits(args: {
       itemIds.push(id)
     }
 
+    // Issue 3: dedupe item ids within the outfit (Sonnet occasionally echoes a name
+    // twice — e.g. a collided name — which would list the same piece twice).
+    const uniqueItemIds = Array.from(new Set(itemIds))
+
     // Pinned item must appear in every outfit.
-    if (pinned && !itemIds.includes(pinned.id)) {
+    if (pinned && !uniqueItemIds.includes(pinned.id)) {
       console.log('[generate-outfits] outfit missing pinned item:', pinned.name)
       return null
     }
@@ -855,7 +909,7 @@ function validateAndMapOutfits(args: {
       vibe,
       name,
       description,
-      items: itemIds,
+      items: uniqueItemIds,
       styleMatchScore,
     })
   }
@@ -1139,6 +1193,24 @@ function applySafetyFilters(args: {
     })
     if (filtered.length !== before) {
       console.log(`[generate-outfits] Hot/Warm name-pattern filter dropped ${before - filtered.length} heavy outerwear items`)
+    }
+  }
+
+  // Hot + non-layering occasion — drop ALL outerwear (unless pinned). Closes the
+  // "light jacket in Hot weather" gap: the heavy-outerwear name filter above misses
+  // light/denim/blazer jackets, and the warmth-column C2 is dormant. Layering occasions
+  // (Work · Office / Going Out / Formal Event) keep outerwear — a light blazer or
+  // structured jacket is a legitimate style choice there. Skipped when Indoor is ON.
+  const HOT_LAYERING_OCCASIONS = new Set(['Work · Office', 'Going Out', 'Formal Event'])
+  if (!indoors && temperature === 'Hot' && !HOT_LAYERING_OCCASIONS.has(occasion)) {
+    const before = filtered.length
+    filtered = filtered.filter(i => {
+      if (i.id === pinnedItemId) return true
+      if (i.category === 'Outerwear') return false
+      return true
+    })
+    if (filtered.length !== before) {
+      console.log(`[generate-outfits] Hot non-layering filter dropped ${before - filtered.length} outerwear items`)
     }
   }
 
@@ -1454,6 +1526,7 @@ Deno.serve(async (req) => {
       .order('created_at', { ascending: false })
       .limit(6)
     const wardrobeNameById = new Map(items.map(i => [i.id, i.name]))
+    const displayNameById = disambiguateNames(items)
     const recentOutfits = (historyRows || []).map(r => {
       const ids = Array.isArray(r.item_ids) ? r.item_ids : []
       const itemNames = ids
@@ -1670,7 +1743,7 @@ Deno.serve(async (req) => {
     // 7. Try Anthropic. On any failure, fall back to stub silently.
     if (anthropicKey) {
       const userContent = buildFreshContent({
-        styleProfile, temperature, condition, occasion, indoors, brief, briefFamily, pinned, items: filteredItems, recoveryMode, recentOutfits, currentOutfits: resolvedCurrentOutfits, styleNotesBlock,
+        styleProfile, temperature, condition, occasion, indoors, brief, briefFamily, pinned, items: filteredItems, recoveryMode, recentOutfits, currentOutfits: resolvedCurrentOutfits, styleNotesBlock, displayNameById,
       })
 
       const aiResult = await callAnthropic({
@@ -1680,7 +1753,7 @@ Deno.serve(async (req) => {
       })
 
       if (aiResult) {
-        const mapped = validateAndMapOutfits({ aiOutfits: aiResult.outfits, items, pinned })
+        const mapped = validateAndMapOutfits({ aiOutfits: aiResult.outfits, items, pinned, displayNameById })
         if (mapped) {
           // SESSION 17F STEP 4: Server-side structural validation (belt-and-suspenders
           // even though SYSTEM_PROMPT Rule 13 instructs Sonnet to enforce structure).

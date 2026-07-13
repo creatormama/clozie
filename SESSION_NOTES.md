@@ -10,6 +10,40 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 4 — 2026-07-12 — Outfit-generation quality fixes (Edge Function Deploys 1–3)
+
+**Branch:** testing. `main` `062d15b` / `production` `ea8f0ca` (Build 15 live) / all build tags UNCHANGED. Docs + `index.ts` pushed to `origin/testing`.
+
+**Commit(s):**
+- (this commit) — `index.ts` (Deploys 1–3) + SESSION_NOTES entry + CLAUDE.md running-log line + new `DEPLOY4_HANDOFF.md`.
+
+**Edge Function deploys:** 3 (all `generate-outfits`, CLI `--use-api`, no `--yes`). **Cache token count:** 2,510 — SYSTEM_PROMPT byte-identical across all three (region SHA `ce2cc53…`); `cache_read_input_tokens: 2510` verified on iPhone after every deploy.
+
+### Goals
+Read-only diagnostic of four outfit-generation issues, then land the three cheapest correct fixes + one nudge — zero SYSTEM_PROMPT touch, each deploy iPhone-verified before the next. Issue 2 (Nope suppression) scoped but DEFERRED — see `DEPLOY4_HANDOFF.md`.
+
+### What changed (`index.ts` only)
+- **Deploy 1 — Issue 4 (Hot outerwear):** new block in `applySafetyFilters`. When `temperature === 'Hot'` AND occasion NOT in {Work · Office, Going Out, Formal Event}, drop ALL Outerwear (pinned exempt). Closes the "light jacket in Hot" gap — the pre-existing Hot filter only dropped `HEAVY_OUTERWEAR` regex; warmth-column C2 is dormant. Layering occasions keep light blazers.
+- **Deploy 2 — Issue 1 (tee+dress):** one-clause nudge on the DRESS RULE line in `buildFreshContent` (USER MESSAGE, not SYSTEM_PROMPT) — "never add a separate top over or under a dress unless the Brief clearly asks for layering." Soft; deliberate layering still allowed.
+- **Deploy 3 — Issue 3 (twin names) + itemIds dedupe:** new `disambiguateNames(items)` → id→display-name map; collided names get a `(colour)` suffix (or `(#n)` when colours also match). Threaded into `buildCompressedPool` (pool lines), the `Must Include` line, and `validateAndMapOutfits` (name→id lookup). Mapper keeps plain-name fallback keys with the **pinned twin owning its plain key** so a dropped-suffix pin still resolves (net = fewer collision fallbacks). `itemIds` deduped per outfit via `new Set`.
+
+### Tests (iPhone, per deploy)
+- **Deploy 1 PASS:** Hot + Casual Day → no jacket; Hot + Work · Office → blazer kept; other temps unaffected; cache 2510.
+- **Deploy 2 PASS:** dresses normal, filters healthy, cache 2510.
+- **Deploy 3 PASS:** brief "jeans" surfaced BOTH twins (Mid-Wash Indigo appeared — previously impossible); pinning Indigo → in all 3 outfits, no collision fallback; both parachute pants reachable; sonnet successes across occasions, no `could not map name to UUID`; cache 2510.
+
+### UNVERIFIED / known issues
+- **Issue 2 (Nope suppression) NOT built** — scoped + designed, deferred. Full handoff in `DEPLOY4_HANDOFF.md`.
+- **Forgot-pin fallback UNCHANGED (out of scope):** a pinned item Sonnet simply omits from one of 3 outfits still logs `outfit missing pinned item` → fallback. Deploy 3 fixes only the *collision* cause, not Sonnet obedience — and both causes print the identical log line (indistinguishable in logs).
+- **Two-blazers 4th structural check** — deferred, watch only.
+
+### Notes / decisions
+- **DEPLOY-STATE GOTCHA (caught tonight):** Step 3 was reviewed + edited but the deploy was never run; a dashboard "deployed 22 min ago" timestamp actually matched Deploy 2 (~19:06), so all twin tests unknowingly ran on pre-Step-3 code (only Optic White ever appeared — the collision bug). Caught by comparing the dashboard timestamp against actual deploy history. **Lesson: verify deploy state FIRST (deploy history, not just a timestamp) before interpreting test results.**
+- Zero SYSTEM_PROMPT changes; cache 2,510 held across all three (SHA `ce2cc53…`). Fixes are JS/user-message only; schema stays name-based in the cached prompt.
+- Fallback builders (`buildSmartFallback` / `buildStubOutfits`) never see the DRESS RULE nudge or disambiguation — they build from Item objects directly. Accepted.
+
+---
+
 ## Update 4 — App Store Submission — 2026-07-12 — v1.0.4 (Build 25) submitted
 
 CORRECTION: live App Store version is 1.0.2 (Build 15), NOT 1.0.3/Build 19 — 1.0.3 (19) only ever reached TestFlight internal testing. Build 25 IPA (delivered via Transporter Jul 12, 8:34 AM) attached to new App Store Connect version 1.0.4; What's New used softened wording ("closet opens up smoother and cleaner", not "loads faster"); reviewer demo login re-verified on device pre-submit; Business Model note confirmed present. Submitted ~4:51 PM — Waiting for Review. Release: MANUAL. Keep existing rating. On approval: press Release, then tag v1.0.4-build25-appstore-live and fast-forward production. Zero code changes, zero deploys, cache 2,510.
