@@ -9,7 +9,7 @@ class BackgroundRemovalModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("BackgroundRemoval")
 
-    AsyncFunction("removeBackground") { _: String ->
+    AsyncFunction("removeBackground") { _: String, _: Map<String, Any?>? ->
       return@AsyncFunction null as String?
     }
   }
