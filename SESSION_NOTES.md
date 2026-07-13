@@ -10,6 +10,51 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 5 — 2026-07-13 — Build 26 opener: version bump 1.0.5 + read-only feasibility audit
+
+**Branch:** testing (HEAD `49b19c0`). `main` `062d15b` / `production` `f711c5d` (Build 25 live) / tag `v1.0.4-build25-appstore-live` — all UNCHANGED. Commit to `origin/testing` only when Grace says push.
+
+**Commit(s):**
+- (this commit) — `app.config.js` + `package.json` (version 1.0.4 → 1.0.5) + `CLAUDE.md` (VERIFICATION RULES section + CURRENT BUILD STATE line) + `SESSION_NOTES.md` (this entry) + new `BUILD26_FEASIBILITY_FINDINGS.md`.
+
+**Edge Function deploys:** 0. **Cache token count:** 2,510 — SYSTEM_PROMPT NOT touched. No Edge Function / eas.json / Supabase changes.
+
+### Goals
+Open the 1.0.5 train (mandatory VERSION RULE gate after Build 25 shipped) and run a READ-ONLY Build 26 feasibility audit: transparent PNG cutouts + auto-enhance + baked silhouette shadow + parameterized Swift module + re-process migration + EXIF rider. Zero code changes beyond the two version strings.
+
+### What changed
+- **Part A (only code-file change):** `app.config.js:7` `version '1.0.4' → '1.0.5'` + `package.json:3` `"version" "1.0.4" → "1.0.5"`. `buildNumber` untouched (EAS auto-increments). Mirrors the Session 5 (Update 2) two-file pattern that fixed the Build 13 rejection.
+- **Part B:** read the live code, wrote `BUILD26_FEASIBILITY_FINDINGS.md` (Q1–Q9, each claim marked VERIFIED file:line or NOT CHECKED). No code touched in Part B.
+- **CLAUDE.md:** added permanent VERIFICATION RULES section (before GOLDEN RULES) + CURRENT BUILD STATE "Last updated" line for the 1.0.5 train open + audit done.
+
+### Key verified findings
+- BG removal is LIVE in Build 25 (App.js:41, 1791, 1823 — Promise.all on EXIF-fixed `fixed.uri`); the SHELVED doc is stale. Code wins.
+- Alpha cutout exists at Swift:33 BEFORE the white composite (Swift:34-35) → transparent PNG = delete composite + swap encoder, not new segmentation.
+- Module takes only `imageUri` today (Swift:9, .ts:4) → needs a one-time `options` arg (native build); all later value-tuning is JS-only.
+- `expo-updates` NOT installed → no OTA; tuning ships via TestFlight builds.
+- PNG measured ~4× the JPEG (~250 KB vs ~60 KB at 512px) — accepted as the industry price.
+- Only processed 512px images are stored — no originals kept (App.js:1782-1790).
+
+### Build 26 scope LOCKED (Grace's decisions this session)
+- ONE native (Swift) build bundles: parameterized `options`, auto-enhance (before mask), transparent PNG output, baked silhouette shadow (industry recipe defaults), + EXIF rotation rider. After that, tuning = JS-only.
+- Re-process = manual opt-in "Refresh closet photos" row in SETTINGS only (never auto, never in My Closet UI); keep-old-on-fail; LOWEST priority, built last, cut without hesitation if heavy; its UI gets a design mini-session with a mockup before any code.
+- PNG accepted (HEIC/WebP explicitly rejected as riskier). Wrinkle hint REMOVED from Build 26 scope — existing hint untouched.
+
+### Tests
+None — read-only audit + two version-string edits. Diff verified: only the two version lines changed, `buildNumber` untouched.
+
+### UNVERIFIED / NOT CHECKED
+- True Vision cutout PNG size (measured on a proxy photo, not a real cutout).
+- Vision re-segmentation quality on stored white JPEGs, esp. light/cream garments (can't run Vision off-device).
+- Visual look of transparency on `cover`-mode surfaces + Share Card (needs one on-device pass).
+- Whether an `expo-dev-client` tuning path exists (would make JS tuning hot-reload without builds).
+- Supabase `wardrobe-photos` bucket format policy (30-sec dashboard confirm before shipping PNG).
+
+### Notes
+- VERIFICATION RULES adopted as permanent project rules this session (now in CLAUDE.md). Flag-2 correction (BG removal not shelved — live in Build 25) verified against code, exactly the failure mode the rules target.
+
+---
+
 ## Update 4 — Session 4 (Deploy 4) — 2026-07-13 — Occasion-scoped Nope suppression (Issue 2)
 
 **Branch:** testing. `main` `062d15b` / `production` `ea8f0ca` (Build 15) / all build tags UNCHANGED. `index.ts` + docs to `origin/testing`.

@@ -46,6 +46,8 @@ Standing facts:
 This is the load-bearing snapshot of "where Clozie stands right now." When a state fact changes (new build ships, Edge Function deploys, cache token count moves, Expo SDK upgrades), update THIS section. Session-by-session narrative for all legacy sessions through Build 12 lives below in this file + CLAUDE_ARCHIVE.md. From Update 1 onward, session narrative lives in SESSION_NOTES.md.
 
 Last updated: **2026-07-13 — Update 4, Session 4 (Deploy 4):** occasion-scoped Nope suppression shipped (`generate-outfits` **Version 61**) — a "not for me" rating now suppresses that exact combination on the next same-occasion generate. **All four 2026-07-12 outfit-quality issues are now resolved (Deploys 1–4)**, cache **2,510**, zero SYSTEM_PROMPT change. **Build 25 / v1.0.4 is LIVE on the App Store** (Apple-approved + Grace pressed Release 2026-07-13); the **1.0.4 train is CLOSED** — next app code change requires a 1.0.5 bump in `app.config.js` + `package.json`. Full session detail lives in **SESSION_NOTES.md**; older running-log history was archived to **CLAUDE_ARCHIVE.md** (2026-07-13).
+
+**2026-07-13 — Build 26 opener:** version bumped 1.0.4 → 1.0.5 in `app.config.js` + `package.json` (testing branch) — the 1.0.5 train is now OPEN. Read-only Build 26 feasibility audit completed (transparent PNG cutouts + auto-enhance + baked silhouette shadow + parameterized Swift module + re-process migration + EXIF rider); full findings in **BUILD26_FEASIBILITY_FINDINGS.md**. Zero Edge Function / SYSTEM_PROMPT / eas.json / Supabase changes; cache stays **2,510**. Background removal confirmed LIVE in Build 25 (verified against code, not the stale SHELVED doc).
 Original: March 24 2026 — REBUILD RULE and testing branch rule added.
 
 ---
@@ -945,6 +947,16 @@ To test on iPhone:
 
 The terminal commands Grace types are: cd ~/Desktop/Clozie\ Native, then nvm use 20 && npx expo start (no tunnel needed, LAN mode works).
 Everything else — building, fixing, labelling — is done through Claude Code in plain English.
+
+---
+
+# VERIFICATION RULES — PERMANENT
+
+- Never describe code from memory. Before stating anything that will be acted on (a commit, build, deploy, or plan decision), read the actual file first.
+- Docs describe history; code describes NOW. Never treat old session docs, SHELVED files, or stale CLAUDE.md lines as the source of truth about current code. When docs and code disagree, the code wins — verify against the code.
+- If something hasn't been verified, say "I haven't checked this" — never guess, never fill gaps with plausible assumptions.
+- After every edit, read the changed lines back and show them — don't claim success without looking.
+- In any findings or audit document, mark each claim VERIFIED (file + line) or NOT CHECKED. Nothing in between.
 
 ---
 
