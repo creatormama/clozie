@@ -10,6 +10,54 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 6 — 2026-07-13 — Build 26: background-removal Swift parameterization + JS wiring (NO EAS build)
+
+**Branch:** testing (HEAD `a2fc8bf`). `main` `062d15b` / `production` `f711c5d` (Build 25 live) / tag `v1.0.4-build25-appstore-live` (→ `f711c5d`) — all UNCHANGED. No push this session unless Grace says.
+
+**Commit(s):** 8 per-step commits, named files only, no amend:
+- `da892f7` Step 1 — options contract (types.ts + wrapper .ts + web stub + Android .kt)
+- `e62b08a` Step 2 — Swift accepts options Record (no-op defaults) + flatten shadowColor→R/G/B in types.ts
+- `db80052` Step 3 — Swift EXIF rotation rider (UIImage.normalizedUp)
+- `7adb38b` Step 4 — Swift transparent PNG branch (opt-in)
+- `dbca755` Step 5 — Swift auto-enhance (opt-in, autoAdjustmentFilters)
+- `6805dd9` Step 6 — Swift baked silhouette shadow (opt-in) [commit MESSAGE cosmetically garbled by a zsh backtick-substitution; CODE correct + full-file verified; left as-is per never-amend]
+- `b258c63` Step 7 — uploadWardrobePhoto derives extension + content-type
+- `a2fc8bf` Step 8 — wire CUTOUT_OPTIONS into both call sites (feature ON)
+
+**Edge Function deploys:** 0. **Cache token count:** 2,510 — SYSTEM_PROMPT NOT touched. No Edge Function / eas.json / app.config.js / package.json / Supabase changes.
+
+### Goals
+Land ALL native (Swift) work for Build 26 in one pass so future shadow/enhance tuning is JS-only, then wire it on — WITHOUT an EAS build (that is Session 2). Follow BUILD26_FEASIBILITY_FINDINGS.md.
+
+### What changed (7 files, +199/−19 vs opener 05d895e)
+- **Swift module fully parameterized** (`ios/BackgroundRemovalModule.swift`): `removeBackground(imageUri, options?)`. Pipeline now: load → EXIF-normalize (`normalizedUp`) → auto-enhance (opt-in) → Vision mask → foreground → baked shadow (opt-in) → subject → PNG or jpeg-white encode. `RemoveBackgroundOptions` Record with all NO-OP defaults (enhance 0, shadow 0, jpeg-white).
+- **Contract widened** across TS wrapper, web stub, Android Kotlin stub; wrapper forwards the 2nd arg only when defined.
+- **uploadWardrobePhoto** (`src/lib/wardrobeItems.js`) derives ext + contentType from the file (png vs jpg).
+- **App.js**: module-scope `CUTOUT_OPTIONS` (png, enhance 1.0, shadowOpacity 0.40, blur 18, offsetY 12, gray 0.3) passed to both `removeBackground` call sites (production add flow + Settings diagnostics modal).
+
+### Design guarantees
+- With no options / defaults, every opt-in is a no-op → output byte-identical to Build 25. The new look is turned on ENTIRELY by App.js passing CUTOUT_OPTIONS (Step 8). Reverting `a2fc8bf` alone restores Build 25 behavior with the machinery dormant.
+- One identical shadow/enhance recipe catalog-wide; all values JS-tunable (rebuild, never a Swift recompile).
+- No 1-arg removeBackground call remains on device.
+
+### Tests
+NONE possible this session — the Vision module returns null in Expo Go, and `testing` runs SDK 57 (Expo Go can't load it). Verified by inspection + git scope only. All on-device proof is Session 2's TestFlight build.
+
+### UNVERIFIED / NOT CHECKED (Session 2 checklist, priority order)
+1. **PNG alpha preservation** — `CIContext.createCGImage(foreground)` + `pngData()` must yield transparency, not black. #1 risk; isolated to the PNG branch if it fails.
+2. Auto-enhance look on real garments (autoAdjustmentFilters may over-correct → lower enhanceStrength, JS-only).
+3. Shadow geometry — offset sign for "downward" (CI y-up); if shadow lands above, flip `shadowOffsetY` sign, JS-only.
+4. EXIF rider on a genuinely rotated input (test modal raw pick).
+5. ~4× file size on real cutouts; closet grid load time.
+6. Kotlin/Swift/Expo optional-arg + Record conversion all compile (no local compiler).
+
+### Notes
+- Supabase `wardrobe-photos` bucket verified by Grace in dashboard 2026-07-13: MIME = Any, 50 MB limit → PNG allowed, NO dashboard change made.
+- `expo-dev-client` NOT installed (read-only check) → Session 2 tuning ships via TestFlight builds unless a dev-client is added later (its own native build).
+- Step 6 commit-message garble is cosmetic only; committed Swift is byte-correct.
+
+---
+
 ## Update 4 — Session 5 — 2026-07-13 — Build 26 opener: version bump 1.0.5 + read-only feasibility audit
 
 **Branch:** testing (HEAD `49b19c0`). `main` `062d15b` / `production` `f711c5d` (Build 25 live) / tag `v1.0.4-build25-appstore-live` — all UNCHANGED. Commit to `origin/testing` only when Grace says push.
