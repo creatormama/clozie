@@ -1,5 +1,5 @@
 // Helpers for reading/writing wardrobe items + photos in Supabase.
-// Photos live at {user_id}/{filename}.jpg in the wardrobe-photos bucket.
+// Photos live at {user_id}/{filename}.{jpg|png} in the wardrobe-photos bucket.
 // Errors are thrown so callers can show a warm Clozie message.
 
 import { supabase } from './supabase';
@@ -30,13 +30,25 @@ export async function fetchWardrobeItems() {
   return data.map(rowToItem);
 }
 
+// Derive the file extension + MIME type from the actual local file URI.
+// PNG cutouts (transparent) upload as image/png; everything else (jpeg-white
+// cutout or the plain-JPEG fallback) uploads as image/jpeg — matching Build 25.
+function extAndTypeFromUri(uri) {
+  const clean = String(uri || '').split('?')[0].split('#')[0];
+  const dot = clean.lastIndexOf('.');
+  const ext = dot >= 0 ? clean.slice(dot + 1).toLowerCase() : '';
+  if (ext === 'png') return { ext: 'png', contentType: 'image/png' };
+  return { ext: 'jpg', contentType: 'image/jpeg' };
+}
+
 export async function uploadWardrobePhoto(localUri, userId) {
-  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
+  const { ext, contentType } = extAndTypeFromUri(localUri);
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
   const path = `${userId}/${filename}`;
   const arrayBuffer = await fetch(localUri).then((r) => r.arrayBuffer());
   const { error } = await supabase.storage
     .from(BUCKET)
-    .upload(path, arrayBuffer, { contentType: 'image/jpeg', upsert: false });
+    .upload(path, arrayBuffer, { contentType, upsert: false });
   if (error) throw error;
   return path;
 }
