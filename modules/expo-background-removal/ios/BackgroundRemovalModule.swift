@@ -34,6 +34,37 @@ private extension UIImage {
   }
 }
 
+// Auto-enhance a CGImage using Core Image's autoAdjustmentFilters, blended with the
+// original by `strength` (0 = original, 1 = fully corrected). Returns the input
+// unchanged when strength <= 0 or on any failure — never breaks the pipeline.
+fileprivate func autoEnhancedCGImage(_ cgImage: CGImage, strength: Double) -> CGImage {
+  guard strength > 0 else { return cgImage }
+  let original = CIImage(cgImage: cgImage)
+  var enhanced = original
+  for filter in original.autoAdjustmentFilters() {
+    filter.setValue(enhanced, forKey: kCIInputImageKey)
+    if let out = filter.outputImage {
+      enhanced = out
+    }
+  }
+  let t = min(max(strength, 0), 1)
+  let blended: CIImage
+  if t >= 1 {
+    blended = enhanced
+  } else if let mix = CIFilter(name: "CIDissolveTransition", parameters: [
+    kCIInputImageKey: original,
+    kCIInputTargetImageKey: enhanced,
+    kCIInputTimeKey: t
+  ])?.outputImage {
+    blended = mix
+  } else {
+    blended = enhanced
+  }
+  let ctx = CIContext()
+  guard let out = ctx.createCGImage(blended, from: original.extent) else { return cgImage }
+  return out
+}
+
 public class BackgroundRemovalModule: Module {
   public func definition() -> ModuleDefinition {
     Name("BackgroundRemoval")
@@ -52,9 +83,14 @@ public class BackgroundRemovalModule: Module {
       let upright = input.normalizedUp()
       guard let cgImage = upright.cgImage else { return nil }
 
+      // Auto-enhance (opt-in via enhanceStrength > 0), applied BEFORE masking on the
+      // EXIF-normalized image. Best-effort: any failure falls back to the original.
+      // enhanceStrength defaults to 0, so this is a no-op unless App.js opts in.
+      let processedCG = autoEnhancedCGImage(cgImage, strength: options?.enhanceStrength ?? 0)
+
       do {
         let request = VNGenerateForegroundInstanceMaskRequest()
-        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+        let handler = VNImageRequestHandler(cgImage: processedCG, options: [:])
         try handler.perform([request])
 
         guard let result = request.results?.first else { return nil }
