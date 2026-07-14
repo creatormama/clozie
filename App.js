@@ -51,6 +51,23 @@ import { filterWardrobeItems } from './src/lib/filterWardrobeItems';
 import { filterSavedOutfits } from './src/lib/filterSavedOutfits';
 import { analyseWardrobe } from './src/lib/wardrobeIntelligence';
 
+// ── Build 26: background-removal recipe ──────────────────────────────────────
+// One identical recipe catalog-wide. All values are JS-tunable — changing them
+// needs a new build (no OTA) but never a Swift recompile. To isolate/disable a
+// layer during tuning: outputFormat:'jpeg-white' (Build 25 look), enhanceStrength:0
+// (no enhance), or shadowOpacity:0 (no shadow).
+const CUTOUT_OPTIONS = {
+  outputFormat: 'png',
+  enhanceStrength: 1.0,
+  shadowOpacity: 0.40,
+  shadowBlur: 18,
+  shadowOffsetX: 0,
+  shadowOffsetY: 12,
+  shadowColorR: 0.3,
+  shadowColorG: 0.3,
+  shadowColorB: 0.3,
+};
+
 // Dynamic Type global cap — limits iOS Larger Text scaling to 1.3× app-wide.
 // Tighter caps on big headings live inline at Welcome + Splash.
 Text.defaultProps = Text.defaultProps || {};
@@ -1755,7 +1772,7 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip, wardrobeLoaded }) {
   const applyBackgroundRemoval = async (uprightUri) => {
     setIsRemovingBg(true);
     try {
-      const cutout = await BackgroundRemoval.removeBackground(uprightUri);
+      const cutout = await BackgroundRemoval.removeBackground(uprightUri, CUTOUT_OPTIONS);
       if (cutout) setPhotoUri(cutout);
     } catch (e) {
       console.warn('[BG removal] threw, keeping original:', e);
@@ -6369,7 +6386,7 @@ function SettingsScreen({ onClose, onSignOut, onRevokeConsent, onClearMemory, is
 
       let cutout = null;
       try {
-        cutout = await BackgroundRemoval.removeBackground(original);
+        cutout = await BackgroundRemoval.removeBackground(original, CUTOUT_OPTIONS);
       } catch (err) {
         console.warn('[BG removal] threw:', err);
         cutout = null;
