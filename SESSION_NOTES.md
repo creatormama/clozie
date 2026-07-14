@@ -10,6 +10,44 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 8 — 2026-07-14 — Build 27: read-only cutout-quality audit (NO code, NO build)
+
+**Branch:** testing (HEAD `1a43b58` at session start; this docs commit adds one commit on top). `main` `062d15b` / `production` `f711c5d` (Build 25 live) / tag `v1.0.4-build25-appstore-live` (→ `f711c5d`) — all UNCHANGED.
+
+**Commit(s):** 1 docs-only commit (this session close) — `CLAUDE.md` + `SESSION_NOTES.md` + `BUILD27_QUALITY_FINDINGS.md`, named files only, no `git add -A`, no amend. ZERO code commits — no App.js / Swift / TS / Edge Function change this session.
+
+**Edge Function deploys:** 0. **Cache token count:** 2,510 — SYSTEM_PROMPT NOT touched.
+
+### Goals
+Read-only reality check on the Build 26 cutout-quality complaints (whites read brown, hazy edges, over-diffuse shadow) against the ACTUAL Swift/JS pipeline — every claim VERIFIED (file:line) or NOT CHECKED. Produce a findings file. No code changes, no code commits, no build.
+
+### What happened
+- **Branch safety (read-only):** confirmed on `testing`; `main` `062d15b` / `production` `f711c5d` untouched; working tree only untracked files.
+- **Read the full pipeline:** `BackgroundRemovalModule.swift`, the `.ts` bridge, `App.js` `CUTOUT_OPTIONS` + both call sites + resize, `clozieRecognition.js`, `wardrobeItems.js`, and every display-size style.
+- **Answered Q1–Q7** with VERIFIED/NOT-CHECKED markers. One file created: `BUILD27_QUALITY_FINDINGS.md`. No stored Vision cutout was reachable read-only → Q6 file size is a labeled proxy, not a real cutout.
+
+### Findings summary
+- **Whites regression (Q3b) — VERIFIED root cause:** the ONLY op that recolors the garment is `autoEnhancedCGImage` at `enhanceStrength: 1.0` (App.js:61 → Swift:123), run on the FULL warm frame BEFORE the mask (Swift:118/123/126). Build 25 (enhance 0) didn't degrade color → regression attributable to enhance. Fix is JS-only (`enhanceStrength → 0`).
+- **No white balance today (Q3) — VERIFIED** (whole file read): only CIFilters are autoAdjustmentFilters / DissolveTransition / SourceInCompositing / GaussianBlur / ColorMatrix. No temperature/whitepoint/exposure.
+- **512px resize is JS-side (Q1) — VERIFIED — App.js:1803/1835**, but SHARED with recognition (clozieRecognition.js:11-16 re-encodes with no downscale) → bumping to 768 also enlarges the Anthropic payload unless decoupled. Largest display box = hanger dress slot 185×320pt ≈ 555×960px @3x (App.js:5553); a 768 portrait source covers it, 512 is upscaled (a real edge-softness contributor).
+- **Shadow values JS-tunable (Q5) — VERIFIED — App.js:59-69 → Swift:8-18/71-99**: blur/opacity/offset/color all no-op-default Record fields; blur 18→12 is a free JS diff.
+- **Choke + garment-only WB/exposure (Q4/Q4b) — feasible** at the post-mask cutout (Swift:138), but Swift changes; the shadow shares the same alpha mask (Swift:84-86) so choke ordering matters. Honest caveat: a fixed white-balance can't whiten whites AND keep camel warm without an illuminant estimate.
+- **PNG size (Q6) — NOT CHECKED (no real cutout on disk); proxy:** ~5-6× JPEG; 768 PNG ≈ ~1 MB/item → ~50 MB per 50-item closet.
+
+### Grace's decision — quality-first TWO-BUILD plan
+- **Build A (next native build, all Swift landed once):** `enhanceStrength → 0`; shadow `blur 18 → 12`; `resize 512 → 768` decoupled from recognition (recognition stays 512); dormant garment-only white-balance + exposure + ~1px alpha-choke added at ZERO/no-op defaults (ship inert, JS-tunable later).
+- **Build B (JS-only tuning, only if Build A falls short):** flip WB / exposure / choke values on — no Swift recompile.
+
+### UNVERIFIED / carried
+- On-device look of any recipe change is UNVERIFIED until Build A is on TestFlight (Vision cutouts can't render read-only or in Expo Go).
+- Build-26 items already have warm-enhanced color baked into the stored PNG — no recipe change fixes those without re-processing/re-shoot.
+- Q6 real PNG size NOT CHECKED — proxy only.
+
+### Notes
+- Nothing shipped. `main` / `production` / tag untouched. Version unchanged (1.0.5 already set; 1.0.5 train OPEN). This docs commit lands on `testing`, not `main`.
+
+---
+
 ## Update 4 — Session 7 — 2026-07-14 — Build 26: pre-build review + EAS build + TestFlight PASS
 
 **Branch:** testing (HEAD `fb29844` at session start; this docs commit adds one commit on top). `main` `062d15b` / `production` `f711c5d` (Build 25 live) / tag `v1.0.4-build25-appstore-live` (→ `f711c5d`) — all UNCHANGED. Pushed to origin only with Grace's explicit OK.
