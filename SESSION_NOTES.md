@@ -10,6 +10,41 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 7 — 2026-07-14 — Build 26: pre-build review + EAS build + TestFlight PASS
+
+**Branch:** testing (HEAD `fb29844` at session start; this docs commit adds one commit on top). `main` `062d15b` / `production` `f711c5d` (Build 25 live) / tag `v1.0.4-build25-appstore-live` (→ `f711c5d`) — all UNCHANGED. Pushed to origin only with Grace's explicit OK.
+
+**Commit(s):** 1 docs-only commit (this session close) — `CLAUDE.md` + `SESSION_NOTES.md`, named files only, no `git add -A`, no amend. ZERO code commits — no App.js / Swift / TS / Edge Function change this session.
+
+**Edge Function deploys:** 0. **Cache token count:** 2,510 — SYSTEM_PROMPT NOT touched.
+
+### Goals
+Second-reviewer inspection of all Session 1 (Build 26) code before spending a build, then the single EAS build for Build 26, then hand off to Grace for Transporter/TestFlight. No code changes.
+
+### What happened
+- **Step 1 — branch safety (read-only):** confirmed on `testing`, HEAD `fb29844`, no tracked-file changes; `main`/`production`/tag all at expected SHAs; `origin/testing` == local `fb29844` (verified against live `git ls-remote`, not just the cached ref) → no pre-build push needed.
+- **Step 2 — independent second-reviewer code read (read-only):** re-read all 7 Session 1 files. Verified (a) all NO-OP defaults are true no-ops, (b) `CUTOUT_OPTIONS` passed at BOTH `removeBackground` call sites (App.js:1775 production add flow + App.js:6389 Settings diagnostics), (c) no 1-arg call remains, (d) `uploadWardrobePhoto` content-type correct for png AND jpg (`extAndTypeFromUri`, wardrobeItems.js:36–42), (e) `.gitignore` `/ios/` + `/android/` still root-anchored (fix `e145753`) so the module native sources ship to EAS — proven by pattern test (`/ios/` matches `ios/Podfile` but NOT `modules/expo-background-removal/ios/…`). Verdict: AGREE — safe to build.
+- **Step 3 — EAS build:** `eas build --profile preview --platform ios --non-interactive` from `fb29844`. buildNumber auto-incremented 25 → 26 (remote source). Build **finished** clean, exit 0.
+
+### Build 26 (verified via `eas build:view`)
+- Status finished · Version **1.0.5** · Build number **26** · Commit `fb29844` · Profile preview · Distribution store · SDK 57.0.0 · Fingerprint `689136ac…` (differs from Build 25's `fd943c7a…` → confirms the native module actually shipped, unlike the silently-dropped Builds 8–11/20).
+- `.ipa`: https://expo.dev/artifacts/eas/aEAZnwK7G8Bdz2fuqpOPKnZmtgXCAkieOojRsdkZW-c.ipa
+- Build page: https://expo.dev/accounts/clozie/projects/clozie/builds/08a73dd8-9fa5-4d59-8d62-778c24e607ac
+- NO `eas submit` — Transporter hand-off to Grace.
+
+### Tests — Build 26 on-device TestFlight PASS (Grace, 2026-07-14)
+Transparency on dark backgrounds ✓ · shadow geometry correct (soft shadow BELOW garment) ✓ · EXIF test upright ✓ · app-restart persistence ✓ · old JPEG items still display ✓ · dress NOT clipped on Hanger View ✓ · clean segmentation even on a busy patterned rug background ✓. **Overall: Build 26 = PASS.**
+
+### UNVERIFIED / carried
+- Build 26 is TestFlight-only — NOT released to the App Store. Build 25 / v1.0.4 remains the LIVE build. 1.0.5 train OPEN.
+- One tuning finding (see KNOWN ISSUES + Session 3 agenda): auto-enhance @ `enhanceStrength: 1.0` doesn't fix dim/warm lighting on light garments (ivory→dingy, cream→brown in the stored cutout). COLOUR recognition unaffected (separate image path). JS-only fix next session.
+
+### Notes
+- Two Known Issues logged this session: (1) the auto-enhance light-garment finding (Session 3 tuning agenda; evidence screenshots captured by Grace), (2) stale comment at `BackgroundRemovalModule.ts:17` (Swift 2-arg since `e62b08a`; dead + `try/catch`-guarded, cosmetic).
+- No version bump (1.0.5 already set in `05d895e`). Session 3 tuning needs NO Swift recompile — recipe values are JS-tunable via a rebuild.
+
+---
+
 ## Update 4 — Session 6 — 2026-07-13 — Build 26: background-removal Swift parameterization + JS wiring (NO EAS build)
 
 **Branch:** testing (HEAD `a2fc8bf`). `main` `062d15b` / `production` `f711c5d` (Build 25 live) / tag `v1.0.4-build25-appstore-live` (→ `f711c5d`) — all UNCHANGED. No push this session unless Grace says.
