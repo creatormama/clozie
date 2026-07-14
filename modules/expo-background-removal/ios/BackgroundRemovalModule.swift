@@ -17,6 +17,23 @@ struct RemoveBackgroundOptions: Record {
   @Field var outputFormat: String = "jpeg-white"  // 'jpeg-white' | 'png'
 }
 
+private extension UIImage {
+  // Returns an upright copy with UIImage.imageOrientation baked into pixels.
+  // No-op for already-upright images (returns self). Preserves scale, so pixel
+  // dimensions are unchanged — production passes an EXIF-baked .up JPEG, so this
+  // leaves the Build 25 output byte-identical.
+  func normalizedUp() -> UIImage {
+    guard imageOrientation != .up else { return self }
+    let format = UIGraphicsImageRendererFormat.default()
+    format.scale = scale
+    format.opaque = false
+    let renderer = UIGraphicsImageRenderer(size: size, format: format)
+    return renderer.image { _ in
+      draw(in: CGRect(origin: .zero, size: size))
+    }
+  }
+}
+
 public class BackgroundRemovalModule: Module {
   public func definition() -> ModuleDefinition {
     Name("BackgroundRemoval")
@@ -29,8 +46,11 @@ public class BackgroundRemovalModule: Module {
         ? String(imageUri.dropFirst(7))
         : imageUri
 
-      guard let input = UIImage(contentsOfFile: path),
-            let cgImage = input.cgImage else { return nil }
+      guard let input = UIImage(contentsOfFile: path) else { return nil }
+      // EXIF rider: input.cgImage ignores UIImage.imageOrientation, so a photo that
+      // carries EXIF rotation would be processed sideways. Redraw upright first.
+      let upright = input.normalizedUp()
+      guard let cgImage = upright.cgImage else { return nil }
 
       do {
         let request = VNGenerateForegroundInstanceMaskRequest()
