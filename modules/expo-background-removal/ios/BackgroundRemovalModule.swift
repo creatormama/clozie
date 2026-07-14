@@ -65,6 +65,40 @@ fileprivate func autoEnhancedCGImage(_ cgImage: CGImage, strength: Double) -> CG
   return out
 }
 
+// Builds a garment-over-shadow CIImage from the alpha silhouette: a blurred,
+// offset, tinted copy of the mask composited UNDER the garment. Returns the
+// foreground unchanged when shadowOpacity <= 0.
+fileprivate func shadowedForeground(_ foreground: CIImage, options: RemoveBackgroundOptions?) -> CIImage {
+  let opacity = options?.shadowOpacity ?? 0
+  guard opacity > 0 else { return foreground }
+
+  let r = options?.shadowColorR ?? 0.5
+  let g = options?.shadowColorG ?? 0.5
+  let b = options?.shadowColorB ?? 0.5
+  let blur = options?.shadowBlur ?? 0
+  let dx = options?.shadowOffsetX ?? 0
+  let dy = options?.shadowOffsetY ?? 0
+
+  // 1. Silhouette in the shadow color, shaped by the garment's alpha.
+  let solid = CIImage(color: CIColor(red: r, green: g, blue: b, alpha: 1))
+  var shadow = solid.applyingFilter("CISourceInCompositing", parameters: [
+    kCIInputBackgroundImageKey: foreground
+  ])
+  // 2. Soften the edges.
+  if blur > 0 {
+    shadow = shadow.applyingFilter("CIGaussianBlur", parameters: [kCIInputRadiusKey: blur])
+  }
+  // 3. Scale alpha by opacity (layer transparency).
+  shadow = shadow.applyingFilter("CIColorMatrix", parameters: [
+    "inputAVector": CIVector(x: 0, y: 0, z: 0, w: opacity)
+  ])
+  // 4. Offset. CI space is y-up, so a positive `dy` (downward on screen) is -dy here.
+  shadow = shadow.transformed(by: CGAffineTransform(translationX: dx, y: -dy))
+
+  // 5. Garment crisply on top of its shadow.
+  return foreground.composited(over: shadow)
+}
+
 public class BackgroundRemovalModule: Module {
   public func definition() -> ModuleDefinition {
     Name("BackgroundRemoval")
@@ -104,11 +138,16 @@ public class BackgroundRemovalModule: Module {
         let foreground = CIImage(cvPixelBuffer: maskedPixelBuffer)
         let context = CIContext()
 
+        // Baked silhouette shadow (opt-in via shadowOpacity > 0): composited UNDER
+        // the garment. No-op when shadowOpacity <= 0, so `subject` == `foreground`
+        // and output matches Build 25.
+        let subject = shadowedForeground(foreground, options: options)
+
         // Transparent PNG branch (opt-in via outputFormat: "png"): encode the
         // alpha-bearing cutout directly, skipping the white composite. The default
         // jpeg-white path below stays byte-identical to Build 25.
         if options?.outputFormat == "png" {
-          guard let outputCG = context.createCGImage(foreground, from: foreground.extent) else { return nil }
+          guard let outputCG = context.createCGImage(subject, from: subject.extent) else { return nil }
           let outputImage = UIImage(cgImage: outputCG)
           guard let pngData = outputImage.pngData() else { return nil }
           let tempURL = FileManager.default.temporaryDirectory
@@ -118,8 +157,8 @@ public class BackgroundRemovalModule: Module {
         }
 
         // Default (jpeg-white) — composite over white, encode JPEG q0.9.
-        let whiteBg = CIImage(color: .white).cropped(to: foreground.extent)
-        let composited = foreground.composited(over: whiteBg)
+        let whiteBg = CIImage(color: .white).cropped(to: subject.extent)
+        let composited = subject.composited(over: whiteBg)
         guard let outputCG = context.createCGImage(composited, from: composited.extent) else { return nil }
         let outputImage = UIImage(cgImage: outputCG)
         guard let jpegData = outputImage.jpegData(compressionQuality: 0.9) else { return nil }
