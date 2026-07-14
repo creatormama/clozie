@@ -66,18 +66,30 @@ public class BackgroundRemovalModule: Module {
         )
 
         let foreground = CIImage(cvPixelBuffer: maskedPixelBuffer)
+        let context = CIContext()
+
+        // Transparent PNG branch (opt-in via outputFormat: "png"): encode the
+        // alpha-bearing cutout directly, skipping the white composite. The default
+        // jpeg-white path below stays byte-identical to Build 25.
+        if options?.outputFormat == "png" {
+          guard let outputCG = context.createCGImage(foreground, from: foreground.extent) else { return nil }
+          let outputImage = UIImage(cgImage: outputCG)
+          guard let pngData = outputImage.pngData() else { return nil }
+          let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("clozie-bg-removed-\(UUID().uuidString).png")
+          try pngData.write(to: tempURL)
+          return tempURL.absoluteString
+        }
+
+        // Default (jpeg-white) — composite over white, encode JPEG q0.9.
         let whiteBg = CIImage(color: .white).cropped(to: foreground.extent)
         let composited = foreground.composited(over: whiteBg)
-
-        let context = CIContext()
         guard let outputCG = context.createCGImage(composited, from: composited.extent) else { return nil }
         let outputImage = UIImage(cgImage: outputCG)
         guard let jpegData = outputImage.jpegData(compressionQuality: 0.9) else { return nil }
-
         let tempURL = FileManager.default.temporaryDirectory
           .appendingPathComponent("clozie-bg-removed-\(UUID().uuidString).jpg")
         try jpegData.write(to: tempURL)
-
         return tempURL.absoluteString
       } catch {
         return nil
