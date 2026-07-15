@@ -13,8 +13,9 @@ export default {
   async removeBackground(imageUri: string, options?: RemoveBackgroundOptions): Promise<string | null> {
     if (!nativeModule) return null;
     try {
-      // Forward the 2nd arg ONLY when given, so 1-arg callers keep hitting the
-      // 1-arg native path (safe while Swift is still single-arg, Steps 1–7).
+      // Forward the 2nd arg only when the caller passes options. Both production call
+      // sites pass CUTOUT_OPTIONS; the no-options branch is a defensive fallback for any
+      // future 1-arg caller (the native module has been 2-arg since Build 26).
       return options === undefined
         ? await nativeModule.removeBackground(imageUri)
         : await nativeModule.removeBackground(imageUri, options);

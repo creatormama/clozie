@@ -28,4 +28,13 @@ export interface RemoveBackgroundOptions {
   // 'jpeg-white' (default) = today's composite-over-white JPEG.
   // 'png' = transparent cutout, no white composite.
   outputFormat?: 'jpeg-white' | 'png';
+
+  // Build 27: garment-only correction, applied after the cutout. DORMANT — every field
+  // defaults to identity (0 = off) in the native Record; Build B turns a layer on by
+  // passing a non-zero value here (JS only, no Swift recompile).
+  wbTemperature?: number;  // delta from neutral; 0 = no white-balance shift
+  wbTint?: number;         // green(-)/magenta(+) delta; 0 = no tint shift
+  exposureEV?: number;     // CIExposureAdjust EV; 0 = no exposure lift
+  edgeChokePx?: number;    // alpha erosion in px; 0 = no choke
+  edgeSharpness?: number;  // 0..1 alpha-ramp steepen; 0 = no ramp change
 }
