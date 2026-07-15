@@ -58,11 +58,11 @@ import { analyseWardrobe } from './src/lib/wardrobeIntelligence';
 // (no enhance), or shadowOpacity:0 (no shadow).
 const CUTOUT_OPTIONS = {
   outputFormat: 'png',
-  enhanceStrength: 1.0,
+  enhanceStrength: 0.0,
   shadowOpacity: 0.40,
-  shadowBlur: 18,
+  shadowBlur: 12,
   shadowOffsetX: 0,
-  shadowOffsetY: 12,
+  shadowOffsetY: 14,
   shadowColorR: 0.3,
   shadowColorG: 0.3,
   shadowColorB: 0.3,
