@@ -62,11 +62,17 @@ Three layers, each with one job. Future sessions follow this contract.
 - **CLAUDE_ARCHIVE.md** — historical session prose lifted out of CLAUDE.md during slim-down passes. Newest-first. Not auto-loaded; read on demand.
 - **SESSION_NOTES.md** — rolling, append-only session log. Newest entry at top. Each session appends ONE entry using the locked structure (Branch / Commits / Edge Function deploys / Cache token count / Goals / What changed / Tests / UNVERIFIED / Notes). Not auto-loaded; read on demand.
 
-**Desktop copy convention.** The repo file is ALWAYS named exactly `SESSION_NOTES.md` (one rolling file, never renamed). At the end of every session, also drop a COPY on Grace's Desktop with a UNIQUE DATED filename so uploads can be told apart:
+**Desktop copy convention.** The repo file is ALWAYS named exactly `SESSION_NOTES.md` (one rolling file, never renamed). At the end of every session, also drop a COPY on Grace's Desktop with a UNIQUE DATED filename so uploads can be told apart.
 
-`SESSION_NOTES_Update[N]_Session[M]_[YYYY-MM-DD].md`
+**SESSION NOTES DESKTOP COPY — LOCKED**
 
-Example: `SESSION_NOTES_Update1_Session2_2026-07-04.md`. The Desktop copy is reference-only — it lives outside the repo and is never committed. Update 1 Session 1's Desktop copy (2026-06-21) was dropped before this rule was formalized and is intentionally left as the plain `SESSION_NOTES.md`; the dated convention applies from Update 1 Session 2 onward.
+`SESSION_NOTES_Update[N]_Session[M]_[YYYY-MM-DD]_[Topic].md`
+
+- **Filename:** `[Topic]` is required, placed last (after the date), 1-4 words, all-lowercase, hyphen-separated, no spaces (e.g. `SESSION_NOTES_Update4_Session8_2026-07-14_session-notes-rule.md`). Keep it descriptive of the session's main outcome.
+- **Contents:** ONLY that session's single entry — never the whole rolling log. Copy the one `## Update N — Session M …` block and nothing above or below it.
+- **Canonical full log:** `SESSION_NOTES.md` in the repo stays cumulative; the Desktop copy is reference-only, lives outside the repo, and is never committed.
+
+Example: `SESSION_NOTES_Update1_Session2_2026-07-04.md` was an early copy dropped before this rule was formalized (no `[Topic]`). Update 1 Session 1's Desktop copy (2026-06-21) was left as the plain `SESSION_NOTES.md`; the dated convention applies from Update 1 Session 2 onward, and the single-entry + `[Topic]` rule above applies going forward.
 
 Session numbering format is `Update[N]_Session[M]` matching the App Store lifecycle described in CURRENT BUILD STATE.
 
