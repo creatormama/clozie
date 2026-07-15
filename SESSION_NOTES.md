@@ -12,6 +12,39 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 10 — 2026-07-15 — Build 27 Build A: enhance-off + shadow tune + dormant Swift controls (code, NO build yet)
+
+**Branch:** testing (HEAD `680cd61` at session start → `0a9338b` after 3 commits). `main` `062d15b` / `production` `f711c5d` (Build 25 live) / tag `v1.0.4-build25-appstore-live` (→ `f711c5d`) — all UNCHANGED, re-verified before and after every commit.
+
+**Commit(s):** 3, named files only (no `git add -A`, no amend): `d008f92` — App.js `CUTOUT_OPTIONS` (S1); `5573ad6` — Swift dormant WB + exposure + edge-choke controls (S2–S6); `0a9338b` — TS types mirror + stale-comment fix (S7).
+
+**Edge Function deploys:** 0. **Cache token count:** 2,510 — SYSTEM_PROMPT NOT touched. **Version:** 1.0.5 (train OPEN) — untouched this session.
+
+**EAS build:** NONE — deferred to a separate GO. First EAS build is the only Swift compile test (no local swiftc). 3 builds remain this month; two-strike rule absolute.
+
+### Context / decisions
+- **Earlier today — read-only opinion session (2026-07-15):** re-verified all Build 27 findings against code at HEAD `680cd061`; **zero code changed.** Confirmed whites-regression root cause (`enhanceStrength: 1.0`) and that every finding still holds.
+- **Grace's Option 2 decision:** narrowed Build A scope — **DROP the 512 → 768 resolution change** (both resize sites stay 512; Anthropic recognition payload unchanged); keep enhance-off + shadow tune + dormant garment-only Swift controls.
+- **Supabase org upgraded to Pro on 2026-07-15** (browser work, separate from code).
+
+### What changed
+- **App.js CUTOUT_OPTIONS (:61/63/65):** `enhanceStrength 1.0→0.0` (kills the only garment-recoloring op — the verified brown-whites fix), `shadowBlur 18→12`, `shadowOffsetY 12→14`. All other fields byte-identical.
+- **Swift:** 5 dormant `@Field`s at identity 0 (`wbTemperature`/`wbTint`/`exposureEV`/`edgeChokePx`/`edgeSharpness`); guarded helpers `whiteBalancedForeground` (:117), `exposureAdjustedForeground` (:132), `chokedForeground` (:151); wired at :223–230 as WB → exposure → choke → shadow. **Choke BEFORE shadow** so the baked shadow derives from the choked mask. Every helper early-returns the EXACT input at identity (mirrors existing :51/:83 guards). `CIColorClamp` uses the no-arg overload for compile safety.
+- **TS:** mirrored the 5 dormant fields as optional numbers (Build B = JS-only); corrected the stale "single-arg Steps 1–7" forwarding comment (native is 2-arg since Build 26).
+
+### Tests
+No runtime test (no build). Static only: App.js diff = exactly 3 lines; Swift brace/paren/bracket balance 40/40, 100/100, 10/10; full top-to-bottom Swift read-back PASS (guards return exact input; dormant-at-defaults proof walked); every edit read back correct; `main`/`production` unchanged after each commit.
+
+### UNVERIFIED (all pending first TestFlight build)
+- Build A on-device: whites vs raw daylight photo (target raw-photo color, NOT better), shadow at blur 12 / offsetY 14, edges unchanged (choke OFF), old JPEG + old PNG items display, dress hanger slot, new-item add flow, recognition/COLOUR unaffected.
+- **Entire Swift compile** — first EAS build is the compile test.
+- **Choke active-path correctness** (RGB-edge darkening / premult) — flagged UNVERIFIED in-code; only relevant once Build B turns it on.
+
+### Notes
+Build B dormant params (identity → effect): `wbTemperature` 0 (+cools warm cast), `wbTint` 0, `exposureEV` 0 (+brightens), `edgeChokePx` 0 (erodes alpha), `edgeSharpness` 0 (steepens ramp). WB + exposure are JS-only in Build B; choke may need a native revision.
+
+---
+
 ## Update 4 — Session 9 — 2026-07-14 — Docs-only: lock SESSION NOTES Desktop-copy rule (NO code, NO build)
 
 **Branch:** testing (HEAD `cb11572` at session start; this session adds 3 commits on top). `main` `062d15b` / `production` `f711c5d` (Build 25 live) / tag `v1.0.4-build25-appstore-live` (→ `f711c5d`) — all UNCHANGED.
