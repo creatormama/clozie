@@ -6,6 +6,8 @@ This file is NOT auto-loaded — read on demand when you need detail beyond the 
 
 Format: every entry uses the locked structure (Branch / Commits / Edge Function deploys / Cache token count / Goals / What changed / Tests / UNVERIFIED / Notes). Keep entries scrollable on a single screen; spillover means the detail belongs lifted into CLAUDE.md as a rule, or split into a follow-up session.
 
+Desktop copy at session close: name it `SESSION_NOTES_Update[N]_Session[M]_[YYYY-MM-DD]_[topic].md` (topic all-lowercase, hyphenated) and include ONLY that session's single entry — never this whole log. Full rule in CLAUDE.md → DOCUMENTATION LAYERS.
+
 Session numbering reset to "Update N — Session M" starting 2026-06-21. All legacy sessions through Build 12 live in CLAUDE.md prose + CLAUDE_ARCHIVE.md.
 
 ---
