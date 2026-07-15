@@ -15,6 +15,16 @@ struct RemoveBackgroundOptions: Record {
   @Field var shadowColorG: Double = 0.5
   @Field var shadowColorB: Double = 0.5
   @Field var outputFormat: String = "jpeg-white"  // 'jpeg-white' | 'png'
+
+  // Build 27 (Build A): dormant garment-only correction. ALL default to identity —
+  // at these values the helpers early-return the exact input (see guards below), so
+  // output stays byte-identical to Build A's JS tuning alone. Build B flips these in
+  // JS only (no Swift recompile) to turn each layer on.
+  @Field var wbTemperature: Double = 0   // delta from neutral; 0 = no white-balance shift
+  @Field var wbTint: Double = 0          // green(−)/magenta(+) delta; 0 = no tint shift
+  @Field var exposureEV: Double = 0      // CIExposureAdjust EV; 0 = no exposure lift
+  @Field var edgeChokePx: Double = 0     // alpha erosion in px; 0 = no choke
+  @Field var edgeSharpness: Double = 0   // 0..1 alpha-ramp steepen; 0 = no ramp change
 }
 
 private extension UIImage {
@@ -99,6 +109,72 @@ fileprivate func shadowedForeground(_ foreground: CIImage, options: RemoveBackgr
   return foreground.composited(over: shadow)
 }
 
+// Garment-only white balance (opt-in via wbTemperature/wbTint != 0): neutralizes an
+// ambient color cast on the already-cut garment. CITemperatureAndTint remaps the assumed
+// source neutral to a target, expressed here as a delta from 6500K/0 so identity is 0/0.
+// Positive wbTemperature cools a warm cast; negative warms. Returns the exact input at
+// identity, or on any failure — never breaks the pipeline. DORMANT at Build A defaults.
+fileprivate func whiteBalancedForeground(_ foreground: CIImage, options: RemoveBackgroundOptions?) -> CIImage {
+  let temp = options?.wbTemperature ?? 0
+  let tint = options?.wbTint ?? 0
+  guard temp != 0 || tint != 0 else { return foreground }
+  guard let filter = CIFilter(name: "CITemperatureAndTint", parameters: [
+    kCIInputImageKey: foreground,
+    "inputNeutral": CIVector(x: 6500 + temp, y: tint),
+    "inputTargetNeutral": CIVector(x: 6500, y: 0)
+  ]), let out = filter.outputImage else { return foreground }
+  return out
+}
+
+// Garment-only exposure lift (opt-in via exposureEV != 0): brightens/darkens the cut
+// garment via CIExposureAdjust (inputEV, 0 = identity). Returns the exact input at
+// identity, or on any failure — never breaks the pipeline. DORMANT at Build A defaults.
+fileprivate func exposureAdjustedForeground(_ foreground: CIImage, options: RemoveBackgroundOptions?) -> CIImage {
+  let ev = options?.exposureEV ?? 0
+  guard ev != 0 else { return foreground }
+  guard let filter = CIFilter(name: "CIExposureAdjust", parameters: [
+    kCIInputImageKey: foreground,
+    kCIInputEVKey: ev
+  ]), let out = filter.outputImage else { return foreground }
+  return out
+}
+
+// Garment-only edge treatment (opt-in via edgeChokePx/edgeSharpness != 0): tightens the
+// matte BEFORE the shadow is derived from it. edgeChokePx erodes the alpha silhouette
+// inward (CIMorphologyMinimum radius); edgeSharpness steepens the alpha ramp around 0.5
+// so soft feathered edges read crisper (CIColorMatrix on the alpha channel, then clamp).
+// Returns the exact input at identity, or on any failure — never breaks the pipeline.
+// DORMANT at Build A defaults.
+// CAVEAT: the ACTIVE path is UNVERIFIED — CIMorphologyMinimum also darkens RGB near the
+// edge and the alpha ramp interacts with premultiplication. Eyeball on-device before
+// Build B locks values; the active path may need a native revision (not JS-only).
+fileprivate func chokedForeground(_ foreground: CIImage, options: RemoveBackgroundOptions?) -> CIImage {
+  let choke = options?.edgeChokePx ?? 0
+  let sharpness = options?.edgeSharpness ?? 0
+  guard choke != 0 || sharpness != 0 else { return foreground }
+
+  var result = foreground
+
+  // Erode the silhouette inward by `choke` px.
+  if choke > 0 {
+    result = result.applyingFilter("CIMorphologyMinimum", parameters: [
+      kCIInputRadiusKey: choke
+    ]).cropped(to: foreground.extent)
+  }
+
+  // Steepen the alpha ramp around 0.5: a' = clamp((a - 0.5) * k + 0.5).
+  if sharpness > 0 {
+    let k = 1 + sharpness * 4   // sharpness 0..1 -> slope 1..5
+    result = result.applyingFilter("CIColorMatrix", parameters: [
+      "inputAVector": CIVector(x: 0, y: 0, z: 0, w: k),
+      "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: 0.5 - 0.5 * k)
+    ])
+    result = result.applyingFilter("CIColorClamp")
+  }
+
+  return result
+}
+
 public class BackgroundRemovalModule: Module {
   public func definition() -> ModuleDefinition {
     Name("BackgroundRemoval")
@@ -138,10 +214,20 @@ public class BackgroundRemovalModule: Module {
         let foreground = CIImage(cvPixelBuffer: maskedPixelBuffer)
         let context = CIContext()
 
-        // Baked silhouette shadow (opt-in via shadowOpacity > 0): composited UNDER
-        // the garment. No-op when shadowOpacity <= 0, so `subject` == `foreground`
-        // and output matches Build 25.
-        let subject = shadowedForeground(foreground, options: options)
+        // Garment-only correction chain (all DORMANT at Build A defaults — each helper
+        // early-returns the exact input, so `corrected` == `foreground` and output stays
+        // byte-identical to the JS tuning alone). WB + exposure fix the cut garment's
+        // color; the edge choke tightens the matte. Choke runs BEFORE the shadow so the
+        // baked shadow derives from the CHOKED mask (shadowedForeground shapes the shadow
+        // from the alpha it is handed).
+        var corrected = foreground
+        corrected = whiteBalancedForeground(corrected, options: options)
+        corrected = exposureAdjustedForeground(corrected, options: options)
+        corrected = chokedForeground(corrected, options: options)
+
+        // Baked silhouette shadow (opt-in via shadowOpacity > 0): composited UNDER the
+        // garment. No-op when shadowOpacity <= 0, so `subject` == `corrected`.
+        let subject = shadowedForeground(corrected, options: options)
 
         // Transparent PNG branch (opt-in via outputFormat: "png"): encode the
         // alpha-bearing cutout directly, skipping the white composite. The default
