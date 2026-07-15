@@ -12,6 +12,34 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 9 — 2026-07-14 — Docs-only: lock SESSION NOTES Desktop-copy rule (NO code, NO build)
+
+**Branch:** testing (HEAD `cb11572` at session start; this session adds 3 commits on top). `main` `062d15b` / `production` `f711c5d` (Build 25 live) / tag `v1.0.4-build25-appstore-live` (→ `f711c5d`) — all UNCHANGED.
+
+**Commit(s):** 3 docs-only commits, named files only (no `git add -A`, no amend). `b65cd77` — CLAUDE.md rule; `7ac1d63` — SESSION_NOTES.md header echo; plus this entry's commit at session close. ZERO code commits.
+
+**Edge Function deploys:** 0. **Cache token count:** 2,510 — SYSTEM_PROMPT NOT touched.
+
+### Goals
+Lock a naming + contents rule for the Desktop session-notes copies (Goal A), then drop a dated CLAUDE.md copy on the Desktop for upload (Goal B). Root cause: audit of 32 Desktop copies found the ritual had drifted badly.
+
+### What changed
+- **Audit (read-only, VERIFIED against the 32 files in `~/Desktop/Session notes Clozie /`):** 14 topic-bearing / 18 number+date-only filenames; only **8 of 32** were a single session entry — the other **24 were cumulative full-log dumps** (H2-entry count climbs 12→…→35), totalling **3.06 MB** (3,057,537 bytes). Only **2** files ever carried a reference-only disclaimer. Grace's own numbers were directionally right, off by ≤1 each; her "the 9 correct ones carry a header" was the one materially wrong sub-claim (only 2 did).
+- **CLAUDE.md** ([65–75](CLAUDE.md:65)) — amended the Desktop-copy convention into a **LOCKED** rule: filename `SESSION_NOTES_Update[N]_Session[M]_[YYYY-MM-DD]_[Topic].md` with `[Topic]` **required, last, 1-4 words, all-lowercase, hyphenated**; contents **ONLY that session's single entry**, never the whole log. `all-lowercase` written explicitly (Grace caught that "casing is fixed" was implied in reasoning but never in the text — the same assumed-but-unwritten hole that let `AnalyseRedesign` happen).
+- **SESSION_NOTES.md** ([9](SESSION_NOTES.md:9)) — one-line echo of the rule in the repo header (read at session-close time).
+- **Desktop copy of CLAUDE.md** — `~/Desktop/CLAUDE_2026-07-14.md`, 1,538 lines / 203,412 bytes, byte-identical to source (`cp` with `$HOME` inside quotes — a quoted `~` would NOT expand). Outside the repo; git can't see it.
+
+### Tests
+Docs only — no runtime. Verified: both edits read back correct (`all-lowercase` present at CLAUDE.md:71); git shows named-file commits only; `main`/`production` SHAs unchanged; Desktop copy `diff` IDENTICAL to source; nothing new staged/untracked from the copy.
+
+### UNVERIFIED
+None outstanding for this session.
+
+### Notes
+This entry's own Desktop copy is the **first real use of the new rule** — single entry only, named `SESSION_NOTES_Update4_Session9_2026-07-14_session-notes-rule.md`. If that copy exceeds ~60 lines, the rule failed on first use.
+
+---
+
 ## Update 4 — Session 8 — 2026-07-14 — Build 27: read-only cutout-quality audit (NO code, NO build)
 
 **Branch:** testing (HEAD `1a43b58` at session start; this docs commit adds one commit on top). `main` `062d15b` / `production` `f711c5d` (Build 25 live) / tag `v1.0.4-build25-appstore-live` (→ `f711c5d`) — all UNCHANGED.
