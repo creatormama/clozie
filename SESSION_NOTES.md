@@ -12,6 +12,45 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 11 — 2026-07-15 (evening) — Build B redefined: read-only investigation, per-photo AWB architecture locked (NO code, NO build)
+
+**Branch:** testing (HEAD `3ed93b4` at session start → docs commit at close). `main` `062d15b` / `production` `f711c5d` (Build 25 live) / tag `v1.0.4-build25-appstore-live` (→ `f711c5d`) — all UNCHANGED. Build A = Build 27 / v1.0.5 on TestFlight (compiled first try, verified today).
+
+**Commit(s):** 1 docs-only, named files only (no `git add -A`, no amend): `SESSION_NOTES.md` (this entry). ZERO code commits — App.js / Swift / TS untouched. NO CLAUDE.md change (nothing shipped tonight).
+
+**Edge Function deploys:** 0. **Cache token count:** 2,510 — SYSTEM_PROMPT NOT touched. **Version:** 1.0.5 (train OPEN) — untouched.
+
+**EAS builds:** 0. Budget: 2 remain this month; EAS resets in ~2 weeks; app is LIVE (hotfix reserve weighed). Both builds unspent tonight.
+
+### Goals
+Values-only Build B was proposed (exposureEV 0.4). Grace brought MEASURED pixel-sampled evidence from Claude.ai that killed it. This session: read-only reality check of the actual Swift, then co-design the real fix. Zero code, zero build — Step 3 execution deferred to a future session.
+
+### Decisions LOCKED tonight
+1. **Values-only Build B is DEAD.** Exposure-only disproven twice: (a) math — exposureEV 0.4 on the measured tee → (197,179,155), R−B warm gap GROWS 38→42 (gamma); (b) real-world — Grace re-shot the same shirt on a DARK CARPET, iPhone auto-exposed ~+0.5EV, cutout measured (197,178,156), within 2 pts/channel of the math, still reads cream. Fixed global WB is non-universal (a closet-tuned 4,900K correction turns a 6,500K daylight photo blue and cools camel).
+2. **ROOT CAUSE (agreed by both Claudes, confirmed against code):** the pipeline never estimates or removes the scene illuminant. White tee records RGB(174,158,136) ~4,876K under dim warm indoor light (EXIF ISO 640, 1/60, f/1.78); app card ~(248,248,248) ~6,471K. Warm-dim source pixels reproduced faithfully onto a neutral card read brown. Build A is FAITHFUL, not buggy (cutout (162,142,119) vs raw (174,158,136) within the shirt's own 146–191 fold variation; Display P3→sRGB shifts neutrals by 0.0000, eliminated).
+3. **AGREED ARCHITECTURE:** per-photo AWB — near-neutral-selective estimator + confidence gate (no correction when scene has no neutral pixels) + strength clamp + brightness normalization toward ~245. Applied at the verified garment-only insertion point (Swift:214 chain). **Amendment accepted:** estimate from the FULL FRAME's near-neutral pixels (not garment-only) to resolve white-in-warm-light vs camel-in-daylight ambiguity. **Plain gray-world REJECTED** — would neutralize raspberry/terracotta/sage (the colors that currently PASS).
+4. **EDGES root cause (accepted):** 512px matte upscaled to ~555×960 (hanger dress) + Vision segmentation-grade alpha, NO feathering/blur/threshold anywhere. Dormant edge dials (choke/sharpen) are lipstick (alias or eat the garment; choke worsens the ivory-shoulder mask gap). Real fix = higher-res mask (decouple BG-removal input from the 512 recognition payload) — SEPARATE later build, NEVER combined with color. ML matting / PhotoRoom API = product decisions, deferred (CLAUDE.md Phase 6).
+5. **WB dial direction:** code comment at Swift:115 ("positive cools") is likely INVERTED per analysis — my derivation says negative `wbTemperature` cools (removes warm cast) in this parameterization. UNVERIFIED at runtime; must be pinned empirically before the manual dials are trusted as trim.
+6. **PLAN:** Phase 1 (next session, ZERO builds) — standalone Swift CoreImage prototype compiled + run LOCALLY on this Mac against Grace's actual photos (added to repo/scratch): pin WB direction, implement estimator+gate+clamp+normalization, tune until whites read white AND raspberry/terracotta/sage/camel untouched. Phase 2 (ONE EAS build) — port validated algorithm into the module (unpremultiply before estimate; the landmine list is the checklist). Phase 3 (after EAS reset) — higher-res mask for edges.
+
+### Step 1 — VERIFIED code findings (file:line)
+- **(a) WB filter/units — VERIFIED (Swift:121-124):** `CITemperatureAndTint`, `inputNeutral=(6500+wbTemperature, wbTint)`, `inputTargetNeutral=(6500,0)`. `wbTemperature`=Kelvin delta, `wbTint`=green(−)/magenta(+) delta. Direction: analysis says comment inverted (NOT CHECKED at runtime).
+- **(b) Insertion point — VERIFIED (Swift:214-226):** `foreground` (post-mask, garment-only, background zeroed) is the correct place; the existing dormant correction chain already inserts here.
+- **(c) CIAreaAverage — available per Apple docs (standard CIFilter iOS 9+); NOT currently used (VERIFIED absent, full read); compile-availability provable only on build.** Landmine: averaging the masked buffer includes zeroed transparent pixels → must divide by coverage (avg premult-RGB ÷ avg alpha).
+- **(d) Landmines — VERIFIED:** `CIImage(cvPixelBuffer:)` (Swift:214) is PREMULTIPLIED (must unpremultiply before estimate/decontam) and created with NO explicit color space (inherits P3/device default) → gamma/linear estimate-vs-apply mismatch risk (`CIExposureAdjust` works in linear).
+- **(e) Raw mask handling — VERIFIED (Swift:202-247):** `generateMaskedImage(…croppedToInstancesExtent:true)` → `CIImage(cvPixelBuffer:)`; NO feathering/blur/threshold/erosion on alpha before compositing (choke dormant at 0). Native Vision matte verbatim. BG removal runs on the 512px `fixed.uri` (App.js:1801-1808/1833-1840), upscaled on display → soft edges.
+- **(f) Edge options w/o ML:** CoreImage tricks (blur/sharpen/choke) are marginal/risky; biggest non-ML lever = higher-res mask; true catalog-crisp needs a matting model (Vision is segmentation-only = stage 1 of 2).
+
+### UNVERIFIED (carry into Phase 1 prototype)
+- WB dial direction at runtime (Swift:115 comment vs analysis).
+- CIAreaAverage compile-availability in this module (provable only on build/local compile).
+- Gamma-encoded vs linear working space for the estimate-vs-apply — must be made consistent.
+
+### Notes
+Recommendation on sequencing (accepted): color first, edges later, NEVER combined; given 2 builds + live app + ~2-week reset, prototype LOCALLY (zero builds) before spending any EAS build on the un-locally-compilable algorithm. Third-party PhotoRoom (matting+WB in one, zero build risk, but cost/privacy/CLAUDE.md-Phase-6) named honestly as the lowest-engineering-risk path to BOTH problems; deferred as a product decision.
+
+---
+
 ## Update 4 — Session 10 — 2026-07-15 — Build 27 Build A: enhance-off + shadow tune + dormant Swift controls (code, NO build yet)
 
 **Branch:** testing (HEAD `680cd61` at session start → `0a9338b` after 3 commits). `main` `062d15b` / `production` `f711c5d` (Build 25 live) / tag `v1.0.4-build25-appstore-live` (→ `f711c5d`) — all UNCHANGED, re-verified before and after every commit.
