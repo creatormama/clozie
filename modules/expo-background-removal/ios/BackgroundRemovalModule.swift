@@ -112,7 +112,7 @@ fileprivate func shadowedForeground(_ foreground: CIImage, options: RemoveBackgr
 // Garment-only white balance (opt-in via wbTemperature/wbTint != 0): neutralizes an
 // ambient color cast on the already-cut garment. CITemperatureAndTint remaps the assumed
 // source neutral to a target, expressed here as a delta from 6500K/0 so identity is 0/0.
-// Positive wbTemperature cools a warm cast; negative warms. Returns the exact input at
+// Negative wbTemperature cools a warm cast; positive deepens it. Returns the exact input at
 // identity, or on any failure — never breaks the pipeline. DORMANT at Build A defaults.
 fileprivate func whiteBalancedForeground(_ foreground: CIImage, options: RemoveBackgroundOptions?) -> CIImage {
   let temp = options?.wbTemperature ?? 0
