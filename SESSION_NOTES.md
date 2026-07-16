@@ -12,6 +12,28 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 12 — 2026-07-16 — Phase 1 AWB prototype COMPLETE (local Mac, zero builds, repo untouched)
+
+**Branch:** testing c7e741a / main 062d15b / production f711c5d — ALL UNCHANGED this session until this docs commit. Zero code commits, zero EAS builds (budget still 2), zero Edge deploys, SYSTEM_PROMPT untouched (2,510).
+
+**Where:** ~/Desktop/clozie-awb-prototype/ (outside repo). Contains FINDINGS.md, 3 Swift sources, 16 copied photos, compiled awb binary, 12 before/after composites, final_run.txt. Dated FINDINGS copy on Desktop.
+
+### Results (14 local iterations, ~47ms/photo)
+- Task A SETTLED at runtime: Swift:115 comment INVERTED — negative wbTemperature cools. Session 11 decision 5 confirmed.
+- Final algorithm: garment-weighted illuminant estimate + warmth-gate (dim-warm→lift, daylight→leave) + scene-anchored brightness + post-WB per-pixel chroma-protection, all linear sRGB.
+- Scoreboard: 1059 PASS (238,236,232) / 1078 PASS (244,246,247) / 1060 = 224 spread 4 — eye-validated white, numeric soft miss, ACCEPTED (revisit via Phase 2 real mask only, never garment-anchored brightening) / controls 1061-1063 shift 0 / camel-daylight 1080 untouched / camel-warm 1081 → beige, never white / 1076 nudged not blown / 1074-1075-1079 report-only.
+
+### Criteria decisions (Grace)
+- Camel/beige trio (IMG_1079/1080/1081) shot and added as binding tests — caught two whitening failure modes during tuning.
+- 1074/1075 backlit-window → report-only: unrepresentative, users shoot against walls/doors (provenance recorded).
+- Approved deviations from Session 11 locked decision 3: garment-weighted WB + scene-anchored brightness — original full-frame rationale honored by warmth-gate + chroma-protection.
+- Measurement evolution recorded: single patch → median grid → flat-lit band (REVERTED, over-reached on 1061) → per-criterion.
+
+### Next: Phase 2 (ONE EAS build)
+Port validated algorithm into expo-background-removal at the Swift:214 chain. Checklist in FINDINGS.md: unpremultiply before estimate, exact CITemperatureAndTint parameterization, real Vision mask replaces border/center proxies (expected to improve 1060 + backlit), linear-sRGB math, Session 11 landmine list. Phase 3 (higher-res mask for edges) after EAS reset — never combined with color.
+
+---
+
 ## Update 4 — Session 11 — 2026-07-15 (evening) — Build B redefined: read-only investigation, per-photo AWB architecture locked (NO code, NO build)
 
 **Branch:** testing (HEAD `3ed93b4` at session start → docs commit at close). `main` `062d15b` / `production` `f711c5d` (Build 25 live) / tag `v1.0.4-build25-appstore-live` (→ `f711c5d`) — all UNCHANGED. Build A = Build 27 / v1.0.5 on TestFlight (compiled first try, verified today).
