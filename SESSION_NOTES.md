@@ -12,6 +12,42 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 13 — 2026-07-16 — Phase 2 AWB port → Build 28 TestFlight: EDGE FAIL (shape outranks color)
+
+**Branch:** testing `329a50a` (pushed to origin) / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4.
+**Commits (P1–P5, each "commits to testing, not main"):** `094e62d` P1 (correct inverted wbTemperature-direction comment — Task A: negative cools) · `b1660ce` P2 (port validated Fork-A AWB as isolated `AutoWhiteBalance.swift`, wired to nothing, byte-identical) · `2598c8a` P3 (add `autoWhiteBalance` enable flag, default off, wired to nothing) · `c630419` P4 (wire AWB at the correction chain, flag-gated, default off, byte-identical) · `329a50a` P5 (flip `autoWhiteBalance: true` in App.js `CUTOUT_OPTIONS`).
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (untouched).
+**EAS builds:** 1 spent — **Build 28, v1.0.5, iOS preview** (buildNumber auto-incremented 27→28 remotely via `appVersionSource: remote`). Compiled **first try** — the full module + `AutoWhiteBalance.swift` iOS compile (the one thing unverifiable locally) PASSED. IPA delivered to TestFlight via Transporter. **1 EAS build remains this month; quota resets in ~2 weeks.**
+
+**Goals:** ship the Phase-1-validated Fork-A automatic white balance (garment-only) into the real cutout pipeline in ONE build.
+
+**What changed:** New `modules/expo-background-removal/ios/AutoWhiteBalance.swift` — CPU-buffer port of the prototype (`~/Desktop/clozie-awb-prototype/awb.swift`): unpremultiply → linear-sRGB estimate (garment alpha>0.9 guard, centerSigma 0.26) → per-channel WB + warmth-gated scene-anchored brightness → per-pixel chroma-protection → 8-bit sRGB straight-alpha rebuild, apply at capped-native res (`applyMaxSide 2400`). Wired at `BackgroundRemovalModule.swift:231` behind `autoWhiteBalance` (default off), flipped on in App.js `CUTOUT_OPTIONS`.
+
+**Tests:**
+- **Phase 1.5 (Mac, real Vision mask, 12 binding photos) — PASSED the gate:** whites 1059 (240,239,235) · 1060 (236,235,234) [Phase-1 soft-miss 224 resolved by the real mask] · 1078 (244,245,246); controls 1061/1062/1063 shift 0; camel-daylight 1080 shift 6; camel-warm 1081 (135,112,89)→(192,189,183), toward-ref 78→16 & <230 [ACCEPTED by Grace, 38pt margin]. Premultiply CONFIRMED (transpMeanRGB=(0,0,0) all 12); orientation upright; ~123 ms/photo. macOS `swiftc` compile of the ported enum = compile proof.
+- **On-device (Build 28 TestFlight, Grace's eye) — FAIL.** Garment **silhouettes/edges DESTROYED on EVERY cutout** — worse than Build 25 for the product. Color may be closer, but the shape is wrecked.
+
+**Grace's ruling (RECORDED): SHAPE OUTRANKS COLOR.** A clean silhouette with imperfect color beats perfect color with a dissolved edge.
+
+**Diagnosis (read-only, VERIFIED by code-reading):**
+- **Primary cause — brightening-on-white dissolves the edge (scale-independent).** `applyCorrectionRGBA` has **no alpha gate**: the estimate excludes alpha<0.9 but the APPLY runs the full gains (brightGain up to 3.0) on ALL pixels including the semi-transparent anti-aliased fringe. Walk of a 20%-alpha warm-white fringe pixel: straight ≈(0.55,0.50,0.42) × gains → rolloff → ≈(1,1,1) WHITE, alpha preserved 0.2 → a white fringe at 20% alpha. On the app's WHITE display surfaces, a near-white semi-transparent edge blends into white → the soft silhouette edge vanishes. Worst for the light/white garments the AWB whitens most → every cutout. Build 25 never brightened → garments kept contrast against white → crisp edges. Call site 1 (Add Item) feeds a **512px** image (App.js:1806) so `applyMaxSide 2400` never downscales → the cause is brightening, NOT resampling.
+- **SECOND on-device symptom (distinct, same loop) — shadowed regions on light garments turn BROWN next to corrected white fabric.** Phase 1.6 hypothesis: the post-correction chroma-protection (protLo/protHi lerp) reads warm dark folds as "chromatic garment colour" and reverts them toward original while the surrounding lit fabric is corrected to white — one garment split into white + brown.
+- **THIRD symptom — coloured garments (e.g. fuchsia joggers) ALSO lose their silhouette.** Edge pixels are diluted garment/background mixes with LOW chroma, so chroma-protection does NOT shield them; the brightness gain pushes the outline toward white → invisible on the white card — while the protected high-chroma body stays coloured. The same mechanism flattens internal shape (seams/sheen/pale shading are low-chroma too). **All three symptoms — blown whites, shapeless silhouettes on every garment, brown shadows — trace to the per-pixel apply's treatment of pixels the ESTIMATE excludes.**
+- **`bufferToCIImage` alpha mode:** `.last` (straight) matches the straight buffer — self-consistent, NOT the primary cause. NOT CHECKED: RN `<Image>`/PNG-on-white pixel-level compositing (on-device layer, not inspectable read-only).
+- **Phase 1.5 missed it** because its composites drew over gray-248, not white — a white fringe shows on gray but vanishes on white.
+
+**UNVERIFIED / not done this session:** flag NOT turned off (stays ON in committed code); no fix attempted; Build 28 stays TestFlight-only.
+
+**Notes / state:** `autoWhiteBalance: true` remains in committed code (testing). **Build 25 / v1.0.4 is the live App Store build, untouched.** main `062d15b` / production `f711c5d` untouched. No Edge Function / SYSTEM_PROMPT / eas.json / Supabase changes; cache 2,510. 1 EAS build remains; EAS resets ~2 weeks. The P1 comment fix and the AWB color math remain correct — the failure is purely the fringe/edge interaction with brightening on white.
+
+**Next session — Phase 1.6 (Mac, ZERO builds):**
+(a) Grace AirDrops tonight's **original camera photos** into `~/Desktop/clozie-awb-prototype/photos/` as the new **binding edge test set** (real edges + real backgrounds).
+(b) **Phase 1.6 = reproduce all three symptoms locally** (blown whites, shapeless silhouettes on every garment, brown shadows) with **on-device-faithful alpha compositing** — composite the cutout PNG over **WHITE** and inspect. Fix space: **alpha-gate/feather the correction at edges** (gate correction strength by alpha so diluted/fringe pixels keep their original colour + contrast) **AND rethink chroma-protection for dark-warm and diluted pixels** (so warm folds aren't reverted to brown and low-chroma edges aren't left unshielded); all composites judged over WHITE.
+(c) **Flag-off decision ONLY after the diagnosis is confirmed reproduced** — no blind flip.
+(d) **All old scoreboard guardrails remain binding** (3 whites, 3 controls shift 0, camel-daylight untouched, camel-warm toward-beige-never-white) PLUS a new **edge/silhouette integrity** criterion.
+
+---
+
 ## Update 4 — Session 12 — 2026-07-16 — Phase 1 AWB prototype COMPLETE (local Mac, zero builds, repo untouched)
 
 **Branch:** testing c7e741a / main 062d15b / production f711c5d — ALL UNCHANGED this session until this docs commit. Zero code commits, zero EAS builds (budget still 2), zero Edge deploys, SYSTEM_PROMPT untouched (2,510).
