@@ -59,6 +59,9 @@ import { analyseWardrobe } from './src/lib/wardrobeIntelligence';
 const CUTOUT_OPTIONS = {
   outputFormat: 'png',
   enhanceStrength: 0.0,
+  autoWhiteBalance: true,   // Build 27 Phase 2: validated Fork-A AWB corrects the cut garment's
+                            // white balance + brightness (the proper fix for the whites the old
+                            // enhance regressed — enhanceStrength stays 0).
   shadowOpacity: 0.40,
   shadowBlur: 12,
   shadowOffsetX: 0,
