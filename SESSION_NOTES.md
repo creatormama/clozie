@@ -12,6 +12,37 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 14 — 2026-07-17 — Phase 1.6 A2+A3 — referee harness that catches the Build 28 edge crime (Mac, ZERO builds, repo untouched)
+
+**Branch:** testing `00e6628` / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4. Only repo change this session is THIS SESSION_NOTES.md commit.
+**Commits:** SESSION_NOTES.md only (this entry) — "commits to testing, not main." Zero app-code commits.
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (untouched). **EAS builds:** 0 (1 still remains this month).
+**Where:** all work in `~/Desktop/clozie-awb-prototype/` (outside repo). Originals in `photos/`, `photos-newlight/`, `FINDINGS.md` read-only; nothing there committed.
+
+**Goal:** Step A1 confirmed the Phase-1.5 scoreboard was blind to edges (composited over gray-248, measured only center body color). A2 = build a referee that SEES the Build-28 edge failure; A3 = recommend the fix approach. NO algorithm changes this session.
+
+**What changed (harness only):** New `src/awb_phase16_referee.swift` — a VERBATIM copy of the proven `awb_forkA_phase15.swift` (the `enum AutoWhiteBalance` and every color guardrail byte-identical) PLUS additions: white(255) + cream(#E8E4CE) before/after composites (judge over the app's real card/page surfaces, never gray); `edgeIntegrity()` — fringe visibility-over-white loss on the 0.05≤α≤0.9 band (the pixels the estimate excludes but the apply corrects); `brownPatch()` — spatial std-dev of per-cell chroma & warmth (R−B) over body pixels (α>0.9); cardigan trio 1079/1080/1081 grouped as ONE garment; newlight set 1118–1122 via file-existence gating. NO pass/fail thresholds — raw numbers only.
+
+**Enum byte-identical THROUGHOUT (VERIFIED 4×):** committed `AutoWhiteBalance.swift` (35–255) vs referee enum region — `diff` empty, md5 `26376fc8ce4577b3125074029639282f` at A2-1 (pre-write), A2-2 (post-write), A2-3 (post compile-fix), A2-5 (post metric-swap). The referee runs the EXACT unmodified Build-28 algorithm.
+
+**Tests (referee compiled clean via macOS `swiftc`, run on BOTH photo folders):**
+- **Build-28 failure REPRODUCED on Mac.** Color guardrails still PASS exactly as Phase 1.5 (whites→neutral, controls 1061/1062/1063 shift 0, camel-daylight 1080 untouched, camel-warm 1081→beige & <230) — but the NEW edge metric FAILS: `edgeLumaLoss` **0.5–0.78** on the visible dissolves (1059 0.628 · 1060 0.505 · 1081 0.779 · 1118 0.752, all bGain 2.4–3.0) and **~0.00 on every clean case** (all bGain=1.0 rows). Confirmed causal: the damage is the brightness lift, not the WB gains (bGain-1.0 rows are clean even with WB gains active). White/cream composites eyeballed — silhouettes visibly bleed into the card exactly where the number is high; clean where it's 0.
+- **Gradient metric DROPPED** — it INVERTED (retention >1 on whitened garments: 1081 2.05, 1060 1.79) because brightening widens P10–P90 spread while visually washing mid-tones. Wrong metric; removed.
+- **warmVar brown-patch metric ADDED and validated** — spatial warmth variance (a variance, so a uniform shift doesn't move it; only patchiness does): **1081 warm cardigan 7.9→14.8 (+87%)**, 1059 6.3→9.9 (+57%), 1118 4.5→6.0 (+33%); **colored controls FLAT** (green 30.4→30.4, fuchsia 11.2→11.3) → clean discrimination. Honest caveat recorded: the chromaVar half mostly falls (global desaturation) and 1060 warmVar dropped despite a real edge fail → warmVar is SECONDARY/confirmatory, edgeLumaLoss is the primary gate.
+- **Cardigan consistency:** same garment corrected to 3 different colors across lights, max pairwise shift 25.
+- **Composites saved:** `~/Desktop/clozie-awb-prototype/out/phase16/` (12 warm-light + CARDIGAN_trio_p16.png) and `out/phase16-newlight/` (5). Judge `_p16.png`; ignore the `_p15.png` gray files.
+
+**A3 recommendation ON RECORD (DECISION PENDING GRACE — deferred to next session per workflow):**
+- **Approach B — spatially-uniform CIImage correction** (apply the smart estimate's per-channel WB gains via a diagonal CIColorMatrix + a capped uniform CIExposureAdjust; drop the per-pixel chroma lerp). Bet on B over Approach A (patch the per-pixel loop) because the referee proved both failure classes are properties of a non-uniform, alpha-blind, brightness-heavy apply — B removes the spatial + alpha classes by construction (SHAPE OUTRANKS COLOR becomes a guarantee), reuses existing module filters, and the global coverage/warmth gate already protects colored garments (so the per-pixel chroma protection — the brown-patch cause — can go). Honest tradeoff: dropping brightGain leaves dim-warm whites neutral-but-dim.
+- **Proposed first A3 step (zero builds):** a **brightGain-cap sweep** in the harness (brightClampHi 1.0/1.3/1.5/2.0) to draw the color-vs-edge tradeoff curve on real photos before writing the real fix — approach-agnostic.
+- **Suggested gates:** primary **edgeLumaLoss ≤ 0.10 = PASS** (fix target: all garments ≤0.10), 0.10–0.30 WARN, >0.30 FAIL; secondary **warmVar after/before ratio > 1.4 = brown-patch flag** (confirmatory only, not an independent hard gate). Fix acceptance = re-run referee: all garments edge ≤0.10, no warmVar ratio >1.4, AND all color guardrails still pass.
+
+**UNVERIFIED / not done:** no algorithm/fix code written; `autoWhiteBalance: true` still ON in committed code; Build 28 stays TestFlight-only. Fix approach + thresholds NOT locked — Grace decides next session.
+
+**Notes / state:** Build 25 / v1.0.4 LIVE and untouched. main `062d15b` / production `f711c5d` untouched. Zero EAS builds spent (1 remains), zero repo code changes, zero Edge Function/SYSTEM_PROMPT/Supabase changes, cache 2,510. Referee proven: color PASSES, edge FAILS — the harness now sees what Grace's eye saw on the iPhone.
+
+---
+
 ## Update 4 — Session 13 — 2026-07-16 — Phase 2 AWB port → Build 28 TestFlight: EDGE FAIL (shape outranks color)
 
 **Branch:** testing `329a50a` (pushed to origin) / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4.
