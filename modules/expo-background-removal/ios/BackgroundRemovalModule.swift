@@ -25,6 +25,11 @@ struct RemoveBackgroundOptions: Record {
   @Field var exposureEV: Double = 0      // CIExposureAdjust EV; 0 = no exposure lift
   @Field var edgeChokePx: Double = 0     // alpha erosion in px; 0 = no choke
   @Field var edgeSharpness: Double = 0   // 0..1 alpha-ramp steepen; 0 = no ramp change
+
+  // Build 27 (Phase 2): garment-only automatic white balance (the validated Fork-A AWB).
+  // false = OFF (default, byte-identical to Build A). true = run AutoWhiteBalance.corrected
+  // on the cut garment. Wired at the correction chain in P4; flipped on from App.js in P5.
+  @Field var autoWhiteBalance: Bool = false
 }
 
 private extension UIImage {

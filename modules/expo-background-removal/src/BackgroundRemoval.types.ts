@@ -37,4 +37,8 @@ export interface RemoveBackgroundOptions {
   exposureEV?: number;     // CIExposureAdjust EV; 0 = no exposure lift
   edgeChokePx?: number;    // alpha erosion in px; 0 = no choke
   edgeSharpness?: number;  // 0..1 alpha-ramp steepen; 0 = no ramp change
+
+  // Build 27 Phase 2: garment-only automatic white balance (validated Fork-A AWB).
+  // false/omitted = OFF (default, byte-identical to Build A). true = correct the cut garment.
+  autoWhiteBalance?: boolean;
 }
