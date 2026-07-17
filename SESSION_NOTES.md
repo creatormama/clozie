@@ -12,6 +12,36 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 15 — 2026-07-17 — Phase 1.6 A3 — brightGain-cap sweep + Approach B LOCKED + gates LOCKED (Mac, ZERO builds, repo untouched)
+
+**Branch:** testing `279f680` → docs commit at close / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4. Only repo change this session is THIS SESSION_NOTES.md commit.
+**Commits:** SESSION_NOTES.md only (this entry) — "This commits to testing, not main." Zero app-code commits.
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (untouched). **EAS builds:** 0 (1 still remains this month).
+**Where:** all work in `~/Desktop/clozie-awb-prototype/` (outside repo). Originals in `photos/`, `photos-newlight/`, `FINDINGS.md` read-only; nothing there committed.
+
+**Goal:** run the approach-agnostic brightGain-cap sweep proposed in Session 14 A3 — draw the color-vs-edge tradeoff curve with real data before any fix code — then Grace locks the fix approach + gates. NO algorithm/fix code this session.
+
+**What changed (harness only):** 2-line edit inside the ADDITIVE HARNESS extension of `src/awb_phase16_referee.swift` (`phase15`, ~line 291): `let e` → `var e` + an env-var re-cap `if BRIGHT_CAP set: e.brightGain = min(cap, e.brightGain)`. Emulates lowering `brightClampHi` WITHOUT touching the enum (every sweep cap ∈ [0.80 floor, 3.0 enum cap], so `min()` is mathematically identical to re-clamping brightClampHi). Compiled once via macOS `swiftc -O`; ran the binary twice per cap (warm-light `photos/` + `photos-newlight/`, separate out dirs). **Enum region (lines 21–241) NEVER touched — md5 re-proven `26376fc8ce4577b3125074029639282f` after the edit.** Baseline run (no env var) reproduced Session 14 numbers EXACTLY (1059 0.628 / 1060 0.505 / 1081 0.779 / 1118 0.752) = proof the edit changed nothing on the default path. Cap effect verified (1081 bGain 1.00/1.30/1.50/2.00 at caps 1.0/1.3/1.5/2.0).
+
+**Tests / the tradeoff curve (edgeLumaLoss gate ≤0.10 PASS · 0.10–0.30 WARN · >0.30 FAIL):**
+- **Edge loss scales MONOTONICALLY with the cap → confirms brightness is the engine of edge destruction.** Worst garments base(3.0)→cap1.0: 1059 0.628→0.003 · 1060 0.505→0.003 · 1081 0.779→0.008 · 1118 0.752→0.005; all reach PASS only at cap 1.0, WARN at cap 1.3–1.5, FAIL at cap 2.0+.
+- **Color guardrails:** dim-warm whites 1059/1060 PASS white ONLY at base (→236–240); every cap drops them below 230 (cap1.5→192–193 = a light warm gray, cap1.0→160). Bright white 1078 PASS through cap1.3 (→238) — it starts at raw 224 so needs only a small lift. Camel 1081 PASS camelWarm at EVERY cap (→192 base … →118 cap1.0, always toward-ref, never white). Controls 1061/62/63 shift 0 at every cap; camelRef 1080 shift 6 every cap; newlight control 1122 shift 0 every cap.
+- **KEY FINDING — for dim warm-lit whites (1059/1060), color and edge are MUTUALLY EXCLUSIVE: at NO cap do both pass.** A raw-174 warm white needs bGain ~2.4 to reach ≥230, and that exact lift dissolves the edge (0.5–0.63 loss). → A one-line "just lower brightClampHi" fix CANNOT clear both gates; the fix must be structural.
+- **warmVar barely responds to the cap** (1059 ratio stays ~1.4 even at cap1.0 where the edge is clean) → the brown-patch is driven by the chroma-protection / WB interaction, NOT brightness → confirms warmVar is confirmatory-only, and the brown fix is the chroma-protection lever (Approach B), not a brightness cap.
+- **Caveat recorded:** these edge numbers are on the CURRENT alpha-blind per-pixel apply. Approach B (alpha-gated) may keep the edge intact at HIGHER brightness by construction — so the sweep prices the cheap fix + confirms the diagnosis; it does NOT cap what B can recover.
+- **Composites saved per cap:** `out/sweep/cap100|cap130|cap150|cap200/` (+ matching `-nl` newlight dirs), baseline in `out/sweep/base/`. Judge the `_p16.png` files (before | after-over-white | after-over-cream).
+
+**DECISIONS LOCKED (Grace, this session):**
+1. **Approach B** — spatially-uniform CIImage correction (WB gains via a diagonal CIColorMatrix + a capped uniform CIExposureAdjust; DROP the per-pixel chroma lerp). Approach A (patch the per-pixel loop) REJECTED.
+2. **Interim tradeoff ACCEPTED:** dim warm-lit whites may land as light warm gray — an honest interim FLOOR, **NOT a locked ceiling.** Approach B's alpha-gating may recover more brightness safely; the referee decides.
+3. **Gates LOCKED:** `edgeLumaLoss ≤ 0.10 = PASS` primary (0.10–0.30 WARN, >0.30 FAIL); `warmVar after/before ratio > 1.4` = confirmatory brown-patch flag ONLY, not an independent hard gate. Fix acceptance = referee re-run: all garments edge ≤0.10 AND all color guardrails still pass (whites ≥230 where achievable given decision 2, controls shift 0, camelRef untouched, camelWarm toward-beige-never-white).
+
+**UNVERIFIED / not done:** no fix/algorithm code written; `autoWhiteBalance: true` still ON in committed code; Build 28 stays TestFlight-only. Approach B NOT yet implemented — separate approved step, next session.
+
+**Notes / state:** Build 25 / v1.0.4 LIVE and untouched. main `062d15b` / production `f711c5d` untouched. Zero EAS builds spent (1 remains), zero repo code changes, zero Edge Function/SYSTEM_PROMPT/Supabase changes, cache 2,510. The referee's brightGain-cap knob (env `BRIGHT_CAP`) remains in the harness for future sweeps; enum unchanged.
+
+---
+
 ## Update 4 — Session 14 — 2026-07-17 — Phase 1.6 A2+A3 — referee harness that catches the Build 28 edge crime (Mac, ZERO builds, repo untouched)
 
 **Branch:** testing `00e6628` / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4. Only repo change this session is THIS SESSION_NOTES.md commit.
