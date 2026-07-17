@@ -219,15 +219,21 @@ public class BackgroundRemovalModule: Module {
         let foreground = CIImage(cvPixelBuffer: maskedPixelBuffer)
         let context = CIContext()
 
-        // Garment-only correction chain (all DORMANT at Build A defaults — each helper
-        // early-returns the exact input, so `corrected` == `foreground` and output stays
-        // byte-identical to the JS tuning alone). WB + exposure fix the cut garment's
-        // color; the edge choke tightens the matte. Choke runs BEFORE the shadow so the
-        // baked shadow derives from the CHOKED mask (shadowedForeground shapes the shadow
-        // from the alpha it is handed).
+        // Garment-only correction chain. With autoWhiteBalance ON, the validated Fork-A AWB
+        // (AutoWhiteBalance.corrected) does the white-balance + brightness on the cut garment
+        // and REPLACES the manual WB/exposure dials (which remain for the Build B JS-tuning
+        // path). With the flag OFF (default) the manual dials run and — at their identity
+        // defaults — leave `corrected` == `foreground`, so output stays byte-identical to
+        // Build A. AutoWhiteBalance.corrected returns nil on any failure -> we keep the
+        // uncorrected foreground, never breaking the pipeline. The edge choke runs in BOTH
+        // paths, BEFORE the shadow, so the baked shadow derives from the CHOKED mask.
         var corrected = foreground
-        corrected = whiteBalancedForeground(corrected, options: options)
-        corrected = exposureAdjustedForeground(corrected, options: options)
+        if options?.autoWhiteBalance == true {
+          corrected = AutoWhiteBalance.corrected(corrected) ?? corrected
+        } else {
+          corrected = whiteBalancedForeground(corrected, options: options)
+          corrected = exposureAdjustedForeground(corrected, options: options)
+        }
         corrected = chokedForeground(corrected, options: options)
 
         // Baked silhouette shadow (opt-in via shadowOpacity > 0): composited UNDER the
