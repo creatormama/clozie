@@ -12,6 +12,38 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 16 — 2026-07-17 — Phase 1.6 — Approach B built in referee + measured: FAILS the locked gates at every cap (Mac, ZERO builds, repo untouched)
+
+**Branch:** testing `149b486` → docs commit at close / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4. Only repo change this session is THIS SESSION_NOTES.md commit.
+**Commits:** SESSION_NOTES.md only (this entry) — "This commits to testing, not main." Zero app-code commits.
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (untouched). **EAS builds:** 0 (1 still remains this month).
+**Where:** all work in `~/Desktop/clozie-awb-prototype/` (outside repo). `photos/`, `photos-newlight/`, `out/phase16*`, `FINDINGS.md` read-only; nothing there committed.
+
+**Goal:** implement locked Approach B (spatially-uniform CIImage correction) in the referee harness and measure it on the same scoreboard as the Build-28 baseline — default cap + the 1.0/1.4/1.8 cap sweep. NO shipping/app code, NO enum change.
+
+**What changed (harness only):** added ONE new function `phase15B` inside the ADDITIVE HARNESS extension of `src/awb_phase16_referee.swift` — reuses `phase15`'s estimate VERBATIM (same WB gains + same capped brightGain incl. `BRIGHT_CAP`), applies WB via a diagonal **CIColorMatrix** + brightness via a uniform **CIExposureAdjust** (EV = log2 brightGain) in the linear working space; NO highlight knee, NO per-pixel chroma lerp (both dropped by design); output byte-format-identical to phase15's before/after so every existing metric/composite consumes it unchanged — PLUS ONE env-gated line in `main` (`APPROACH=="B" ? phase15B : phase15`). **Enum region (lines 21–241) NEVER touched — md5 re-proven `26376fc8ce4577b3125074029639282f` after every edit.** Gate OFF reproduced Step-3 baseline BYTE-IDENTICALLY (35/35 composites + identical metric tables) = wiring inert when off. **Self-check inside phase15B (CI-vs-analytic uniform multiply, body pixels) = meanAbs 0.00–0.03 levels on every photo → the CI filter path is a FAITHFUL uniform correction, not an implementation artifact.** Caps verified applied via self-check bGain (cap1.0→all 1.00 · cap1.4→max 1.40 · cap1.8→max 1.80).
+
+**Tests — B scoreboard vs A (edgeLumaLoss ≤0.10 PASS · 0.10–0.30 WARN · >0.30 FAIL):**
+- **Edge gate passes ONLY at cap 1.0** (zero brightness lift). DEFAULT→1.8→1.4→1.0: 1059 0.634→0.414→0.232→**0.003** · 1060 0.608→0.408→0.225→**0.005** · 1078 0.285(flat)→**0.001** · 1081 0.816→0.446→0.248→**0.011** · 1118nl 0.761→…→**0.006**; 1063 control 0.437→…→**0.104** (marginal WARN). At cap 1.4 the lifted whites are still 0.22–0.29 (FAIL). B is slightly **edge-worse than A at equal bGain** (1060 0.505→0.608) — the honest cost of dropping A's knee + lerp.
+- **Color at the edge-safe cap 1.0:** whites NEUTRALIZED but DIM — 1059→(160,160,157) · 1060→(160,159,158) · **1078→(212,213,214) a regression** (was a bright 224-white, now <230). NO white reaches ≥230 under B's edge-safe cap. camelWarm 1081→(117,115,112) toward-ref 78→62 <230 PASS but dim/gray. camelRef 1080 shift 6 PASS. controls 1062/1122 shift 0 PASS.
+- **NEW casualty — dropping the chroma lerp fails control 1063 at EVERY cap:** 1063 (pink, gate 0.36, extreme WB gains 0.72/2.00/1.54) shifts 66/32/23/**22** at DEFAULT/1.8/1.4/1.0 vs A's shift **0**. Verified proportional to the estimate's gate: gate 0.00 (1062,1122)→shift 0 fine · gate 0.17 (1061)→shift 6 borderline/cap-rescuable · gate 0.36 (1063)→shift 22 — **WB-driven, not brightness-driven, so NO cap fixes it.** A's per-pixel chroma protection was the safety net for nonzero-gate saturated garments; locked-B drops it.
+- **warmVar QUIET at cap 1.0** — brown-patch flags gone: only 1081 trips (ratio 1.43, marginal, warm garment). B does NOT reintroduce widespread brown patchiness at the edge-safe cap (unlike default, where warmVars climbed).
+- **Artifacts:** default-cap B in `out/phaseB/` + `out/phaseB-newlight/`; sweep in `out/phaseB-cap10|cap14|cap18(+-nl)/`; A baseline in `out/phaseBaseline*`.
+
+**VERDICT (VERIFIED):** **Approach B as locked — uniform CIColorMatrix WB + capped CIExposureAdjust, chroma lerp dropped — FAILS the locked acceptance at every cap.** Two independent problems: (1) edge vs brightness mutual exclusivity (known, now confirmed for B) — the only edge-safe cap (1.0) surrenders all white brightening, and even the bright white 1078 can't reach 230; (2) the dropped chroma protection FAILS the 1063 control guardrail (shift 22), WB-driven and uncapfixable. Self-check proves this is B's true behaviour, not a bug.
+
+**FORKS — both OPEN, nothing recommended or locked (Grace's call, future step):**
+- **(a)** restore a chroma-protection equivalent in the CI path, and/or tighten the estimate's gate so high-chroma/low-confidence garments (1063) get identity gains.
+- **(b)** alpha-gate/feather the correction at the fringe to break the edge-vs-brightness lock (explicitly on the Phase 1.6 fix-space list, NOT part of locked B).
+
+**OPEN QUESTION ON RECORD (unresolved):** Grace's eye on the Mac before/after composites found the DEFAULT-cap B whites acceptable-looking, even though the edge gate FAILS them (0.6+). Whether `edgeLumaLoss ≤ 0.10` is calibrated to real iPhone appearance at card size — vs stricter than the eye needs — is **unresolved.** Needs an on-phone check (B output rendered at actual card size over the white surface) in a future session BEFORE any gate change or fork is locked. The gate stands as-is for now.
+
+**UNVERIFIED / not done:** no fix chosen; `autoWhiteBalance: true` still ON in committed code; Build 28 stays TestFlight-only; no fork implemented; on-phone gate-calibration check not done.
+
+**Notes / state:** enum md5 `26376fc8ce4577b3125074029639282f` UNCHANGED; zero EAS builds (1 remains); zero repo code changes; main `062d15b` / production `f711c5d` UNTOUCHED; Build 25 / v1.0.4 LIVE and unchanged; zero Edge Function/SYSTEM_PROMPT/Supabase changes; cache 2,510. `phase15B` + the `APPROACH=B` env gate remain in the harness for future fork measurement; enum unchanged.
+
+---
+
 ## Update 4 — Session 15 — 2026-07-17 — Phase 1.6 A3 — brightGain-cap sweep + Approach B LOCKED + gates LOCKED (Mac, ZERO builds, repo untouched)
 
 **Branch:** testing `279f680` → docs commit at close / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4. Only repo change this session is THIS SESSION_NOTES.md commit.
