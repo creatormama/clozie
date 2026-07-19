@@ -12,6 +12,37 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 17 — 2026-07-19 — Phase 1.6 Fork (a) — chroma-protected Approach B (phase15C) built in referee + measured: PASSES acceptance at every cap (Mac, ZERO builds, repo untouched)
+
+**Branch:** testing `727efde` → docs commit at close / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4. Only repo change this session is THIS SESSION_NOTES.md commit.
+**Commits:** SESSION_NOTES.md only (this entry) — "This commits to testing, not main." Zero app-code commits.
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (untouched). **EAS builds:** 0 (1 still remains this month).
+**Where:** all work in `~/Desktop/clozie-awb-prototype/` (outside repo). `photos/`, `photos-newlight/`, `out/*` read-only originals; nothing there committed. New read-only `photos_manifest.md5` (21-file md5 manifest, self-md5 `46827282…`) written to the prototype root to guard the originals — outside the repo, never committed.
+
+**Goal:** implement Fork (a) from Session 16 — keep locked Approach B's spatially-uniform CIImage shape but ADD a chroma-protection equivalent so high-chroma/low-confidence garments (control 1063, gate 0.36; control 1061, gate 0.17) get identity gains, matching Approach A's shift 0, WITHOUT regressing edges vs B. NO shipping/app code, NO enum change.
+
+**What changed (harness only):** added ONE new function `phase15C` inside the ADDITIVE HARNESS extension of `src/awb_phase16_referee.swift`, PLUS ONE env-gated ternary in `main` (`APPROACH=="C" ? phase15C : =="B" ? phase15B : phase15`). **`phase15` and `phase15B` byte-for-byte UNTOUCHED. Enum region (lines 21–241) NEVER touched — md5 re-proven `26376fc8ce4577b3125074029639282f` after every edit.**
+- **Mechanism (garment-level chroma protection = A's per-pixel lerp, aggregated):** over body pixels (α>0.9) `phase15C` computes the provisional-corrected chroma EXACTLY as enum A's `applyCorrectionRGBA` does — `rolloff(px·gain·brightGain, knee)` → `(mx−mn)/max(mx,1e-5)` — takes the MEAN, and forms `sC = 1 − smoothstep(protLo 0.22, protHi 0.44, meanChroma)` (A's own ramp constants, reused verbatim). WB gains AND brightGain are attenuated toward identity by `sC`, then applied through the SAME single CIColorMatrix + CIExposureAdjust B uses. `sC≈1` (low-chroma whites) → byte-identical to B; `sC≈0` (high-chroma controls) → identity gains → shift 0. Spatially UNIFORM — no per-pixel apply, no new edge surface. Returned est carries the effective (post-sC) gains so the scoreboard shows what C applied.
+- **Inertness proven (step6 = new binary; step5/baseline never overwritten):** step6 at no-APPROACH AND `APPROACH=B` == prior `step5` — 35/35 composites BYTE-IDENTICAL on BOTH paths, scoreboard data identical, and the B self-check stderr byte-identical. Baseline edge numbers reproduced EXACTLY (1059 0.628 / 1060 0.505 / 1081 0.779 / 1118 0.752). C code is reachable ONLY under `APPROACH=C`.
+- **Caps + sC proven applied per photo via self-check stderr** (Session 15 zsh trap avoided — verified from printed artifacts, not the env var): cap field `none`/`1.0`/`1.4`/`1.8` ×17 each; CI-vs-analytic body `meanAbs ≤ 0.03` levels on every photo-run → the attenuated CI transform is FAITHFUL, not an artifact.
+
+**Tests — C scoreboard, folding in the compact C / A / B comparison (gates LOCKED: edgeLumaLoss ≤0.10 PASS · warmVar ratio >1.4 confirmatory-only):**
+- **PRIMARY ACCEPTANCE MET — all controls shift 0 at EVERY cap.** 1061 · 1062 · 1063 · 1122 = **0/0/0/0** at default/1.0/1.4/1.8. **C vs A vs B on the two leaky controls:** 1063 — **A 0 · B 66/32/23/22 · C 0/0/0/0**; 1061 — **A 0 · B 6 · C 0/0/0/0**. `sC=0.000` for all four (meanChroma 0.70–0.997, above protHi) → before=after byte-for-byte. C restores exactly what B dropped.
+- **NO edge regression vs B (C ≤ B everywhere; C strictly dominates B on controls).** Whites 1059/1060/1078 · camelWarm 1081 · report 1079: **C == B edgeLumaLoss to 3 dp** (sC=1 → C *is* B). Controls: 1061 **0.298→0.000**, 1063 **0.437→0.000** (C *better* — identity gains never touch the fringe); 1062/1122 already 0. So on controls C beats B on color AND edge simultaneously; A also held color but its per-pixel brightness apply is what FAILED garment edges in Build 28 — **C = A's control protection inside B's uniform-edge shape.**
+- **Camel guardrails hold** (sC=1 → C==B): camelRef 1080 shift 6 (<8) PASS every cap; camelWarm 1081 toward-ref & <230 every cap (78→18 default · →62 cap1.0 · →42 cap1.4 · →25 cap1.8) PASS.
+- **Whites unchanged from B by construction (sC=1.000, meanChroma 0.077–0.111 << protLo).** 1059/1060 PASS white only at default (→236/234); 1078 (starts bright) PASSES at default/1.4/1.8; under cap they dim to warm-gray exactly as B did.
+- **Composites** (Grace eyeball, APPROVED): 1063/1061/camels/colorful controls untouched at every cap; whites look same as B including the known gauze/soft-edge softness at default — confirmed the EXPECTED open problem for Fork (b), NOT a regression. Saved: `out/phaseC_default(+-nl)`, `out/phaseC_cap10|cap14|cap18(+-nl)`.
+
+**VERDICT (VERIFIED):** **Fork (a) — phase15C, chroma-protected uniform CIImage correction — PASSES the locked acceptance at every cap.** It closes the Session-16 casualty (dropped chroma protection failing controls 1061/1063) with zero edge cost — matching Approach A's control protection while keeping Approach B's uniform, alpha-safe apply shape.
+
+**HONEST FLAG ON RECORD:** Fork (a) does **NOT** fix the dim-warm-white brightness problem. Because whites have sC=1, C is byte-for-byte B on whites — 1059/1060 still land dim below the default cap and the gauze edge stays soft at default. That is Fork (b) (alpha-gate/feather the fringe to break the edge-vs-brightness lock) and remains the OPEN problem, exactly as expected. The Session-16 OPEN QUESTION — whether `edgeLumaLoss ≤ 0.10` matches real iPhone appearance at card size — is still unresolved and still needs an on-phone check before any gate change.
+
+**UNVERIFIED / not done:** no repo port — porting phase15C into the app is its OWN future session (Build 29); `autoWhiteBalance: true` still ON in committed code; Build 28 stays TestFlight-only; Fork (b) not started; on-phone gate-calibration check not done.
+
+**Notes / state:** enum md5 `26376fc8ce4577b3125074029639282f` UNCHANGED; zero EAS builds (1 remains); zero repo code changes; main `062d15b` / production `f711c5d` UNTOUCHED; Build 25 / v1.0.4 LIVE and unchanged; zero Edge Function/SYSTEM_PROMPT/Supabase changes; cache 2,510. `phase15C` + the `APPROACH=C` env gate + new `out/awb_phase16_step6` binary remain in the harness for the Fork-(a) record; `phase15B`/`APPROACH=B` and the enum unchanged.
+
+---
+
 ## Update 4 — Session 16 — 2026-07-17 — Phase 1.6 — Approach B built in referee + measured: FAILS the locked gates at every cap (Mac, ZERO builds, repo untouched)
 
 **Branch:** testing `149b486` → docs commit at close / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4. Only repo change this session is THIS SESSION_NOTES.md commit.
