@@ -12,6 +12,32 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 19 — 2026-07-19 — Build 29 CHUNK 1 of 2 — port phase15D (Fork b winner) into the app: AutoWhiteBalance.swift rewritten to the validated C+D pipeline, committed + pushed (Mac, ZERO EAS builds, build deferred to Chunk 2)
+
+**Branch:** testing `4bf5f5d` → `5b51910` (pushed to origin/testing, 0/0 ahead/behind) / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4.
+**Commits:** ONE app-code commit `5b51910` — `modules/expo-background-removal/ios/AutoWhiteBalance.swift` ONLY (+64/−4). Named-file commit, "This commits to testing, not main." (This SESSION_NOTES.md entry is a second commit at close.)
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (untouched). **EAS builds:** 0 (1 still remains this month — spent in Chunk 2).
+**Session split:** Chunk 1 = state-verify → port plan → edit → commit → push. STOPPED before the pre-build triple-check and any `eas build` — those run in a fresh Chunk-2 conversation that re-verifies all state from disk first.
+
+**Goal:** replace Build-28's Approach-A per-pixel apply (which destroyed garment edges on-device) with the Session-18 Fork-b winner (phase15D): garment-level `sC` chroma protection + spatially-uniform CIColorMatrix/CIExposureAdjust + trailing alpha-gated fringe blend. No App.js/module change, no env dials.
+
+**What changed (app code, one file):**
+- **State verified first (all VERIFIED):** branch/HEAD/main/production safe, tree clean. Version `1.0.5` in BOTH app.config.js:7 + package.json:3 → v1.0.5 train OPEN (Builds 26/27/28 TestFlight-only, never released) → NO bump for Build 29. Build number = EAS remote autoIncrement (eas.json `appVersionSource: remote`). Prototype enum md5 `26376fc8…` re-proven over lines 21–241 (byte-identical; phase15C/D live in the harness extension 247–575, below the hashed core).
+- **KEY finding:** the shipping enum core (`AutoWhiteBalance.swift` 35–255) was ALREADY byte-for-byte identical to the Mac-validated referee shared enum (`awb_phase16_referee.swift` 21–241) — all 18 estimate constants + `estimateIlluminant` + `applyCorrectionRGBA` + helpers present & correct. So the port touched ONLY `corrected()` + 2 new constants.
+- **Edit 1:** added `fringeBlendLo = 0.85` / `fringeBlendHi = 0.90` (hardcoded, no env dials; `fringeBlendHi == alphaEstMin 0.9` by design = body cutoff).
+- **Edit 2:** rewrote `corrected()`'s apply tail — removed `applyCorrectionRGBA(..., correct: true)` (the edge-destroyer), added phase15D verbatim: `refLin` render → `sC = 1 − smoothstep(protLo, protHi, meanBodyChroma)` → WB+brightGain attenuated by `sC` → uniform `CIColorMatrix` (diagonal WB, alpha row preserved) + `CIExposureAdjust` (EV = log2 g) → `blended = refLin + s·(ciLin − refLin)`, `s = smoothstep(0.85, 0.90, α)`, alpha passthrough → `applyCorrectionRGBA(idEst, correct:false)` → `bufferToCIImage`. Signature unchanged → no module edit. Two new fail-safe `guard`s (refLin + ciLin/size-match → nil → module keeps uncorrected foreground).
+- **Integration confirmed read-only:** `BackgroundRemovalModule.swift:232` passes the premultiplied Vision-masked `foreground` (line 219, `croppedToInstancesExtent: true`) into `AutoWhiteBalance.corrected(...)` and nil-coalesces on failure — exactly what phase15D expects. `autoWhiteBalance: true` in App.js CUTOUT_OPTIONS (App.js:62) unchanged.
+
+**Tests (Mac, static checks only — NO build):**
+- **Numeric parity vs referee phase15D VERIFIED byte-identical:** sC chroma loop + gain attenuation (17/17 statements MATCH), CIColorMatrix/CIExposureAdjust (code identical; one inline comment not carried), alpha-gated blend loop (MATCH), final linToSrgb (identical bar the local buffer name). Only intended deltas: aLo/aHi → hardcoded constants; inline estimate (drops harness probes, same numbers); local names.
+- **`swiftc -parse` AND `swiftc -typecheck` both exit 0** on this Mac (macOS SDK, arm64; NO artifacts written) — full CoreImage API surface resolves (CIColorMatrix params, CIVector, log2f, applyingFilter, Estimate init).
+
+**UNVERIFIED / not done:** NOT iOS-compiled — macOS typecheck ≠ EAS iOS build; first real compile is Build 29 (Chunk 2). No pre-build triple-check, no `eas build`, no Transporter upload. On-phone verdict still OPEN — the port reproduces the config the Mac scoreboard passed; the Session-16 gate-calibration question (does edgeLumaLoss ≤0.10 match real iPhone appearance at card size? is the fringe halo invisible?) can ONLY be answered on-device next session.
+
+**Notes / state:** backup `AutoWhiteBalance.swift.session19-prebackup` written (byte-identical, md5 `542e4918…`), untracked/local, never committed — instant revert door. Prototype read-only, untouched (enum md5 `26376fc8…` unchanged). Zero EAS builds (1 remains); main `062d15b` / production `f711c5d` UNTOUCHED; Build 25 / v1.0.4 LIVE; Build 28 stays TestFlight-only, NOT promoted; zero Edge Function/SYSTEM_PROMPT/Supabase changes; cache 2,510.
+
+---
+
 ## Update 4 — Session 18 — 2026-07-19 — Phase 1.6 Fork (b) — alpha-gated fringe protection (phase15D) built in referee + measured: PASSES acceptance at aLo 0.85 / default cap — the previously-impossible pair (Mac, ZERO builds, repo untouched)
 
 **Branch:** testing `09f0ac6` → docs commit at close / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4. Only repo change this session is THIS SESSION_NOTES.md commit.
