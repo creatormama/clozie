@@ -54,6 +54,11 @@ enum AutoWhiteBalance {
   private static let protLo       : Float = 0.22   // chroma-protection ramp: below -> full correction
   private static let protHi       : Float = 0.44   // chroma-protection ramp: above -> preserve (revert)
   private static let alphaEstMin  : Float = 0.9    // NEW fringe guard: estimate uses alpha>0.9 pixels only
+  // alpha-gated fringe blend ramp — Fork b (phase15D) validated winner, Session 18.
+  // HARDCODED, no env dials. fringeBlendHi intentionally == alphaEstMin (0.9): the body cutoff
+  // where s==1 (fully corrected) matches the estimate/chroma body guard.
+  private static let fringeBlendLo: Float = 0.85   // alpha <= this -> s=0 (keep original fringe)
+  private static let fringeBlendHi: Float = 0.90   // alpha >  this -> s=1 (fully corrected body)
   private static let applyMaxSide = 2400           // cap apply-resolution: bounds the transient linear
                                                    // float buffer (~2400^2 * 16B ~= 88MB) so a very large
                                                    // cutout can't spike memory on older iPhones. Above this
@@ -246,10 +251,65 @@ enum AutoWhiteBalance {
     guard let est = renderLinearRGBA(straight, maxSide: estMaxSide, context: ctx) else { return nil }
     let e = estimateIlluminant(est.px, est.w, est.h)
 
-    // Apply at NATIVE resolution (preserve current output res), capped at applyMaxSide.
+    // Straight linear reference at capped-native res — chroma stat AND blend base.
     let nativeMaxSide = min(applyMaxSide, Int(max(masked.extent.width, masked.extent.height).rounded()))
-    guard let full = renderLinearRGBA(straight, maxSide: nativeMaxSide, context: ctx) else { return nil }
-    let corrected = applyCorrectionRGBA(full.px, full.w, full.h, e, correct: true)
-    return bufferToCIImage(corrected, full.w, full.h)
+    guard let refLin = renderLinearRGBA(straight, maxSide: nativeMaxSide, context: ctx) else { return nil }
+
+    // Garment-level chroma protection scalar sC (mean provisional-corrected chroma, body pixels).
+    // A warm white becomes neutral after correction (low chroma) -> sC~1 -> full correction; a true
+    // color stays chromatic -> sC~0 -> identity gains -> no shift. Whole-garment decision, not per-pixel.
+    let tr = e.gainR * e.brightGain, tg = e.gainG * e.brightGain, tb = e.gainB * e.brightGain
+    var sumChroma: Float = 0; var nBody = 0
+    for i in 0..<(refLin.w * refLin.h) {
+      if refLin.px[i*4+3] <= alphaEstMin { continue }          // body pixels only (same guard as estimate)
+      let pr = rolloff(refLin.px[i*4]   * tr, knee)
+      let pg = rolloff(refLin.px[i*4+1] * tg, knee)
+      let pb = rolloff(refLin.px[i*4+2] * tb, knee)
+      let mx = max(pr, max(pg, pb)), mn = min(pr, min(pg, pb))
+      sumChroma += (mx - mn) / max(mx, 1e-5)
+      nBody += 1
+    }
+    let meanBodyChroma = nBody > 0 ? sumChroma / Float(nBody) : 0
+    let sC = 1 - smoothstep(protLo, protHi, meanBodyChroma)
+
+    // Attenuate WB gains AND brightGain toward identity by sC. sC=1 -> full correction; sC=0 -> identity.
+    let gR = 1 + sC * (e.gainR - 1)
+    let gG = 1 + sC * (e.gainG - 1)
+    let gB = 1 + sC * (e.gainB - 1)
+    let g  = 1 + sC * (e.brightGain - 1)
+
+    // Spatially UNIFORM correction: WB as a diagonal CIColorMatrix (alpha row preserves alpha),
+    // brightness as CIExposureAdjust (EV = log2 g), in the linear working space. NO per-pixel apply.
+    let wb = straight.applyingFilter("CIColorMatrix", parameters: [
+      "inputRVector": CIVector(x: CGFloat(gR), y: 0, z: 0, w: 0),
+      "inputGVector": CIVector(x: 0, y: CGFloat(gG), z: 0, w: 0),
+      "inputBVector": CIVector(x: 0, y: 0, z: CGFloat(gB), w: 0),
+      "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1),
+      "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: 0)
+    ])
+    let ev = log2f(max(g, 1e-4))
+    let correctedCI = wb.applyingFilter("CIExposureAdjust", parameters: ["inputEV": CGFloat(ev)])
+
+    guard let ciLin = renderLinearRGBA(correctedCI, maxSide: nativeMaxSide, context: ctx),
+          ciLin.w == refLin.w, ciLin.h == refLin.h else { return nil }
+
+    // Alpha-gated fringe blend (Fork b / phase15D): s = smoothstep(fringeBlendLo, fringeBlendHi, alpha).
+    // s=1 body (alpha > 0.9) -> corrected; s=0 fringe (alpha <= 0.85) -> ORIGINAL. The edge-metric band
+    // (0.05..0.9) lands on the protected side, so the soft silhouette is kept -> no Build-28 dissolve.
+    // The blend only ever moves a fringe pixel TOWARD its original value, never further.
+    var blended = [Float](repeating: 0, count: ciLin.w * ciLin.h * 4)
+    for i in 0..<(ciLin.w * ciLin.h) {
+      let a = refLin.px[i*4+3]
+      let s = smoothstep(fringeBlendLo, fringeBlendHi, a)
+      blended[i*4]   = refLin.px[i*4]   + s * (ciLin.px[i*4]   - refLin.px[i*4])
+      blended[i*4+1] = refLin.px[i*4+1] + s * (ciLin.px[i*4+1] - refLin.px[i*4+1])
+      blended[i*4+2] = refLin.px[i*4+2] + s * (ciLin.px[i*4+2] - refLin.px[i*4+2])
+      blended[i*4+3] = ciLin.px[i*4+3]                          // alpha passthrough (== refLin alpha)
+    }
+
+    // Linear float -> straight-alpha sRGB8 (identity estimate = pure linToSrgb, per-pixel alpha preserved).
+    let idEst = Estimate(gainR:1,gainG:1,gainB:1,brightGain:1,coverage:0,gate:0,illumR:1,illumG:1,illumB:1)
+    let out = applyCorrectionRGBA(blended, ciLin.w, ciLin.h, idEst, correct: false)
+    return bufferToCIImage(out, ciLin.w, ciLin.h)
   }
 }
