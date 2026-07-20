@@ -12,6 +12,31 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 20 — 2026-07-20 — DOCUMENTATION CATCH-UP (no app code, no builds). CLAUDE.md refreshed to Build-29-submitted state, 2 Build-29 findings logged to backlog, build/upload guide added to repo. Continues same session as the Build-29 restore tag.
+
+**Branch:** testing → 3 doc commits this session / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4.
+**Commits (this session, all testing, named-file only):**
+- `10fcb32` — CLAUDE.md CURRENT BUILD STATE refresh: Last verified → 2026-07-20; new lean "Last updated" snapshot (Build 29 v1.0.5 submitted to Apple, awaiting review; restore tag; AWB in app code; pending release bookkeeping); old Build-28 block archived in place (no text deleted).
+- `fc9a1cb` — `Clozie_Known_Issues_Backlog.md`: 2 Build-29 on-device findings logged under Background Removal (Finding 2 oatmeal/pale-warm over-whiten = AWB tuning; Finding 3 busy-carpet cutout = Vision segmentation, out of AWB scope). Fixes the docs gap where Session 19 *claimed* these were logged but they were never actually in the backlog file.
+- `5146bf0` — new file `Clozie_Build_And_Upload_Guide.md` (60 lines) at repo root: current build/upload flow (Claude Code builds; download IPA to Desktop; Transporter as Clozie LLC T9PZ9RW7F5; never `eas submit`; pre-flight code + config checks). Closes the Session-19 gap where this guide was absent from the repo and Transporter steps had to be reconstructed.
+**Tag (created earlier this session, already pushed):** `v1.0.5-build29-awb-whitefix` → commit `0baff39` (Build 29's EAS-confirmed source; tag-object `5314ce9`). Descriptive restore point only — NOT `-appstore-live`, no production move.
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (untouched). **EAS builds:** 0 (none this session; 0 remain this month).
+
+**Goal:** bring the docs current with reality — CLAUDE.md was 2 builds + a submission stale (frontier still read "Build 28 EDGE FAIL"), 2 Build-29 findings were unlogged, and the build/upload guide was missing from the repo.
+
+**What happened:**
+- Build 29 (v1.0.5) was **submitted to Apple 2026-07-20 ~3:50 PM PT** and is **AWAITING REVIEW** — NOT approved, NOT released. Build 25 / v1.0.4 stays LIVE.
+- State re-verified live from disk before every edit (branch/HEAD/main/production, tags, commit `5b51910` = AutoWhiteBalance.swift only). Every doc claim VERIFIED against git or marked as sourced from prior session notes / Grace.
+- Build 29 TestFlight field-testing reconfirmed the oatmeal / pale-warm over-whitening (Finding 2, backlog `fc9a1cb`); fixes are queued for Session 21 (starter already prepared).
+
+**Tests:** N/A — documentation only, no runnable surface. Read-back + git diff verified on each of the 3 commits; guide verified byte-exact valid UTF-8 (60 lines, em-dashes/arrows intact, no smart-quote corruption).
+
+**UNVERIFIED / not done:** no promotion to production; Build 29 stays TestFlight-only awaiting Apple review. Findings 2 & 3 logged only, not fixed. Pending release bookkeeping (create `v1.0.5-build29-appstore-live` on `0baff39` + fast-forward `production` `f711c5d` → `0baff39`) waits until Apple approves and Grace presses Release.
+
+**Notes / state:** testing advanced by 3 doc commits (`10fcb32` → `fc9a1cb` → `5146bf0`); main `062d15b` / production `f711c5d` UNTOUCHED; tag `v1.0.4-build25-appstore-live` → `f711c5d` intact; cache 2,510; zero Edge Function / SYSTEM_PROMPT / Supabase changes; zero app-code changes; zero EAS builds.
+
+---
+
 ## Update 4 — Session 19 — 2026-07-19 — Build 29 CHUNK 2 of 2 — EAS build (LAST of the month) → Transporter delivered → on-phone verdict: MUCH better, not perfect. Session-16 gate-calibration PASS. phase15D iOS compile risk RESOLVED (Mac, ONE EAS build spent, repo write = this entry only)
 
 **Branch:** testing `0baff39` (pre-entry HEAD, unchanged from Chunk 1) → SESSION_NOTES.md commit at close / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4. Only repo change this session is THIS SESSION_NOTES.md commit.
