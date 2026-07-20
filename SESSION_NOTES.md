@@ -12,6 +12,38 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 19 — 2026-07-19 — Build 29 CHUNK 2 of 2 — EAS build (LAST of the month) → Transporter delivered → on-phone verdict: MUCH better, not perfect. Session-16 gate-calibration PASS. phase15D iOS compile risk RESOLVED (Mac, ONE EAS build spent, repo write = this entry only)
+
+**Branch:** testing `0baff39` (pre-entry HEAD, unchanged from Chunk 1) → SESSION_NOTES.md commit at close / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4. Only repo change this session is THIS SESSION_NOTES.md commit.
+**Commits:** SESSION_NOTES.md ONLY (this entry) — "This commits to testing, not main." Zero app-code commits (all code landed in Chunk 1 `5b51910`).
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (untouched). **EAS builds:** 1 (Build 29) — the LAST of the month, **0 now remain** (quota resets ~2 weeks).
+
+**Goal:** the first real iOS compile of the Chunk-1 phase15D port, then TestFlight delivery + Grace's on-device gate-calibration verdict — the one thing the Mac scoreboard could never answer.
+
+**What happened:**
+- **State re-verified from disk first (all VERIFIED):** branch/HEAD/main/production safe, tree clean of tracked changes. Version `1.0.5` in BOTH app.config.js:7 + package.json:3 → v1.0.5 train OPEN (Builds 26/27/28 TestFlight-only, never released; Build 25 / v1.0.4 LIVE) → NO bump. `AutoWhiteBalance.swift` read in full — fringeBlendLo 0.85 / fringeBlendHi 0.90 hardcoded, phase15D pipeline + both fail-safe guards intact, `corrected()` signature unchanged. `autoWhiteBalance: true` App.js:62 intact. Prototype enum md5 `26376fc8…` re-proven read-only over lines 21–241 (`sed`/`awk`/keepends convention — a no-trailing-newline variant differs, file genuinely unchanged). Backup `session19-prebackup` md5 `542e4918…` intact.
+- **Pre-build triple check PASSED:** git clean + pinned; version rule satisfied (Build 29 via EAS remote autoIncrement, `eas.json appVersionSource: remote`); `eas whoami` = `clozie` / hello@clozie.net BEFORE the build so auth couldn't waste it; profile `preview` (matches Builds 25–28).
+- **Build 29 / v1.0.5 EAS iOS preview build SUCCEEDED FIRST TRY (exit 0).** buildNumber auto-incremented 28→29; credentials ready (com.clozie.app, Apple Team T9PZ9RW7F5 Clozie LLC); "✔ Build finished". Build page `67b0bb56-d200-4566-b8c1-067fbc4c9bf3`. **This is the first real iOS compile of phase15D — the Chunk-1 honest risk (macOS typecheck ≠ iOS build) is RESOLVED.** As predicted, the two "new" calls carried no compile-time surface (log2f = libm; CIColorMatrix/CIExposureAdjust = string-resolved runtime filters).
+- **Transporter DELIVERED 2026-07-19 7:47 PM — 1.0.5 (29)**, signed in as **Clozie LLC**, NEVER `eas submit`. TestFlight-only; nothing promoted; Build 25 / v1.0.4 stays LIVE.
+- **CORRECTION ON THE RECORD:** during the session I suggested signing into Transporter as insuredbyjacek@msn.com — **that was WRONG**; the correct identity is **Clozie LLC** per `Clozie_Build_And_Upload_Guide.md`. That guide is **NOT in the repo** (confirmed absent this session) — Transporter steps were reconstructed from scratch; the guide should be added to the repo in a future session.
+
+**GRACE'S ON-PHONE VERDICT (verbatim):** "So it is so much better, but it's not perfectly fine. So whites are whites. That's good. I can see the pretty good shape. If I put white T shirt and a busy carpet in a dim light with shades, it's not completely white. Colors are good. But if I put, like, colorful T shirt and a colorful carpet, sometimes does not cut out well. I mean, most of the time does not cut out well. And if I put the oatmeal sweater in a bright light, comes out almost white." On the halo: "The hollow is very minimal, almost not visible, it's fine."
+
+**SESSION-16 GATE-CALIBRATION ANSWER — PASS:** edgeLumaLoss ≤0.10 matches real iPhone appearance at card size; the fringe halo is near-invisible on-device exactly as predicted. The Session-16 open question is answered YES.
+
+**Findings sorted:**
+1. **Dim-warm whites not fully white** (white tee, busy carpet, dim light/shades) — the KNOWN Session-16 open limitation, now confirmed on-device. Expected, not a regression. Whites in normal light DO read white; shape is good.
+2. **NEW — oatmeal / low-chroma warm garments in bright light over-whiten** ("oatmeal sweater in bright light comes out almost white"). Cause: garment-level `sC` chroma protection reads a pale warm as near-neutral → full correction → whitening. Inherent trade of the sC design (the same mechanism that lets warm whites go white). Candidate follow-up: raise the sC protection floor for pale-warm garments, or gate brightGain by absolute luma. Logged to KNOWN ISSUES backlog.
+3. **Colorful garment on busy colorful carpet fails cutout** ("most of the time does not cut out well"). This is **Vision segmentation / background-removal**, NOT AWB — OUT OF SCOPE for this workstream. Logged to KNOWN ISSUES backlog for the segmentation/cutout track.
+
+**Net ruling:** phase15D is a clear improvement over Build 28 (whites white, shape preserved, halo gone, colors good) — but "better, not perfect." SHAPE OUTRANKS COLOR still holds; the residual color misses (dim-warm, pale-warm-bright) are AWB tuning, and the busy-carpet miss is a separate cutout problem.
+
+**UNVERIFIED / not done:** no promotion to production; Build 29 stays TestFlight-only. Findings 2 & 3 not yet fixed — logged only. No further EAS build this month (0 remain).
+
+**Notes / state:** testing HEAD `0baff39` pre-entry; main `062d15b` / production `f711c5d` UNTOUCHED; backup `AutoWhiteBalance.swift.session19-prebackup` intact; prototype read-only, untouched (enum md5 `26376fc8…`); cache 2,510; zero Edge Function / SYSTEM_PROMPT / Supabase changes.
+
+---
+
 ## Update 4 — Session 19 — 2026-07-19 — Build 29 CHUNK 1 of 2 — port phase15D (Fork b winner) into the app: AutoWhiteBalance.swift rewritten to the validated C+D pipeline, committed + pushed (Mac, ZERO EAS builds, build deferred to Chunk 2)
 
 **Branch:** testing `4bf5f5d` → `5b51910` (pushed to origin/testing, 0/0 ahead/behind) / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4.
