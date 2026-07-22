@@ -12,6 +12,31 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 22 — 2026-07-21 — BUILD 29 APP STORE RELEASE + GIT BOOKKEEPING. Build 29 / v1.0.5 RELEASED; production INTENTIONALLY fast-forwarded f711c5d → 0baff39. main UNTOUCHED. Zero deploys, zero app-code, zero EAS builds — release + docs only.
+
+**Branch:** testing `8bf90d5` → `6708c79` (two CLAUDE.md doc commits) / **production `f711c5d` → `0baff39` (INTENTIONAL fast-forward — this is a release, the one session that deliberately moves production)** / main `062d15b` UNTOUCHED (never checked out, never moved). HEAD stayed on testing throughout.
+**Commits:** 3 total, all named-file, all "This commits to testing, not main." — (1) `868d320` CLAUDE.md CURRENT BUILD STATE → Build 29 live / Build 25 demoted in place / v1.0.5 train CLOSED; (2) `6708c79` CLAUDE.md standing fact SDK 54 → 57; (3) this SESSION_NOTES.md entry. Plus git refs: annotated tag `v1.0.5-build29-appstore-live` (tag-object `e2b79f2`) on commit `0baff39`, and production ff `f711c5d` → `0baff39`.
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (untouched — nothing deployed). **EAS builds:** 0 (0 remain this month; none needed — Build 29 was already built + Apple-approved).
+
+**Goal:** press Release on the already-Apple-approved Build 29, then do the release git bookkeeping (appstore-live tag + production fast-forward) exactly per the Build 25 precedent, after independently re-verifying the fast-forward target that Session 21 flagged as unverified.
+
+**What changed:**
+- **Build 29 / v1.0.5 RELEASED to the App Store 2026-07-21 (US, 1 region).** Grace pressed Release in App Store Connect; sidebar status went **Pending Developer Release → Ready for Distribution**, rollout in progress. Build 25 / v1.0.4 is the prior live build.
+- **Verified Build 29 source commit = `0baff39`.** Session 21 had flagged `0baff39` as NOT independently verified. Closed it SIX ways: (in-repo, all VERIFIED) real commit; contains phase15D `AutoWhiteBalance.swift` (app-code `5b51910` is its ancestor; fringeBlendLo 0.85 / fringeBlendHi 0.90, sC chroma, CIColorMatrix/CIExposureAdjust, alpha-gated blend all present); version `1.0.5` in BOTH app.config.js:7 + package.json:3; `f711c5d` is a true ANCESTOR (ff, nothing lost); reachable on testing (ancestor of HEAD). PLUS the **EAS server-side record** (`eas build:view 67b0bb56-…`): Version 1.0.5 / Build number 29 / Commit `0baff3924ec25bc28f827615d6a96d7332f147da` — the binary-to-commit link is cryptographically confirmed, not inferred from notes.
+- **Annotated tag `v1.0.5-build29-appstore-live`** (tag-object `e2b79f2`) created on `0baff39`, Build 25-style annotation. **production fast-forwarded `f711c5d` → `0baff39`** — 41 commits, ff-only via `git push . 0baff39:production`, no `--force`, nothing discarded. Tag + production both pushed to origin (local `production` = `origin/production` = `0baff39`, VERIFIED).
+- **Docs:** `868d320` (CURRENT BUILD STATE → Build 29 live, Build 25 demoted in place with no text deleted, v1.0.5 train CLOSED → next app CODE change bumps BOTH app.config.js + package.json to 1.0.6; both read 1.0.5 on disk, no bump yet) and `6708c79` (standing fact SDK 54 → 57, VERIFIED from package.json `expo ^57.0.0` + node_modules 57.0.4 / RN 0.86.0 — **npm audit fix ban KEPT IN FORCE and explicitly marked NOT re-validated against SDK 57: untested is not cleared**).
+
+**Tests / verification:**
+- production local = origin = `0baff39` (VERIFIED via `git ls-remote`). Tag on origin, tag-object `e2b79f2` (VERIFIED).
+- **Build 25 restore point `v1.0.4-build25-appstore-live` @ `f711c5d` (tag-object `d219721`) VERIFIED INTACT after the production move.** Build 29 descriptive restore tag `v1.0.5-build29-awb-whitefix` @ `0baff39` also intact.
+- main STILL `062d15b`, HEAD on testing STILL advanced only by the two doc commits, testing 0/0 with origin (all VERIFIED).
+
+**SDK lineage (for the record, per Grace's own history check):** Build 15 / v1.0.2 was the last App Store-RELEASED build on SDK 54; Build 18 was the first EAS build on SDK 57; Build 19 became the TestFlight-verified SDK 57 baseline; everything from Build 18 onward — including Builds 25 and 29 — is SDK 57, so **production is now SDK 57**. **CAVEAT:** Builds 16/17 failed and never shipped — which SDK they were on is NOT VERIFIED, left unstated.
+
+**UNVERIFIED / not done / still open:** ZERO Edge Function / SYSTEM_PROMPT / app-code / EAS-build changes this session. Deliberately NOT touched (future docs pass): CLAUDE.md flag #2 (`Latest TestFlight standalone (Update 0): Build 12` — stale) and flag #3 (main "107 commits behind testing" count — stale, NOT CHECKED). Build 29 field findings 2 (oatmeal / pale-warm over-whiten — AWB tuning) and 3 (busy-carpet cutout — Vision segmentation, out of AWB scope) remain in the backlog, UNFIXED. Whether `npm audit fix` is safe on SDK 57 — untested, ban stays.
+
+**Notes / state:** This is the release session — the ONE session that intentionally moves production, exactly as CURRENT BUILD STATE's build convention prescribes. main `062d15b` untouched; production now `0baff39` (Build 29 / v1.0.5 LIVE); cache 2,510; EAS quota 0 remaining this month.
+
 ## Update 4 — Session 21 — 2026-07-21 — OUTFIT-GENERATION DIAGNOSTIC (READ-ONLY: zero deploys, zero app-code, zero commits except this entry). Diagnosed 6 issues (A–F) from Grace's Build-29 July-20 field testing against the live index.ts. NOTHING fixed — sized fix proposals only. Build 29 still awaiting Apple review; production stays f711c5d.
 
 **Branch:** testing (HEAD `7164328`, clean, 0/0 with origin) / main `062d15b` / production `f711c5d` — main + production UNTOUCHED. Live App Store build unchanged: Build 25 / v1.0.4.
