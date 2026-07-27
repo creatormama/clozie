@@ -449,6 +449,12 @@ function pickLightOuterwear(items: Item[], used: Set<string>): Item | null {
   return pickRandom(candidates)
 }
 
+// Issue D (2026-07-27): "new-item bias" — items created today get a "* " mark
+// so Sonnet prioritises them. Disabled because bulk re-photographing the whole
+// closet marks EVERYTHING as new. Pinning is the deliberate replacement.
+// Flip back to true to restore. All code below is retained and reversible.
+const NEW_ITEM_BIAS_ENABLED = false
+
 function isToday(iso: string | null): boolean {
   if (!iso) return false
   try {
@@ -530,7 +536,7 @@ function buildCompressedPool(items: Item[], briefFamily: ColorFamily | null = nu
   })
 
   return sorted.map(item => {
-    const todayMark = isToday(item.createdAt) ? '* ' : ''
+    const todayMark = (NEW_ITEM_BIAS_ENABLED && isToday(item.createdAt)) ? '* ' : ''
     const parts = [displayNameById?.get(item.id) ?? item.name, item.category, item.colour || '—']
 
     // Fabric: only if NOT already in the name. Try notes if name has none.
