@@ -33,6 +33,13 @@ const LIGHT_OUTERWEAR = /cardigan|blazer|vest|sweater|denim jacket|light jacket|
 // and the Indoor toggle. Active today; does not depend on the warmth column.
 const HEAVY_OUTERWEAR = /parka|puffer|puff jacket|down coat|down jacket|duvet coat|winter coat|overcoat|shearling|sherpa|teddy|ski jacket|fur coat|faux fur|windbreaker|poncho|cape|quilted jacket|bomber|trench coat|rain jacket|peacoat|fleece jacket|fleece cover|leather jacket/i
 
+// Rain-shell outerwear name-pattern regex — used by the Cold/Snowy interim filter.
+// Narrow by design: only thin waterproof shells (rain jacket/coat, anorak, windbreaker),
+// NOT warm coats (parkas/puffers/winter coats stay allowed in the cold). Leading word
+// boundaries guard against odd names; no trailing boundary so plurals ("rain jackets",
+// "raincoats") still match. Active today; independent of the warmth column.
+const RAIN_OUTERWEAR = /\brain[ -]?jacket|\brain[ -]?coat|\banorak|\bwindbreaker/i
+
 // Open footwear name-pattern regex — used by the Cool/Cold temperature filter.
 // Active today; targets shoes only — sleeveless tops and other categories untouched.
 const OPEN_FOOTWEAR = /sandal|flip.?flop|flip flop|slide|espadrille|open.?toe|strappy flat|strappy heel|thong sandal/i
@@ -1279,6 +1286,25 @@ function applySafetyFilters(args: {
     })
     if (filtered.length !== before) {
       console.log(`[generate-outfits] C4 Snowy filter dropped ${before - filtered.length} unsafe-for-snow items`)
+    }
+  }
+
+  // Cold/Snowy — drop thin rain-shell outerwear (rain jacket/coat, anorak, windbreaker)
+  // unless pinned. These shells add no warmth, so they're wrong for genuine cold or snow.
+  // Rainy carve-out: a rain shell is still allowed when it's actively raining (condition
+  // === 'Rainy'), so this never fires on a mild rainy day. Warm coats (parkas, puffers,
+  // winter coats) are NOT touched — they stay allowed in the cold. Outerwear isn't an
+  // essential, so dropping it can never trip the soft-fail revert below.
+  if (!indoors && (condition === 'Snowy' || (temperature === 'Cold' && condition !== 'Rainy'))) {
+    const before = filtered.length
+    filtered = filtered.filter(i => {
+      if (i.id === pinnedItemId) return true
+      if (i.category !== 'Outerwear') return true
+      if (RAIN_OUTERWEAR.test(i.name || '')) return false
+      return true
+    })
+    if (filtered.length !== before) {
+      console.log(`[generate-outfits] Cold/Snowy rain-outerwear filter dropped ${before - filtered.length} rain-shell items`)
     }
   }
 
