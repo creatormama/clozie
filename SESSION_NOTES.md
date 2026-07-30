@@ -12,6 +12,31 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 24 — 2026-07-29 — CLOSET BLANK-IMAGES DIAGNOSIS (spec banked, fix deferred to Aug 1) + 1e COLD-WEATHER WARMTH INTERIM (deployed Version 63, verified). No app-code shipped; one Edge Function deploy.
+
+**Branch:** testing. main `062d15b` UNTOUCHED / production `0baff39` UNTOUCHED. HEAD on testing throughout. Nothing pushed.
+**Commits (this session, testing, named-file only — no `git add -A`):** (1) `bc80ca5` — Option A closet-fix spec doc; (2) `b0a6621` — `index.ts` 1e warmth filter; (3) this SESSION_NOTES.md entry; (4) a lean CLAUDE.md update. All "This commits to testing, not main."
+**Edge Function deploys:** 1 — `generate-outfits` via CLI `--use-api` → now **Version 63, ACTIVE**. **Cache token count:** 2,510 (SYSTEM_PROMPT untouched). **EAS builds:** 0.
+
+**Goal:** (1) diagnose the closet blank-images-after-long-background bug read-only and bank the fix; (2) ship the cold-weather rain-shell interim without touching the prompt cache.
+
+**What changed:**
+- **CLOSET BLANK-IMAGES BUG — diagnosed, fix BANKED, deferred.** Root cause (VERIFIED): closet images are private Supabase Storage **signed URLs with a 1-hour TTL** (`wardrobeItems.js:8`), minted **once** on MainAppScreen mount (`loadItems`, `App.js:7789`/`7799`/`7806`) and **never regenerated on foreground return**. RN keeps the screen mounted while backgrounded, so after >1h the metadata renders but every `photoUri` is expired → blank images; force-quit remounts and re-mints → fixed. Auth-token hypothesis REJECTED (signed URLs are standalone; the AppState listener at `App.js:8356` only refreshes auth). **Fix = Option A** (gated foreground re-mint: on AppState `active`, if >45 min since last mint, re-mint signed URLs by mapping over items already in state via the safe functional-map setter — avoids the `loadItems` hard-replace race by both timing and mechanism). Fully spec'd + banked to **`Clozie_ClosetImage_SignedURL_Fix_OptionA_Spec_2026-07-29.md`** (commit `bc80ca5`). **DEFERRED to Aug 1** — it's an App.js native change, un-testable until the EAS quota resets. Two open flags to confirm AT BUILD TIME: (a) whether re-mint causes a visible image **re-download/flicker** depends on the closet grid's `<Image>` component + its cache behavior (`App.js:2138`); (b) Your Looks saved-outfit cards hold their **own** item-URL copies and are **not** covered by this fix (out of scope; refresh on next Generate).
+- **VERSION CORRECTION:** older notes said the live `generate-outfits` edge version was 61. `supabase functions list` showed it was actually **62 pre-deploy** (notes were one version stale). Tonight's deploy incremented it cleanly to **Version 63, STATUS ACTIVE**.
+- **1e COLD-WEATHER WARMTH INTERIM — DEPLOYED + VERIFIED.** Added const `RAIN_OUTERWEAR = /\brain[ -]?jacket|\brain[ -]?coat|\banorak|\bwindbreaker/i` near `index.ts:34` and a new filter block in `applySafetyFilters` right after the C4 Snowy block. Trigger: `!indoors && (condition === 'Snowy' || (temperature === 'Cold' && condition !== 'Rainy'))`. Pinned-exempt (single-pin `pinnedItemId`, same guard as every other filter); Outerwear-only category guard; house-style drop-count `console.log`. Leading word-boundaries only (no trailing `\b`) so plurals ("rain jackets", "anoraks", "windbreakers") still match. **SYSTEM_PROMPT untouched → cache stays 2,510.** Syntax verified via the installed TypeScript in transpile-only mode (throwaway scratchpad script, no toolchain install); all identifiers confirmed in scope. Deployed via CLI `--use-api` → Version 63.
+
+**Tests / verification (on-device + Supabase Logs):**
+- **Cold + Snowy** → log `Cold/Snowy rain-outerwear filter dropped 1 rain-shell items`; no rain jacket in the generated outfits. ✅
+- **Cold + Rainy** → NO rain-outerwear drop line (carve-out held); the stone anorak correctly reappeared. ✅
+- Cache round-trip: `cache_creation 2510` then `cache_read 2510`. ✅ 3 outfits each run, source sonnet.
+
+**UNVERIFIED / OPEN / NEXT SESSION:**
+- **Light non-warm outerwear (denim jacket, leather jacket) and light/short-sleeve TOPS still appear in Cold/Snowy — NOT covered by this rain-only interim** (confirmed via logs: only the rain filter touched outerwear; the warmth-column C1 Cold filter is dormant because `warmth` is NULL on all items). The interim removes the *wrong* outerwear; it does **not** guarantee the rest of the outfit is warm.
+- **Real fix = the warmth-data layer (path b):** tag each item light/mid/warm, then require warm-enough outerwear AND tops in Cold/Snowy. This is the next spec. **Do NOT solve it with an ever-growing name blocklist.**
+- Closet Option A fix awaits Aug 1 EAS quota + its two build-time flags above.
+
+**Notes / git state:** testing holds spec commit `bc80ca5` + warmth commit `b0a6621` (+ this entry + a CLAUDE.md update). main untouched; production untouched; **nothing pushed.** Numbering: this is Session 24 — SESSION_NOTES skips 23 because Session 23 (Issue D, 2026-07-27) was recorded in CLAUDE.md only.
+
 ## Update 4 — Session 22 — 2026-07-21 — BUILD 29 APP STORE RELEASE + GIT BOOKKEEPING. Build 29 / v1.0.5 RELEASED; production INTENTIONALLY fast-forwarded f711c5d → 0baff39. main UNTOUCHED. Zero deploys, zero app-code, zero EAS builds — release + docs only.
 
 **Branch:** testing `8bf90d5` → `6708c79` (two CLAUDE.md doc commits) / **production `f711c5d` → `0baff39` (INTENTIONAL fast-forward — this is a release, the one session that deliberately moves production)** / main `062d15b` UNTOUCHED (never checked out, never moved). HEAD stayed on testing throughout.
