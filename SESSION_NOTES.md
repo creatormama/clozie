@@ -12,6 +12,57 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 25 — 2026-08-01 — CAPTURE-PATH COLOR-PROFILE DIAGNOSIS (READ-ONLY). Pale-garment "washout" traced to the in-app camera path, NOT AWB, NOT lighting. No code changed, no build, no Edge Function. Branch untouched.
+
+**Branch:** testing. main `062d15b` UNTOUCHED / production `0baff39` UNTOUCHED. HEAD `5a8c046` throughout. Nothing pushed.
+**Commits (this session, testing, named-file only — no `git add -A`):** (1) this SESSION_NOTES.md entry; (2) a lean CLAUDE.md CURRENT BUILD STATE pointer. All "This commits to testing, not main."
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (SYSTEM_PROMPT untouched). **EAS builds:** 0. **Session type:** READ-ONLY DIAGNOSTIC.
+
+**Goal at start:** fix the oatmeal / pale-warm "washout" (garments coming out almost-white).
+
+**Grace's controlled experiment (on phone):** ONE physical oatmeal cardigan, added THREE ways — (1) camera-roll import → correct, named "Oatmeal"; (2) in-app camera in DAYLIGHT → washed out, misnamed "Stone Grey"; (3) in-app camera in WARM light → washed out, misnamed "Powder Blue". **Conclusion: the CAPTURE PATH predicts the washout, NOT the lighting.**
+
+**Code-level diagnosis (VERIFIED against the real code):**
+- **Both Add-Item paths are byte-for-byte identical AFTER acquisition.** Camera `handleTakePhoto` (`App.js:1787`) and library `handleUploadFile` (`App.js:1818`) both run the SAME `ImageManipulator.manipulateAsync(uri, [{ resize: { width: 512 } }], { compress: 0.75, format: JPEG })` (`App.js:1804` / `1836`), then the SAME `Promise.all([runRecognition(fixed.uri), applyBackgroundRemoval(fixed.uri)])` (`App.js:1811` / `1843`) with the SAME `CUTOUT_OPTIONS` (`autoWhiteBalance: true`, `App.js:59-62`) into the SAME shared native module (`BackgroundRemovalModule.swift:187-232`). The ONLY difference between the two paths is the picker call itself.
+- **The picker is where the paths diverge (expo-image-picker `57.0.2`).** Camera → `UIImagePickerController` has **no original file** (`referenceURL` nil — the code comments this at `ImageUtils.swift:68`), so it is forced to **redraw** (`UIImage+fixOrientation.swift:50-78`, a CGContext redraw) and **re-encode** via `image.jpegData(compressionQuality: 0.85)` (`ImageUtils.swift:107`, the `default:` branch). Library → `PHPickerViewController` calls `loadImageDataRepresentation()` (`MediaHandler.swift:182`) and for HEIC returns the **ORIGINAL bytes untouched** (`ImageUtils.swift:146`) — embedded ICC/Display-P3 profile intact, no redraw, no re-encode.
+- **Leading mechanism:** the P3 profile is dropped or mistagged somewhere in the camera-only redraw → `jpegData` → ImageManipulator-resize chain, so a downstream stage reads P3 pixels as sRGB → pale colors wash out. Library survives because its original profile travels through intact. **This is a profile-PRESERVATION/tagging difference, not a gamut difference** (both sources may be P3).
+- **VERIFIED:** the redraw-vs-original-bytes asymmetry (camera must re-encode; library preserves original HEIC bytes). **NOT CHECKED:** the exact link where the profile is lost, and whether the camera JPEG ends up UNTAGGED vs MISTAGGED-sRGB — needs real-file inspection.
+
+**KEY IMPLICATION — the AWB luma-gate is RETIRED for this issue.** Recognition runs on `fixed.uri` BEFORE any AWB (`runRecognition` → `recognizeWardrobePhoto` re-encodes `fixed.uri` to base64, `clozieRecognition.js:12`; AWB only ever touches the separate background-removal branch). Yet camera shots come back NAMED washed ("Stone Grey"/"Powder Blue") — so the washout is baked into `fixed.uri` UPSTREAM of AWB. The previously-scoped AWB `brightGain` luma-gate cannot fix this and would leave recognition wrong. **Luma-gate is off the table for the pale washout.**
+
+**Package facts:** expo-image-picker `57.0.2`, expo-image-manipulator `57.0.2` — VERIFIED from node_modules. NEITHER exposes any color-space / ICC / gamut option (picker: quality/base64/exif/mediaTypes/allowsEditing/presentationStyle/cameraType; manipulator: format/compress/base64). **So there is no flag fix** — the fix must be an explicit color-managed conversion step (real code + a build).
+
+**CHOSEN FIX DIRECTION (not yet designed):** a proper **COLOR-MANAGED P3→sRGB conversion at the CAPTURE stage, upstream of the split**, so the single shared `fixed.uri` is correctly sRGB-tagged before it fans out to recognition and background removal. This fixes BOTH the display washout AND the color-naming error at their shared root. It is a color-managed conversion (renders pixels through a real transform, preserves appearance), **NOT a blind re-tag** — a blind re-tag would dull colors and is explicitly RULED OUT.
+
+**GRACE'S HARD CONSTRAINT:** the fix must NOT regress background removal, the whites, or the colored clothes — all three are non-negotiable. If an approach can't protect all three, it does not ship.
+
+**Risk read on the chosen direction:** BR edges/shape — none expected (mask is shape/luminance-driven). Whites — very low (neutral is the same point in P3 and sRGB). Colored clothes — low but THE ONE TO WATCH (a managed conversion preserves in-gamut colors; only a blind re-tag would dull them). Color-naming — fixed as a bonus (shared `fixed.uri`).
+
+**Confirmation method:** Xcode "Download Container" was considered but **Grace does NOT have Xcode installed — Xcode route ABANDONED.** Instead, fold a TEMPORARY logging step into the fix build to confirm the profile on the real files (read the base64 header for the ICC marker + sample a pixel), then remove it.
+
+**BUILD PLAN (Grace's decision — 15 builds available this month, builds not scarce):**
+- **Build 1** = capture-stage fix + TEMPORARY logging → test on phone + read the profile notes.
+- **Build 2** = remove logging + bundle ONE small, pre-agreed, low-risk fix (candidate: the closet blank-images Option A fix, spec banked Session 24) → ship clean.
+- Respect "one thing at a time / don't pile fixes" — the bundled extra must be small and pre-agreed.
+
+**VERSION RULE reminder:** app-code change → bump `1.0.5` → `1.0.6` in BOTH `app.config.js` AND `package.json` before any EAS build.
+
+**ON-DEVICE REGRESSION CHECKLIST (run next session before trusting any build):**
+1. BR edges/shape clean on white / dark / patterned garments.
+2. Whites still white via BOTH paths.
+3. Colored garments still vivid AND now MATCH the library import of the same piece.
+4. Oatmeal via in-app camera in daylight AND warm light now correct.
+5. Recognizer names oatmeal correctly (→ "Oatmeal", not "Stone Grey"/"Powder Blue").
+6. Library path renders byte-identically (unchanged — regression guard).
+7. Same garment camera-vs-library now visually match (the definitive proof).
+8. Nothing else moved (no Edge Function / SYSTEM_PROMPT, cache 2,510, version bumped before build).
+
+**UNVERIFIED / NEXT SESSION:** fresh session — design the color-managed P3→sRGB capture conversion, build WITH temporary logging, confirm the profile on real files, then run the full regression checklist above. NOT CHECKED items to resolve at build time: exact profile-loss link; untagged vs mistagged-sRGB.
+
+**Notes / git state:** READ-ONLY diagnostic — zero code, zero builds, zero deploys. testing HEAD `5a8c046` unchanged except this entry + a lean CLAUDE.md pointer. main untouched; production untouched; nothing pushed.
+
+---
+
 ## Update 4 — Session 24 — 2026-07-29 — CLOSET BLANK-IMAGES DIAGNOSIS (spec banked, fix deferred to Aug 1) + 1e COLD-WEATHER WARMTH INTERIM (deployed Version 63, verified). No app-code shipped; one Edge Function deploy.
 
 **Branch:** testing. main `062d15b` UNTOUCHED / production `0baff39` UNTOUCHED. HEAD on testing throughout. Nothing pushed.
