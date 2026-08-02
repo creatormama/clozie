@@ -12,6 +12,38 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 26 — 2026-08-02 — MEASURE-ONLY BUILD 30 + DECISIVE MEASUREMENT. Washout root cause FOUND: background-removal AWB over-whitening pale warm garments — Session 25 capture-path theory OVERTURNED. One EAS build (measure-only, TestFlight); no fix code yet.
+
+**Branch:** testing @ `17472d1`, ahead of origin by 4, NOT pushed. main `062d15b` UNTOUCHED / production `0baff39` UNTOUCHED.
+**Commits (this session, testing, named-file only — no `git add -A`, no amend):** `64b980e` version bump 1.0.5 → 1.0.6 (`app.config.js` + `package.json`); `17472d1` measure(camera-color) — `MEASURE_COLOR_MODE` share of raw `fixed.uri` on camera + library paths (`App.js` only, +20 lines, purely additive). Plus this SESSION_NOTES entry + a CLAUDE.md CURRENT BUILD STATE block + a KNOWN ISSUES bullet. All "This commits to testing, not main."
+**Restore tag:** annotated `v2026-08-02-pre-camera-color-fix` @ `c447731` (known-good pre-camera-work bookmark; local only, not pushed).
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (SYSTEM_PROMPT untouched). **EAS builds:** 1 — Build 30 (v1.0.6), measure-only, delivered to TestFlight via Transporter; NOT promoted (Build 29 / v1.0.5 still LIVE). **Session type:** measure build + on-Mac measurement.
+
+**Goal at start:** fix the oatmeal / pale-warm "washout" (garments coming out almost-white; misnamed "Stone Grey" / "Powder Blue").
+
+**What we built — measure-only Build 30 (v1.0.6):** a TEMPORARY `MEASURE_COLOR_MODE` flag + `shareForMeasurement(uri, title)` helper (module scope, right after `CUTOUT_OPTIONS`), plus ONE added line in each of `handleTakePhoto` ("CAMERA capture — AirDrop to Mac") and `handleUploadFile` ("LIBRARY capture — AirDrop to Mac"). Fire-and-forget, error-swallowing, NOT awaited — the normal `Promise.all([runRecognition(fixed.uri), applyBackgroundRemoval(fixed.uri)])` + save-to-closet flow stays byte-identical to Build 29. Purpose: hand the raw `fixed.uri` (the exact bytes recognition reads, BEFORE background removal) off the phone for exact ICC/pixel inspection on the Mac. Uses expo-sharing (already installed) — no new dependency, no native code. EAS auto-incremented buildNumber 29 → 30 (remote `appVersionSource`). No `eas submit` (Grace's locked Transporter workflow).
+
+**DECISIVE MEASUREMENT (Mac, sips + PIL/ImageCms, read-only):** same physical oatmeal cardigan, garment-region average RGB —
+- **Raw CAMERA `fixed.uri`:** **(211,191,164)**, brightness 189, saturation ~46 — true warm oatmeal.
+- **Raw LIBRARY `fixed.uri`:** **(218,198,168)**, brightness 195, saturation ~49 — true warm oatmeal; only ~6 levels brighter than camera, essentially the same colour.
+- **Displayed closet CARD** (phone screenshot, garment area only): **(227,225,223)**, brightness 225, saturation **~3.8** — near-neutral white. Warmth (R−B) collapsed from ~47 (raw) to ~4 (card).
+
+**KEY FINDING (decisive):** raw camera and raw library captures are BOTH correct warm oatmeal and nearly identical; the washout appears ONLY in the DISPLAYED card. The only processing between `fixed.uri` and the shown cutout is the background-removal module with `autoWhiteBalance: true`. **→ The visible washout is ADDED AFTER capture by the Fork-A AWB white-fix over-whitening a near-neutral WARM garment toward white. It is NOT the capture path.** This OVERTURNS the Session 25 "capture-path color-profile" diagnosis for the displayed washout.
+
+**Also confirmed (earlier 4-file pass this session):** all four measured captures (camera/library × daylight/warm) carried a **byte-identical Display P3 ICC profile** (same MD5 `ecfda38e…`); converting P3→sRGB barely moved the numbers. There was NO tag mismatch and NO "P3 pixels wearing an sRGB label." **A P3→sRGB capture conversion (Session 25's chosen fix direction) would have done essentially nothing and risked DULLING real colours — measuring first stopped us shipping the wrong fix.**
+
+**Tests:** measurement only. Measure build verified working on-device (share sheets fired on both paths; four raw captures + a card screenshot AirDropped). No functional-regression testing — no fix code was written.
+
+**UNVERIFIED / open:**
+- **NEXT STEP (Mac, NO build first):** compare the oatmeal cutout with `autoWhiteBalance` OFF vs ON to confirm AWB is the whitening agent and see the off-state colour. **HARD GUARD: must NOT regress WHITES.** The AWB white-fix was introduced by the Session 13–19 work specifically to clean whites (`modules/expo-background-removal/ios/AutoWhiteBalance.swift`, app-code commit `5b51910`, Session 19); Grace specifically recalls that raising whites is what made "oatmeal too white." BEFORE changing AWB, review where the white-fix was introduced and what it solved, so a pale-garment fix does not reopen the whites problem. The real fix likely must distinguish "warm neutral CAST to remove" (whites) from "genuine warm garment COLOUR to keep" (oatmeal) — not a blanket AWB on/off.
+- The modest raw camera-vs-library difference (~6 levels, camera slightly duller in daylight) is real but NOT the washout — likely ordinary capture variation. The earlier colour-NAMING difference Grace saw ("Stone Grey" vs "Oatmeal") is not explained by a large raw-file gap and is a separate thread from the displayed-card washout resolved here.
+
+**Notes:** the measure flag `MEASURE_COLOR_MODE = true` remains in committed code on testing (`17472d1`) — TestFlight-only, and MUST be flipped false / removed in the fix build before any App Store promotion. First EAS build attempt failed locally with a corrupted npx `eas-cli` cache (missing `pngjs/sync-reader`) — cleared `~/.npm/_npx/<hash>` and re-ran successfully; no EAS quota spent on the failed local attempt. EAS quota was available (buildNumber incremented, build ran) — the Session 22 "0 builds remain" note reflected July; August reset.
+
+---
+
+**[SUPERSEDED 2026-08-02 by Session 26 — the DISPLAYED washout is background-removal AWB over-whitening a warm garment, NOT the capture path. All four measured captures were byte-identical Display P3 (no tag mismatch), so the capture-path / P3-mistag diagnosis below is RETIRED. Kept for the record.]**
+
 ## Update 4 — Session 25 — 2026-08-01 — CAPTURE-PATH COLOR-PROFILE DIAGNOSIS (READ-ONLY). Pale-garment "washout" traced to the in-app camera path, NOT AWB, NOT lighting. No code changed, no build, no Edge Function. Branch untouched.
 
 **Branch:** testing. main `062d15b` UNTOUCHED / production `0baff39` UNTOUCHED. HEAD `5a8c046` throughout. Nothing pushed.
