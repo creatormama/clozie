@@ -12,6 +12,37 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 27 — 2026-08-03 — READ-ONLY Mac measurement of the AWB washout: root cause CONFIRMED in code; scene-reference fix simulated (colours preserved, whites don't converge); 4 visual comparisons rendered. No shipping code, no build, no Edge Function.
+
+**Branch:** testing @ `5c8d14e` (HEAD unchanged all session; Session 26 docs commit). main `062d15b` UNTOUCHED / production `0baff39` UNTOUCHED. Nothing pushed; testing ahead of origin (`5a8c046`).
+**Commits (this session, testing, named-file only — no `git add -A`):** (1) this SESSION_NOTES.md entry; (2) CLAUDE.md CURRENT BUILD STATE pointer (new Last-updated block + Session 26 block demoted to a dated block). All "This commits to testing, not main."
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (SYSTEM_PROMPT untouched). **EAS builds:** 0. **Session type:** READ-ONLY diagnostic + on-Mac simulation. **All work in the scratchpad, OUTSIDE the repo** — `AutoWhiteBalance.swift` and `BackgroundRemovalModule.swift` were READ only, never edited.
+
+**Goal at start:** confirm/refute the Session 26 diagnosis (AWB over-whitens pale warm garments) at the code + numeric level, and scope the lowest-risk fix directions — before touching any shipping code.
+
+**What we did (Mac swiftc harnesses; garment cut with real Vision `VNGenerateForegroundInstanceMaskRequest`; verbatim copies of the AWB math):**
+- **Step 3 — instrumented measurement.** Copied the AWB constants + `estimateIlluminant` + `corrected()` math verbatim, added prints. Harness proven FAITHFUL: raw camera body (214,195,171) vs Grace's sips (211,191,164); raw library (218,199,172) vs (218,198,168); corrected oatmeal (234,232,230), warmth R−B **43→4** — the exact washout signature. **Root cause CONFIRMED in code:** (1) the estimator reads the garment's OWN colour as the illuminant (oatmeal illum ≈ garment; baby blue illum ≈ garment) and builds neutralising WB gains + a ~1.5× brightness lift; (2) the chroma-protection gate **never fires — `sC = 1.00` on ALL pales** (meanBodyChroma 0.05–0.15, far below `protLo` 0.22). The estimator is the damage; the gate is a backstop that structurally can't engage for low-chroma garments. `enhanceStrength` is `0.0` in live `CUTOUT_OPTIONS`, so AWB runs on the masked garment with no pre-enhance.
+- **Direction A (hue/locus-aware protection) ruled OUT:** oatmeal's estimated illuminant is warm amber and baby blue's is blue-cyan — both sit ON the natural warm↔cool daylight axis, so hue can't separate garment-colour from light. Only a scene reference can.
+- **V1 — scene-vs-garment divergence** (background sampled via inverse Vision mask). **Gray-world is defeated by the red rug (R/B 2.4–4.2 warm everywhere) — unusable.** **White-patch (brightest near-neutral scene pixels) reads ≈neutral (R/B ~1.0) in EVERY shot, including on a different rug** — strong evidence it finds real neutral references. Garment vs white-patch: oatmeal 1.73 vs 1.01, blue 0.74 vs 1.06 → **DIVERGE → a scene reference would preserve them.** White tee: garment 1.43 vs scene 1.07 → only partial.
+- **V2 — full Direction-B simulation** (white-patch WB + gentle scene-anchored brightness) vs current AWB. **Colours preserved:** Dir-B oatmeal (247,235,203) R−B **+44**, baby blue (195,222,232) **−37**, where current AWB washes both to (234,232,230)/+4 and (226,228,231)/−5. **White-tee NON-CONVERGENCE found (key catch):** the SAME tee lands warm-light → chromaticity R/B **1.27 (cream)**, daylight → **0.63 (blue)** — ~2× apart, does NOT converge. Current AWB converges whites BETTER (warm (245,246,247), daylight (226,220,215)) because it neutralises the garment itself. Root of the Dir-B white failure: the daylight tee's **beige couch under cool light read FALSELY neutral**, leaving the shirt's blue cast in place.
+- **Visual comparisons — 4 PNGs in scratchpad** (RAW | CURRENT AWB | DIR-B, full garment on white): `compare_oatmeal.png`, `compare_babyblue.png`, `compare_whitetee_warm.png`, `compare_whitetee_daylight.png`. Delivered to Grace.
+- **Hybrid A/B analysis.** **A (garment-only chroma threshold):** lowest risk (retune the existing `sC` gate) but weak separating signal — warm-lit-white (0.05), neutral-ish oatmeal (0.06), baby blue (0.088) overlap → unavoidable gray zone; cool-daylight white (chroma 0.20) reads as colored → stays blue. **B (scene as CLASSIFIER, not corrector):** garment cast ≈ scene cast → near-white-under-cast → run current full AWB (clean, converged white); cast unexplained by scene → protect. **B keeps the Session 13–19 warm-white win AND preserves oatmeal/blue — strictly better than Direction B on whites, same on colours.** B's failure = false-neutral scenes (daylight couch). **No approach solves the gray zone** where "white under a cast" and "pale colour" are the same pixels with no true-white tie-breaker — fundamental.
+
+**Grace's eyeball verdict (REQUIRED gate — numbers alone are NOT enough):** in the Direction-B renders, **oatmeal reads too YELLOW** to her eye (not true oatmeal); blue and white panels acceptable. Any future fix must pass Grace's VISUAL sign-off, not just the numeric scoreboard.
+
+**ROOT-CAUSE FRAMING (on the record — Grace):** everything so far has fixed SYMPTOMS (whites fix → broke pales → judges to protect pales = patches on patches). **Key historical fact: whites WERE white on the closet cards when background removal FIRST shipped; the beige/brown whites appeared LATER.** So something CHANGED in between and THAT is the true root — none assumed. Candidates: BR-module rework across builds; the SDK 54→57 upgrade; the capture/resize path; the card compositing. Guiding principles: **the colours cannot disagree (same garment → same answer), and no more patches on patches.**
+
+**Tests:** none on device — read-only Mac measurement + simulation only. No functional-regression risk (no shipping file touched).
+
+**NEXT-SESSION PLAN (in order):**
+1. **Establish the timeline** from SESSION_NOTES + build history — find which build/change turned whites from white to brown.
+2. **Measure BR in isolation** — same image straight in vs straight out, `autoWhiteBalance` OFF, to see whether masking / cropping / compositing ADDS any colour shift of its own (never measured before).
+3. **Only then decide fix strategy from the root** — Hybrid B (scene-as-classifier) LEAD candidate, Hybrid A (chroma threshold) FALLBACK, validated via V3 in the Mac harness IF the root investigation still points that way.
+
+**Notes:** scratchpad (outside repo, throwaway): `probe_vision.swift`, `measure_awb.swift`, `measure_v1.swift`, `measure_v2.swift`, `render_compare.swift` + the 4 `compare_*.png`. swiftc 6.3.1 / macOS 26.4.1; Vision foreground-instance mask runs headless under CommandLineTools. One caught-and-fixed copy error in the harness (gB gain used the wrong source term) before any numbers were trusted. Nothing built, nothing deployed, cache 2,510, Build 29 / v1.0.5 still LIVE. The Session 26 `MEASURE_COLOR_MODE` flag remains in code (unchanged this session).
+
+---
+
 ## Update 4 — Session 26 — 2026-08-02 — MEASURE-ONLY BUILD 30 + DECISIVE MEASUREMENT. Washout root cause FOUND: background-removal AWB over-whitening pale warm garments — Session 25 capture-path theory OVERTURNED. One EAS build (measure-only, TestFlight); no fix code yet.
 
 **Branch:** testing @ `17472d1`, ahead of origin by 4, NOT pushed. main `062d15b` UNTOUCHED / production `0baff39` UNTOUCHED.
