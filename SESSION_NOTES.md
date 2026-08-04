@@ -12,6 +12,40 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 28 — 2026-08-03 — READ-ONLY: background removal measured IN ISOLATION (AWB off, enhance 0). Pipeline is colour-CLEAN; source photos carry different casts per lighting. No fix built, none validated. No shipping code, no build, no Edge Function.
+
+**Branch:** testing @ `dfea4b8` at start (Session 27 docs commit); this session commits two docs files on top. main `062d15b` UNTOUCHED / production `0baff39` UNTOUCHED. Nothing pushed; testing ahead of origin (`5a8c046`).
+**Commits (this session, testing, named-file only — no `git add -A`):** (1) this SESSION_NOTES.md entry; (2) CLAUDE.md pointer (new Last-updated block + Session 27 block demoted to a dated block). Both "This commits to testing, not main."
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (SYSTEM_PROMPT untouched). **EAS builds:** 0. **Session type:** READ-ONLY diagnostic. **All work in the scratchpad, OUTSIDE the repo** — `BackgroundRemovalModule.swift` + `AutoWhiteBalance.swift` READ only, never edited.
+
+**Goal at start:** Session 27's Step 2 — measure background removal IN ISOLATION: same photo straight in vs straight out with `autoWhiteBalance` OFF, to see whether masking / cropping / compositing / PNG-encoding ADDS any colour shift of its own (never measured before).
+
+**What we did (Mac swiftc harness; real Vision `VNGenerateForegroundInstanceMaskRequest`; faithful copy of `removeBackground()` for the AWB-off / enhance-0 / dials-identity / shadow-off path):** ran BOTH endings on 4 photos (warm white tee / daylight white tee / oatmeal / baby blue — the exact raw `fixed.uri` captures from Sessions 26/27). **PATH A** = mask → composite over white → JPEG q0.9 (Build-25 look); **PATH B** = mask → transparent PNG (current look). Production parity: `CIImage(cvPixelBuffer:)` no options, default `CIContext()`, `createCGImage(_,from:)` no colorspace — ZERO added colour management. Measured garment-interior median RGB (alpha ≥ 0.98, eroded 6px, 50k–113k px) in appearance-sRGB at 4 points: Source → Post-mask → Path A → Path B.
+
+**MEASURED — pipeline is colour-clean (max delta 0–1 = rounding, every photo):**
+- white tee warm: source (240,226,207) → post-mask (240,226,206) → A (240,226,206) → B (240,226,206)
+- white tee daylight: (169,185,218) unchanged through all 4
+- oatmeal: (218,200,171) → (218,200,171) → A (219,200,171) → B (218,200,171)
+- baby blue: (182,204,212) → (182,204,212) → A (182,203,212) → B (182,204,212)
+
+Mask / crop / white-composite / PNG-encode add NO colour shift. The Display-P3→sRGB output conversion is properly colour-managed and correctly tagged sRGB (NO profile mismatch). **The cutout machinery did NOT brown the whites.**
+
+**MEASURED — source casts differ per lighting:** the SAME white tee is warm/cream in warm light (R−B **+33**) and cool/blue in daylight (R−B **−49**). The cast is in the CAPTURE, before the pipeline.
+
+**PRIOR-established (NOT this session's harness), on the record:** enhance (`enhanceStrength 1.0`) damaged Build-26-era STORED files (ivory dingy, cream dress stored brown) — Build 26 TestFlight eyeball, 2026-07-14 Known Issue; harness ran enhance 0, so NOT re-tested here. Current AWB washes pales in the live closet — Grace on-device + Session 27 harness (`sC=1.00` on all pales).
+
+**Renders (Grace's eye = required gate):** 4 side-by-side PNGs `compare_*.png` (RAW | Path A on white | Path B on sage #E8E4CE) delivered. Pixels proven identical A↔B; the renders show the same pixels under different framings.
+
+**NO fix claimed or validated.** Session 27 Direction B FAILED Grace's eyeball (oatmeal too yellow). Nothing this session tested a correction.
+
+**Tests:** none on device — read-only Mac measurement. No functional-regression risk (no shipping file touched).
+
+**NEXT SESSION:** test correction candidates in the Mac harness against this 4-photo set (warm white / daylight white / oatmeal / baby blue). Grace's eyes are the ONLY pass gate.
+
+**Notes:** scratchpad (outside repo, throwaway): `measure_twopath.swift` + binary, `render_step6.swift` + binary, `photos/` (4 byte-identical copies of the raw captures), `out/` (Path A jpg + Path B png per photo), `compare_*.png`. Reused Session 27's `probe_vision`/`measure_v2` patterns for the Vision mask + sampling. swiftc / macOS 26; Vision headless OK. cache 2,510, Build 29 / v1.0.5 still LIVE. The Session 26 `MEASURE_COLOR_MODE` flag remains in code (unchanged this session) and MUST be removed before any App Store promotion.
+
+---
+
 ## Update 4 — Session 27 — 2026-08-03 — READ-ONLY Mac measurement of the AWB washout: root cause CONFIRMED in code; scene-reference fix simulated (colours preserved, whites don't converge); 4 visual comparisons rendered. No shipping code, no build, no Edge Function.
 
 **Branch:** testing @ `5c8d14e` (HEAD unchanged all session; Session 26 docs commit). main `062d15b` UNTOUCHED / production `0baff39` UNTOUCHED. Nothing pushed; testing ahead of origin (`5a8c046`).
