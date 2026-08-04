@@ -12,6 +12,45 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 29 — 2026-08-04 — READ-ONLY: baseline washout reproduced faithfully in a fresh Mac harness; "read the room" scene-classifier MEASURED and ruled out; pivot to garment-only chroma-threshold retune (tuned by eye). No shipping code, no build, no Edge Function.
+
+**Branch:** testing @ `0095f89` at start; this session commits two docs files on top (testing → 1 ahead of origin, NOT pushed). main `062d15b` UNTOUCHED / production `0baff39` UNTOUCHED. Build 29 / v1.0.5 still LIVE.
+**Commits (this session, testing, named-file only — no `git add -A`, no amend):** (1) this SESSION_NOTES.md entry; (2) CLAUDE.md CURRENT BUILD STATE pointer. Both "This commits to testing, not main."
+**Edge Function deploys:** 0. **Cache token count:** 2,510 (SYSTEM_PROMPT untouched). **EAS builds:** 0. **Session type:** READ-ONLY diagnostic + Mac-harness measurement. **All work in the scratchpad, OUTSIDE the repo** — `AutoWhiteBalance.swift` READ only, never edited (still md5 `f929d680…`).
+
+**Goal at start:** build a fresh, faithful baseline harness that reproduces the live washout, then measure whether the ROOM around a garment can tell a light-cast (→ whiten) from a garment's own colour (→ leave) — the only signal that could separate whites from pales.
+
+**What we did (Mac swiftc; real Vision mask; ported VERBATIM from shipped `AutoWhiteBalance.swift` — estimator `:120–201`, apply tail `:245–313` = CIColorMatrix + CIExposureAdjust EV=log2 g + fork-b fringe blend + output image):**
+- **Baseline VERIFIED to the digit.** Oatmeal: brightGain **1.4932**, sC **1.0000**, raw (212,193,168) → corrected **(234,232,230)**, warmth R−B **+44→+4**, brightness **191→232**. Reproduces the Session 26/27 signature; confirmed washed on the sage card #E8E4CE by Grace's eye. (Others: whitetee_warm +30→−2; whitetee_daylight −39→+11; babyblue −30→−5 — every pale flattened + brightened.)
+- **Root cause restated:** the estimator reads a low-chroma garment's OWN colour as the illuminant and neutralises + brightens it; the `sC` chroma gate never fires on pales (meanBodyChroma below `protLo` 0.22 → sC=1.00). Whites AND pales are both low-chroma → nothing INTERNAL to the garment separates them.
+- **"Read the room" (scene classifier) — MEASURED DEAD END.** Background R−B (red rug excluded via low-saturation filter, foreground + foot excluded, edge-eroded): whitetee_warm **+14**, babyblue **+15**, oatmeal **+7**, whitetee_daylight **−3**. No threshold separates the 2 whites from the 2 pales — whitetee_warm (+14) ≈ babyblue (+15) but need OPPOSITE treatment; oatmeal (warm garment in the SAME warm room) reads a warm bg = indistinguishable from a white under warm light. Root reason: **no true neutral/white reference in real user rooms** (rug / wood floor / beige couch / cream border all carry their own colour), and the iPhone capture-AWB has already partly flattened the cast (daylight couch bg −3 behind a −39 garment). Sampled-pixel visuals confirmed rug + foot were excluded. **This supersedes Session 27's tentative "a scene reference would preserve the pales."**
+- **Re-shoot does NOT rescue it** as a shipping strategy — users photograph clothes on beds/rugs/sofas, not grey cards.
+- **"Just turn AWB off" — REJECTED (Grace's eye, on record):** it regresses the whites, which were the entire point of the Session 13–19 white-fix (the warm white tee must stay clean).
+
+**PRIORITY REFRAME (Grace, on record):**
+- **IDEAL** = every garment its TRUE colour — white=white, oatmeal=oatmeal, peach=peach, yellow=yellow, blue=blue. That is the goal.
+- **FALLBACK, only if all-correct is unreachable:** protect the CHROMATIC pales first (blues, peaches, yellows). Oatmeal→cream is the one to sacrifice first if forced — cream is an honest neighbour, low-harm, no user misled. A priority ORDER, not a wish to make oatmeal cream.
+- **ADD yellow** to the 4-photo test set next session (untested so far).
+
+**TWO on-record observations — both VERIFIED as COLOUR in the rendered cutout (NOT the AI text label; already checked):**
+- (a) A genuinely WHITE tee sometimes renders CREAM/warm — the correction UNDER-cleans some whites (same washout mechanism, opposite direction). More evidence this is ONE miscalibrated correction, not a physical law.
+- (b) Baby blue sometimes renders GRAY — chroma stripped to neutral = true colour-IDENTITY LOSS, not a gentle wash toward white. This is the RED-LINE failure.
+
+**NEXT-SESSION GATE HIERARCHY (judged by Grace's eye on renders):**
+1. **Best** = all colours true, including yellow.
+2. **Hard red line** = NO chromatic colour goes neutral. Baby blue must never read gray; peach must stay peach.
+3. **Tolerable only if forced** = oatmeal→cream; a slight cream cast on a genuine white.
+
+**CHOSEN NEXT DIRECTION (NOT started) — garment-only chroma-threshold retune.** Because we do NOT need to win the hardest case (oatmeal vs warm-lit white), a chroma-threshold retune reopens: lower `protLo` to protect higher-chroma pales (baby blue ~0.09, peach higher) while still correcting the lowest-chroma (white ~0.05, oatmeal ~0.06 → cream, both fine). Automatic, closet-wide, no room signal, no per-item labour. **Honest residual risk on record:** a white under STRONG COOL DAYLIGHT measures chroma ~0.20 — bluer than baby blue — so the cool side is NOT cleanly threshold-separable; baby blue is protectable in normal light but may slip against a strong cool-daylight white. Peach (warm) is cleaner to protect.
+
+**Tests:** none on device — read-only Mac measurement. No functional-regression risk (no shipping file touched).
+
+**UNVERIFIED:** no correction candidate built or validated this session; the chroma-threshold retune, its `protLo` value, the gate hierarchy, and the cool-daylight-white residual risk are all unmeasured until next session's renders (test set to include yellow).
+
+**Notes:** scratchpad (outside repo, throwaway): `render_baseline.swift` + binary, `render_step3b.swift` + binary, `measure_room.swift` + binary, `photos/` (4 byte-identical locked copies: whitetee_warm / whitetee_daylight / oatmeal / babyblue), `compare_baseline_*.png` (RAW | RAW-on-sage | AWB-on-sage), `room_*.png` (sampled-pixel visuals). cache 2,510, Build 29 / v1.0.5 still LIVE. Session 26 `MEASURE_COLOR_MODE` flag remains in code (unchanged) and MUST be removed before any App Store promotion. Separate parked task (NOT the washout fix): a plain/white capture background could improve the CUTOUT (cleaner isolation) but does not fix the washout and can slightly worsen it.
+
+---
+
 ## Update 4 — Session 28 — 2026-08-03 — READ-ONLY: background removal measured IN ISOLATION (AWB off, enhance 0). Pipeline is colour-CLEAN; source photos carry different casts per lighting. No fix built, none validated. No shipping code, no build, no Edge Function.
 
 **Branch:** testing @ `dfea4b8` at start (Session 27 docs commit); this session commits two docs files on top. main `062d15b` UNTOUCHED / production `0baff39` UNTOUCHED. Nothing pushed; testing ahead of origin (`5a8c046`).
