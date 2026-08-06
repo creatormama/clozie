@@ -71,24 +71,6 @@ const CUTOUT_OPTIONS = {
   shadowColorB: 0.3,
 };
 
-// ── TEMPORARY: camera-color measurement (v1.0.6, TestFlight-only) ─────────────
-// Flip MEASURE_COLOR_MODE to false (or delete this block + the two call sites)
-// to restore the exact Build 29 add-item flow, byte-identical. Purely additive:
-// shares the raw fixed.uri so the camera-vs-library capture can be AirDropped to
-// the Mac for ICC/pixel inspection. NEVER awaited by the add-item flow; swallows
-// all errors so it can never interrupt recognition, background removal, or save.
-const MEASURE_COLOR_MODE = true;
-const shareForMeasurement = async (uri, title) => {
-  if (!MEASURE_COLOR_MODE) return;
-  try {
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri, { dialogTitle: title });
-    }
-  } catch (e) {
-    console.log('[measure] share skipped:', e);
-  }
-};
-
 // Dynamic Type global cap — limits iOS Larger Text scaling to 1.3× app-wide.
 // Tighter caps on big headings live inline at Welcome + Splash.
 Text.defaultProps = Text.defaultProps || {};
@@ -1826,7 +1808,6 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip, wardrobeLoaded }) {
       );
       clearStaleClozieFills();
       setPhotoUri(fixed.uri);
-      if (MEASURE_COLOR_MODE) shareForMeasurement(fixed.uri, 'CAMERA capture — AirDrop to Mac');
       await Promise.all([runRecognition(fixed.uri), applyBackgroundRemoval(fixed.uri)]);
     } catch (e) {
       console.log('Take photo error:', e);
@@ -1859,7 +1840,6 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip, wardrobeLoaded }) {
       );
       clearStaleClozieFills();
       setPhotoUri(fixed.uri);
-      if (MEASURE_COLOR_MODE) shareForMeasurement(fixed.uri, 'LIBRARY capture — AirDrop to Mac');
       await Promise.all([runRecognition(fixed.uri), applyBackgroundRemoval(fixed.uri)]);
     } catch (e) {
       console.log('Upload file error:', e);
