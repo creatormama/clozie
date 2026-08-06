@@ -53,6 +53,14 @@ enum AutoWhiteBalance {
   private static let knee         : Float = 0.85   // highlight rolloff knee (linear)
   private static let protLo       : Float = 0.22   // chroma-protection ramp: below -> full correction
   private static let protHi       : Float = 0.44   // chroma-protection ramp: above -> preserve (revert)
+  // Candidate A (Session 30 bench, sweep rank #1: pW=0.06/0.12 pC=0.18/0.33 spr=1.55 sMax=0.85 pl=1.00)
+  private static let protLoW      : Float = 0.06   // warm-side chroma ramp: below -> full correction
+  private static let protHiW      : Float = 0.12   // warm-side chroma ramp: above -> preserve
+  private static let protLoC      : Float = 0.18   // cool-side chroma ramp lo
+  private static let protHiC      : Float = 0.33   // cool-side chroma ramp hi
+  private static let coolSpreadMin: Float = 1.55   // 0 = off; damp cool-side sC when gain spread below this
+  private static let plausDamp    : Float = 1.0    // sC multiplier when illum G < min(R,B) (magenta = implausible light)
+  private static let sCMax        : Float = 0.85   // ceiling on correction strength
   private static let alphaEstMin  : Float = 0.9    // NEW fringe guard: estimate uses alpha>0.9 pixels only
   // alpha-gated fringe blend ramp — Fork b (phase15D) validated winner, Session 18.
   // HARDCODED, no env dials. fringeBlendHi intentionally == alphaEstMin (0.9): the body cutoff
@@ -270,7 +278,18 @@ enum AutoWhiteBalance {
       nBody += 1
     }
     let meanBodyChroma = nBody > 0 ? sumChroma / Float(nBody) : 0
-    let sC = 1 - smoothstep(protLo, protHi, meanBodyChroma)
+    let spread = max(e.gainR, e.gainB)/max(min(e.gainR, e.gainB), 1e-5)
+    let warmSide = e.illumR >= e.illumB
+    let plausMagenta = e.illumG < min(e.illumR, e.illumB)
+
+    var sC: Float
+    if warmSide { sC = 1 - smoothstep(protLoW, protHiW, meanBodyChroma) }
+    else {
+      sC = 1 - smoothstep(protLoC, protHiC, meanBodyChroma)
+      if coolSpreadMin > 0 { sC *= smoothstep(coolSpreadMin - 0.2, coolSpreadMin, spread) }
+    }
+    if plausMagenta { sC *= plausDamp }
+    sC = min(sC, sCMax)
 
     // Attenuate WB gains AND brightGain toward identity by sC. sC=1 -> full correction; sC=0 -> identity.
     let gR = 1 + sC * (e.gainR - 1)
