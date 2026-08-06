@@ -12,6 +12,28 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 31 — 2026-08-06 — Build 31 / v1.0.6: Candidate A camera-color fix PORTED, built, TestFlight-delivered. On-device eyeball: whites/pink/oatmeal/warm-yellow PASS; BLUE washes out (both lights) + daylight yellow washes out + whites name as "Cream". Build 31 stays on TestFlight — NOT promoted to App Store. Blue over-correction is the top next-session target.
+
+**Branch:** testing. Two Build 31 commits on top of Session 30's c818aba: (1) 3a25976 — AutoWhiteBalance Candidate A color fix (sC computation only); (2) 2a140d5 — remove Session 26 MEASURE_COLOR_MODE scaffolding. main 062d15b / production 0baff39 UNTOUCHED. Build 29 / v1.0.5 still LIVE on App Store. testing 2 ahead of origin at build time (push status: confirm at next session start).
+
+**Edge Function deploys:** 0. **Cache:** 2,510 (untouched). **EAS builds:** 1 (Build 31, first try, exit 0). **Delivery:** Transporter (Clozie LLC, T9PZ9RW7F5). NO eas submit. NOT submitted to App Store.
+
+**What shipped in Build 31 (bench-verified before build):** Candidate A sC computation ported to AutoWhiteBalance.swift line-for-line from Session 30 bench render_cand.swift — warm/cool split, gainSpread cool-side gate, sCMax 0.85, plausDamp kept (=1.0, inert but retained whole per Grace). brightCap deliberately left out (provable no-op: max g=2.70 vs cap 99; apply-tail untouched, in-scope decision). Parity proof v2 confirmed every bench line present. MEASURE_COLOR_MODE flag + shareForMeasurement helper + both call sites removed (restores exact Build 29 add-item flow; expo-sharing import retained for Share Outfit card). Version already 1.0.6 (bumped Session 26, commit 64b980e). buildNumber auto-incremented 30→31 (Session 26 measure build consumed 30); this session = Build 31.
+
+**ON-DEVICE VERDICT (Grace's eye, real garments, both warm + daylight captures, camera path):**
+- PASS: whites (color acceptable), pink incl. pink_warm, oatmeal/beige, yellow under WARM light. Clear improvement over pre-fix washout.
+- FAIL — BLUE washes out under BOTH lights. Real cool-side OVER-CORRECTION. Real closet blues (Baby Blue + Sky Blue Knit Cotton Cardigans) fall in the chroma 0.13–0.18 "unproven cool-side" zone flagged at Session 30 — bench babyblue sat below it and passed, real blues land inside it. TOP TARGET next session.
+- FAIL — YELLOW washes out under DAYLIGHT only (warm light acceptable). Consistent with documented colored-garment daylight ceiling (Candidate A does not correct colored garments; renders as-captured).
+- NAMING — whites read as "Cream" from Sonnet. Grace's theory (from prior experience): name follows the color that reaches Sonnet, not a hand-typed label — so the color coming through is slightly warm and Sonnet honestly names it Cream. Treat as color symptom, not label bug. Secondary target.
+
+**Candidate B on record (do NOT flip blind):** B = A with sCMax 1.00 (whites full strength), one-line change. Session 30 bench: colored photos byte-identical to A. Grace recalls B possibly worse on colors — UNVERIFIED, not in notes. Next session: re-render B vs A on REAL garment colors on the bench, Grace's eye decides. CAUTION: B = stronger correction — could worsen the blue over-correction. Blues and whites must be tuned TOGETHER.
+
+**Next session:** (1) Grace's homework — more test captures first (blues + yellows, both lights) for more cool-side data. (2) Bench work on cool-side blue over-correction — tighten cool gate so real blues (chroma 0.13–0.18) are protected. (3) Then whites/naming. (4) Build 31 stays TestFlight-only; App Store promotion waits until blue fixed. Restore tag v2026-08-02-pre-camera-color-fix at c447731 still valid.
+
+**UNVERIFIED:** blue over-correction not yet measured on bench with real-garment values. **Tests:** on-device only (Build 31 TestFlight), no bench this session.
+
+---
+
 ## Update 4 — Session 30 — 2026-08-05 — BENCH ONLY: chroma-threshold retune SOLVED on the Mac bench. Candidate A locked as winner by Grace's eye on all 10 photos (whites clean, every chromatic colour kept, oatmeal stays TRUE oatmeal). No shipping code, no build, no Edge Function; Build 30 Swift port is a SEPARATE gated session.
 
 **Branch:** testing @ `34e7124` at start (Session 29 docs commit — found already pushed; origin/testing in sync). This session commits two docs files on top. main `062d15b` UNTOUCHED / production `0baff39` UNTOUCHED. Build 29 / v1.0.5 still LIVE.
