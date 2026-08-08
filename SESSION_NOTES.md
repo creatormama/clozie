@@ -12,6 +12,26 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 32 — 2026-08-07 — DIAGNOSIS ONLY: bench-vs-device blue mismatch SOLVED in mode. Bench babyblue "pass" was knife-edge luck, not protection — Candidate A has a design hole at chroma ~0.09 (too chromatic for white, not chromatic enough for either protection band). Device Build 31 card shows ~half-strength cool-side wash. No fixes, no sweeps, no parameter changes; Candidate A LOCKED and untouched; shipping code untouched. Build 31 stays TestFlight-only.
+
+**Branch:** testing @ `162bd54` (unchanged all session — docs-only close-out commit follows). main `062d15b` / production `0baff39` UNTOUCHED. Build 29 / v1.0.5 still LIVE on App Store. Step 1 safety check: testing 0 ahead / 0 behind origin, bench intact, all 10 locked photos md5-verified against AirDropped originals.
+
+**Edge Function deploys:** 0. **Cache:** 2,510 (untouched). **EAS builds:** 0. **Commits:** docs only (SESSION_NOTES + CLAUDE.md pointer).
+
+**Q1 — PROVENANCE VERIFIED (git reads of `17472d1`/`2a140d5`):** the Session 26 `shareForMeasurement` shared `fixed.uri` = Apple's processed camera JPEG (quality 0.85) resized to 512px + JPEG-0.75 re-encoded — NOT sensor-raw, but **byte-identical to what the device fed background removal + AWB** (`applyBackgroundRemoval(fixed.uri)` on the next line). Bench inputs fully trustworthy as "what our AWB saw" per capture. Consequence: the Aug 6 Build 31 device-test frames were fresh captures with MEASURE_COLOR_MODE already removed — **unretrievable forever**.
+
+**Q2 — RE-MEASURE + RE-RENDER (scratch `session32_diag/`, locked photos untouched):** babyblue chroma = **0.0882 — UNDER the 0.13–0.18 zone** (0.042 below its floor); Session 31's "real blues land inside 0.13–0.18" theory CORRECTED. Candidate A params reconstructed + verified (`A 0.06 0.12 0.13 0.18 1.55 99 0.85 1.0` reproduces all logged sC values); fresh render **byte-identical (md5) to Session 30 outputs**. On the bench Candidate A applies ~nothing to babyblue (sC 0.005): at chroma 0.088 the cool chroma band gives ZERO protection — only the spread gate held correction off, and this capture sat at **spread 1.358 vs gate floor 1.35 — margin 0.008. Knife-edge luck.** Design hole named: chroma ~0.09 is too chromatic to be white, not chromatic enough for either protection band (warm side: mid-ramp ≈ half correction, no gate at all).
+
+**Q3 — DEVICE COMPARISON (IMG_1811 pixel-sampled; fidelity anchored — card white 255/255/255, oatmeal warm card within ~8/channel of bench output):** Baby Blue (warm) card = median (183,195,201), **R−B −18 vs raw −30 at unchanged brightness 193** — the device lost ~half its blueness where the bench predicted NO change. Bench does NOT reproduce the device washout — now quantified. Mode: **partial cool-side wash, sC ≈ 0.4–0.5** (fresh frame with spread ~1.45, gate partially open). **Hypothesis 1 — capture-to-capture knife-edge variation — confirmed-mode leading explanation.** Self-correction on record: the earlier "warm-side ~50%" mode was WRONG — a warm-side read would cool/boost the blue, not wash it; washout direction requires the garment-as-illuminant cool-side read.
+
+**NOT explained:** (1) **brightness anomaly** — bench math couples brightness to sC (sC≈0.5 should lift 193→~215+; device shows NO lift) → either the fresh raw differed, or the Build 31 Swift port applies brightGain differently — **Hypothesis 2 (numeric port parity) stays ALIVE as secondary suspect** (estimator/apply-tail out of scope this session, flagged and stopped). (2) **Sky Blue daylight unquantifiable** — its raw never reached the Mac. (3) **Build 29 ALSO washes blues** (Grace verified on a Build 29-era photo; matches bench measure_any: (176,196,206)→(226,228,231)) — so blue washout is NOT a Build 31 regression; IMG_1870 "Powder Blue" survival = **unexplained curiosity, evidence for nothing**.
+
+**Next session:** Grace shoots **fresh camera captures of the blue cardigan — SEVERAL per light, BOTH lights** — AirDrop to Mac, bench-measure spread/chroma scatter FIRST before any retune discussion. Keep brightness anomaly on the list. Build 31 stays TestFlight-only; App Store promotion still waits on blue.
+
+**UNVERIFIED:** whether fresh-capture spread truly scatters across the 1.35–1.55 gate (predicted, not yet measured); port numeric parity on identical input. **Tests:** bench-only (md5-verified reproduction); no device build, no on-device tests this session.
+
+---
+
 ## Update 4 — Session 31 — 2026-08-06 — Build 31 / v1.0.6: Candidate A camera-color fix PORTED, built, TestFlight-delivered. On-device eyeball: whites/pink/oatmeal/warm-yellow PASS; BLUE washes out (both lights) + daylight yellow washes out + whites name as "Cream". Build 31 stays on TestFlight — NOT promoted to App Store. Blue over-correction is the top next-session target.
 
 **Branch:** testing. Two Build 31 commits on top of Session 30's c818aba: (1) 3a25976 — AutoWhiteBalance Candidate A color fix (sC computation only); (2) 2a140d5 — remove Session 26 MEASURE_COLOR_MODE scaffolding. main 062d15b / production 0baff39 UNTOUCHED. Build 29 / v1.0.5 still LIVE on App Store. testing 2 ahead of origin at build time (push status: confirm at next session start).
