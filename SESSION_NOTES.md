@@ -12,6 +12,31 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 33 — 2026-08-08 — SCATTER MEASUREMENT: Hypothesis 1 CONFIRMED and extended on 52 fresh captures. Spread, chroma, AND the warm/cool side-read all scatter capture-to-capture on the same garment — the blue cardigan alone spans the full 1.35–1.55 gate (BELOW/INSIDE/ABOVE). Candidate A untouched, shipping code untouched, NO fixes designed.
+
+**Branch:** testing @ `1645456` (Session 32 close-out) unchanged all session — this entry + a CLAUDE.md pointer are the only commits. main `062d15b` / production `0baff39` UNTOUCHED. Build 29 / v1.0.5 still LIVE; Build 31 stays TestFlight-only. Step 1 safety check: testing 0/0 with origin (via `git ls-remote`, no fetch), bench intact, all 10 locked photos md5-verified against the Session 30 record, `session32_diag/` present.
+
+**Edge Function deploys:** 0. **Cache:** 2,510 (untouched). **EAS builds:** 0. **Session type:** read-only repo + bench measurement. All outputs in NEW scratch `~/Desktop/clozie-color-bench/session33_scatter/`; locked photos, bench scripts, and ~/Downloads originals untouched (read-only). Candidate A constants verified verbatim in shipping `AutoWhiteBalance.swift` (0.06/0.12 · 0.18/0.33 · coolSpreadMin 1.55 → smoothstep(1.35,1.55) · sCMax 0.85 · plausDamp 1.0); `MEASURE_COLOR_MODE` confirmed gone from App.js (0 hits).
+
+**GROUPING (locked by Grace):** 63 AirDropped files = 52 raw HEIC captures + 11 device screenshots (1206×2622 PNGs — evidence only, never bench inputs). 8 groups: **blue cardigan 1875–1882 (ONE garment — "Baby Blue"/"Sky Blue" were always the same sweater; 5 daylight 1875–1879 incl. the 1875/1876 retake pair + 3 warm 1880–1882)** · yellow SKIRT 1883–1889 (same garment as bench yellow_warm/daylight) · sage shirt 1890–1896 · striped tank 1897–1903 · white tee 1904–1910 · mauve lace top 1911–1917 (all 4D+3W) · denim jacket 1929–1935 (4D+3W, 08:41 batch) · **BONUS eyelet blouse 1918–1919 (2 captures, both daylight — never mixed into the 7-garment scatter).**
+
+**PROVENANCE CORRECTED mid-session (Grace's catch):** first prep used 683-max-side (sips, orientation unbaked). The CODE says the device feeds AWB a **512-wide, JPEG q0.75, orientation-baked** artifact — `App.js:1806` (camera) / `App.js:1838` (library), comment at `:1803`. Re-prepped all 52 exactly per the code recipe and re-ran; **the 512 run is CANONICAL** (`scatter_table_512.txt` / `scatter_output_512.txt`); the 683 run kept for the record, superseded (`scatter_table.txt` / `scatter_output.txt`).
+
+**VERDICT (512-canonical, `measure_any` = verbatim shipped estimator; A-sC computed from the locked Candidate A formula, read-only):** the Session 32 prediction — fresh-capture spread scatters across the 1.35–1.55 gate — is **TRUE and understated**. Same-garment scatter hits all three signals:
+- **Blue cardigan (8 captures, one sweater):** spread 1.08–1.85 → 1× ABOVE (1875, sC 0.85 full wash), 2× INSIDE (1878 sC 0.29, 1879 sC 0.10), 3× below (sC 0), 2× flip to warm-side (sC 0). Chroma 0.046–0.206 (4.5×). The 13-second retake pair 1875/1876 = full wash vs untouched.
+- **Denim jacket:** 2 of 7 washed (1931 sC 0.64 with brightGain 3.0; 1929 sC 0.18), 5 untouched — a genuinely blue garment pushed toward gray in some captures only.
+- **White tee:** only 3 of 7 cleaned (1904/1906/1910 sC 0.85); the other 4 read too-chromatic (chroma up to 0.27) or cool-side-below-gate → uncorrected. The whites-fix fires inconsistently on fresh captures.
+- **Sage shirt:** sC 0.85/0.85/0.26/0/0/0/0 — same shirt, opposite answers. **Striped tank:** 1 of 7 corrected (1899 sC 0.85). **Mauve lace top:** 6 of 7 protected, but 1914 half-corrected sC 0.665 — red-line grazer. **Yellow skirt: the one clean story — sC ≈ 0 in all 7** (max 0.04); its raw warmth still swings R−B +19→+82 (camera variation, rendered as-captured). **Bonus eyelet:** 1918 warm sC 0.20, 1919 sC 0 (no conclusions — 2 captures).
+- **Bottom line: Candidate A's decision is capture roulette** — the same garment gets 0→0.85 correction depending on the individual shot; no threshold retune can stabilize signals that move 1.1→2.1 between shots of one sweater.
+
+**META-OBSERVATION (on record, no conclusion attached):** re-encoding the same photos (683-rotated-sips vs 512-upright-PIL, three variables at once) flipped the Candidate A decision on **10 of 52** captures (sC swings up to 0.75, e.g. 1910: 0.06→0.85) — one more sign the signals are knife-edge; not attributable to resolution alone.
+
+**OPEN / UNVERIFIED:** Hypothesis 2 (Build 31 brightness anomaly / port numeric parity) untouched — no device comparison this session. 1918 masks only in the 512-upright prep (Vision FAIL on the 683-rotated copy). Prep approximates the picker's intermediate JPEG-0.85 step (HEIC originals → 512/q75 directly); signal-level conclusions robust to this. NO fix designed, NO sweeps, NO parameter changes; Candidate A LOCKED.
+
+**Tests:** bench-only; no build, no device tests. **Files (`session33_scatter/`):** `scatter_table_512.txt` + `scatter_output_512.txt` (CANONICAL) · `scatter_table.txt` + `scatter_output.txt` (superseded 683 run) · `prepped512/` (52 device-recipe copies) · `prepped/` (683 copies) · `fullres/` · `thumbs/` + `contact_sheet.jpg` + `zoom*` (grouping evidence). Downloads originals + both output files KEPT per Grace. cache 2,510; Build 29 / v1.0.5 LIVE.
+
+---
+
 ## Update 4 — Session 32 — 2026-08-07 — DIAGNOSIS ONLY: bench-vs-device blue mismatch SOLVED in mode. Bench babyblue "pass" was knife-edge luck, not protection — Candidate A has a design hole at chroma ~0.09 (too chromatic for white, not chromatic enough for either protection band). Device Build 31 card shows ~half-strength cool-side wash. No fixes, no sweeps, no parameter changes; Candidate A LOCKED and untouched; shipping code untouched. Build 31 stays TestFlight-only.
 
 **Branch:** testing @ `162bd54` (unchanged all session — docs-only close-out commit follows). main `062d15b` / production `0baff39` UNTOUCHED. Build 29 / v1.0.5 still LIVE on App Store. Step 1 safety check: testing 0 ahead / 0 behind origin, bench intact, all 10 locked photos md5-verified against AirDropped originals.
