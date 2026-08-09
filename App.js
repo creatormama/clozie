@@ -71,6 +71,26 @@ const CUTOUT_OPTIONS = {
   shadowColorB: 0.3,
 };
 
+// Session 35 recognition veto — maps Clozie's recognized COLOUR word to the AWB's
+// cool-side cap (awbCoolCap). Locked rule: tokenize on non-letters; the cool-side
+// white-fix runs ONLY when every token is purely neutral (or filler) — any real or
+// unknown colour word blocks it (0.0). No colour answer in time → 0.4 fallback.
+// Warm side is never gated (Variant i) — see AutoWhiteBalance.swift coolCap.
+const AWB_NEUTRAL_WORDS = ['white', 'cream'];
+const AWB_FILLER_WORDS = ['off', 'optic'];
+const AWB_OFFLINE_COOL_CAP = 0.4;           // recognition timeout / offline / error fallback
+const RECOGNITION_COLOR_TIMEOUT_MS = 8000;  // race window for the colour answer — revisit on device
+
+function coolAwbCapForColor(colorWord) {
+  if (typeof colorWord !== 'string' || !colorWord.trim()) return AWB_OFFLINE_COOL_CAP;
+  const tokens = colorWord.toLowerCase().split(/[^a-z]+/).filter(Boolean);
+  if (tokens.length === 0) return AWB_OFFLINE_COOL_CAP;
+  const allNeutral = tokens.every(
+    (t) => AWB_NEUTRAL_WORDS.includes(t) || AWB_FILLER_WORDS.includes(t)
+  );
+  return allNeutral ? 1.0 : 0.0;
+}
+
 // Dynamic Type global cap — limits iOS Larger Text scaling to 1.3× app-wide.
 // Tighter caps on big headings live inline at Welcome + Splash.
 Text.defaultProps = Text.defaultProps || {};
@@ -1752,6 +1772,9 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip, wardrobeLoaded }) {
       setAutoFilledFields(filled);
       setRecognitionStatus('success');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Session 35 recognition veto: expose the colour word for the AWB cap race.
+      // null (no colour field) maps to the 0.4 offline fallback in coolAwbCapForColor.
+      return recognized.color || null;
     } catch (recogErr) {
       console.log('Recognition error:', recogErr);
       if (recogErr?.code === 'NO_KEY') {
@@ -1761,6 +1784,7 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip, wardrobeLoaded }) {
       } else {
         setRecognitionStatus('error');
       }
+      return null;   // Session 35: failed recognition -> no colour answer -> 0.4 fallback
     } finally {
       setIsScanning(false);
     }
@@ -1772,10 +1796,12 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip, wardrobeLoaded }) {
   // isRemovingBg disables Add until this finishes, so the cutout is ready before the
   // user can tap Add (no bad-save race). finally guarantees the flag always clears.
   // On null/throw we leave photoUri as fixed.uri — user never sees an error or blank.
-  const applyBackgroundRemoval = async (uprightUri) => {
+  // coolCap (Session 35 recognition veto): cool-side AWB strength ceiling from
+  // coolAwbCapForColor. Default 1.0 = Candidate A unchanged for any legacy caller.
+  const applyBackgroundRemoval = async (uprightUri, coolCap = 1.0) => {
     setIsRemovingBg(true);
     try {
-      const cutout = await BackgroundRemoval.removeBackground(uprightUri, CUTOUT_OPTIONS);
+      const cutout = await BackgroundRemoval.removeBackground(uprightUri, { ...CUTOUT_OPTIONS, awbCoolCap: coolCap });
       if (cutout) setPhotoUri(cutout);
     } catch (e) {
       console.warn('[BG removal] threw, keeping original:', e);
@@ -1808,7 +1834,19 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip, wardrobeLoaded }) {
       );
       clearStaleClozieFills();
       setPhotoUri(fixed.uri);
-      await Promise.all([runRecognition(fixed.uri), applyBackgroundRemoval(fixed.uri)]);
+      // Session 35 recognition veto (Option 1 sequence): start recognition, race ONLY its
+      // colour answer against the timeout, then run background removal with the mapped
+      // cool-side cap. Recognition is never cancelled — a late answer still fills the
+      // fields; the timer only decides the cap (timeout → 0.4 offline fallback).
+      // Pre-veto shape kept for revert until device-verified:
+      // await Promise.all([runRecognition(fixed.uri), applyBackgroundRemoval(fixed.uri)]);
+      const recogPromise = runRecognition(fixed.uri);
+      const colorWord = await Promise.race([
+        recogPromise,
+        new Promise((resolve) => setTimeout(resolve, RECOGNITION_COLOR_TIMEOUT_MS)),
+      ]);
+      await applyBackgroundRemoval(fixed.uri, coolAwbCapForColor(colorWord));
+      await recogPromise;
     } catch (e) {
       console.log('Take photo error:', e);
       Alert.alert('Something went wrong', 'Please try again.', [{ text: 'OK' }]);
@@ -1840,7 +1878,19 @@ function WardrobeTab({ items, setItems, onGoToVibe, isVip, wardrobeLoaded }) {
       );
       clearStaleClozieFills();
       setPhotoUri(fixed.uri);
-      await Promise.all([runRecognition(fixed.uri), applyBackgroundRemoval(fixed.uri)]);
+      // Session 35 recognition veto (Option 1 sequence): start recognition, race ONLY its
+      // colour answer against the timeout, then run background removal with the mapped
+      // cool-side cap. Recognition is never cancelled — a late answer still fills the
+      // fields; the timer only decides the cap (timeout → 0.4 offline fallback).
+      // Pre-veto shape kept for revert until device-verified:
+      // await Promise.all([runRecognition(fixed.uri), applyBackgroundRemoval(fixed.uri)]);
+      const recogPromise = runRecognition(fixed.uri);
+      const colorWord = await Promise.race([
+        recogPromise,
+        new Promise((resolve) => setTimeout(resolve, RECOGNITION_COLOR_TIMEOUT_MS)),
+      ]);
+      await applyBackgroundRemoval(fixed.uri, coolAwbCapForColor(colorWord));
+      await recogPromise;
     } catch (e) {
       console.log('Upload file error:', e);
       Alert.alert('Something went wrong', 'Please try again.', [{ text: 'OK' }]);
@@ -6389,7 +6439,8 @@ function SettingsScreen({ onClose, onSignOut, onRevokeConsent, onClearMemory, is
 
       let cutout = null;
       try {
-        cutout = await BackgroundRemoval.removeBackground(original, CUTOUT_OPTIONS);
+        // Session 35: no recognition on this test path -> offline fallback cap by definition.
+        cutout = await BackgroundRemoval.removeBackground(original, { ...CUTOUT_OPTIONS, awbCoolCap: AWB_OFFLINE_COOL_CAP });
       } catch (err) {
         console.warn('[BG removal] threw:', err);
         cutout = null;
