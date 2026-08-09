@@ -30,6 +30,10 @@ struct RemoveBackgroundOptions: Record {
   // false = OFF (default, byte-identical to Build A). true = run AutoWhiteBalance.corrected
   // on the cut garment. Wired at the correction chain in P4; flipped on from App.js in P5.
   @Field var autoWhiteBalance: Bool = false
+
+  // Session 35 recognition veto: ceiling on the AWB's COOL-SIDE correction strength only.
+  // 1.0 (default) = Candidate A unchanged · 0.4 = offline/timeout fallback · 0.0 = full veto.
+  @Field var awbCoolCap: Double = 1.0
 }
 
 private extension UIImage {
@@ -229,7 +233,7 @@ public class BackgroundRemovalModule: Module {
         // paths, BEFORE the shadow, so the baked shadow derives from the CHOKED mask.
         var corrected = foreground
         if options?.autoWhiteBalance == true {
-          corrected = AutoWhiteBalance.corrected(corrected) ?? corrected
+          corrected = AutoWhiteBalance.corrected(corrected, coolCap: Float(options?.awbCoolCap ?? 1.0)) ?? corrected
         } else {
           corrected = whiteBalancedForeground(corrected, options: options)
           corrected = exposureAdjustedForeground(corrected, options: options)

@@ -250,7 +250,9 @@ enum AutoWhiteBalance {
 
   // ---- public entry point: correct a masked (alpha) CIImage, garment-only ----
   // Returns the corrected CIImage, or nil on any failure (caller falls back to the input).
-  static func corrected(_ masked: CIImage) -> CIImage? {
+  // coolCap (Session 35 recognition veto): ceiling on COOL-SIDE correction strength only.
+  // 1.0 (default) = Candidate A unchanged · 0.4 = offline/timeout fallback · 0.0 = full veto.
+  static func corrected(_ masked: CIImage, coolCap: Float = 1.0) -> CIImage? {
     let ctx = CIContext(options: [.workingColorSpace: linearCS, .outputColorSpace: linearCS])
     // Source is premultiplied (FINDINGS Session 11 landmine) — confirmed in Phase 1.5.
     let straight = masked.unpremultiplyingAlpha()
@@ -287,6 +289,7 @@ enum AutoWhiteBalance {
     else {
       sC = 1 - smoothstep(protLoC, protHiC, meanBodyChroma)
       if coolSpreadMin > 0 { sC *= smoothstep(coolSpreadMin - 0.2, coolSpreadMin, spread) }
+      sC = min(sC, coolCap)   // Session 35 recognition veto — bench-parity-verified in session35_port
     }
     if plausMagenta { sC *= plausDamp }
     sC = min(sC, sCMax)

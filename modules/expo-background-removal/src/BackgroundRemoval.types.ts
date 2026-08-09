@@ -41,4 +41,9 @@ export interface RemoveBackgroundOptions {
   // Build 27 Phase 2: garment-only automatic white balance (validated Fork-A AWB).
   // false/omitted = OFF (default, byte-identical to Build A). true = correct the cut garment.
   autoWhiteBalance?: boolean;
+
+  // Session 35 recognition veto: ceiling on the AWB's COOL-SIDE correction strength only.
+  // Warm side is never gated. 1.0/omitted = Candidate A unchanged · 0.4 = offline/timeout
+  // fallback · 0.0 = full cool-side veto (recognition named a real color).
+  awbCoolCap?: number;
 }
