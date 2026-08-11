@@ -12,6 +12,39 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 36 — 2026-08-11 — Build 32 / v1.0.6 App Store RELEASE + release git bookkeeping. Recognition-veto colour fix RELEASED to all users; production fast-forwarded to the shipped commit; v1.0.6 train CLOSED. (Docs + git only — zero app code.)
+
+**Branch:** testing @ `5d117ef` — this SESSION_NOTES entry + the CLAUDE.md CURRENT STATE update are the only changes this session (no app code). `production` fast-forwarded `0baff39` → `d34b05c` and pushed (earlier this session). main `062d15b` UNTOUCHED. Step-1 safety check: testing 0/0 with origin; production local = origin = `d34b05c`; main local = origin = `062d15b` (all `git rev-parse` / `git ls-remote` verified).
+
+**Commits:** git bookkeeping (no code) — annotated tag **`v1.0.6-build32-appstore-live`** (tag-object `b8424fc`) created on the EAS-verified shipped commit **`d34b05c`** and pushed; `production` fast-forwarded `0baff39` → `d34b05c` (true/clean fast-forward via `--ff-only`, no force) and pushed. The docs commit carrying THIS entry + the CLAUDE.md edit follows on testing. Zero app-code commits.
+
+**Edge Function deploys:** 0. **Cache:** 2,510 (untouched). **EAS builds:** 0 (Build 32 was built in Session 35).
+
+**Goals:** (1) Record the Build 32 / v1.0.6 App Store release. (2) Land the release git bookkeeping per the locked convention (annotated tag + production fast-forward). (3) Update CLAUDE.md CURRENT BUILD STATE — Build 32 LIVE, production at `d34b05c`, v1.0.6 train CLOSED.
+
+**What changed — the App Store release arc (Build 32 / v1.0.6):**
+- The build: recognition-veto (Variant i, cool-side-only) camera-colour fix — App.js commit `d34b05c`, native AWB `min(sC, coolCap)` hook commit `f649506` (both Session 35). Built via EAS profile **preview**, delivered to TestFlight via Transporter (no `eas submit`).
+- **2026-08-09 ~4:00 PM EDT:** submitted to App Store review (per Grace's handoff).
+- **2026-08-10:** Apple approved → status "Pending Developer Release" (per handoff).
+- **2026-08-10 ~3:20 PM EDT:** Grace pressed "Release This Version" → "1.0.6 Ready for Distribution." **Manual release, ALL users at once (not phased), age rating KEPT.** Build 29 / v1.0.5 superseded. **Build 32 / v1.0.6 is now the LIVE App Store build** (per handoff).
+- Reviewer path verified before submit: demo login `hello@clozie.net` / `test12345`; AI-consent modal names Anthropic; account reset for fresh reviewers (per handoff).
+- Timestamped screenshots documenting submit + approval + release exist and are kept outside the repo (per handoff; not filed in git).
+
+**What changed — release git bookkeeping (2026-08-11, VERIFIED on origin):**
+- Annotated tag `v1.0.6-build32-appstore-live` (tag-object `b8424fc`) on shipped commit `d34b05c`; pushed. Build 32 → `d34b05c` binding VERIFIED independently via `eas build:list` server record (Build 32 | Version 1.0.6 | preview | Commit `d34b05c3798…` | finished | store).
+- `production` fast-forwarded `0baff39` → `d34b05c` (34 commits, true fast-forward, no force); pushed. `production` now points at the live Build 32.
+- `testing` unchanged (`5d117ef`); `main` unchanged (`062d15b`).
+- Prior restore tags preserved: `v1.0.5-build29-appstore-live` @ `0baff39` (tag-object `e2b79f2`); `v1.0.6-build31-testflight` @ `2a140d5` (tag-object `550b6df`, never Apple-approved, name deliberately not `-appstore-live`).
+- **v1.0.6 train now CLOSED** — per the VERSION RULE, the next app CODE change must bump the version to **1.0.7** in BOTH `app.config.js` AND `package.json` before any EAS build, or Apple rejects with 90062/90186. (Edge Function deploys are server-side and NOT gated by this.)
+
+**Tests:** none this session — no app code touched. Release-readiness (reviewer path, demo login, consent modal) was verified before the Session-35 submit; on-device colour behaviour was verified first-pass in Session 35 (blues stay blue both lights, whites clean, oatmeal unchanged, airplane 0.4-cap path). Git state VERIFIED on origin (`git rev-parse`, `git ls-remote`, `eas build:list`).
+
+**UNVERIFIED / OPEN:** extended on-device colour matrix from Session 35 (rapid retake mid-scan, more garments/lights, a real gray/silver garment) still OPEN — the veto shipped on a first-pass POSITIVE, not an exhaustive pass; watch production feedback. The 8000 ms recognition-timeout value (device revisit) still OPEN. Hypothesis 2 (Build 31 brightness anomaly / port numeric parity) still OPEN. recognize-photo prompt-wording question ("Cream not White" steering) still logged for post-verification. No post-release crash/feedback data yet (just released).
+
+**Notes:** Zero code changed, zero Edge Function deploys, cache stays 2,510. First App Store release of the recognition-veto colour work (Sessions 26–35). CLAUDE.md kept LEAN — only the CURRENT STATE snapshot + Last-updated pointer changed; the full arc lives here. This commits to testing, not main.
+
+---
+
 ## Update 4 — Session 35 — 2026-08-09 — RECOGNITION VETO (Variant i) PORTED + BUILT: Build 32 / v1.0.6 TestFlight-delivered; first-pass device test POSITIVE (blues stay blue, whites clean, airplane 0.4-path verified) — extended testing continuing; Build 32 stays TestFlight-only. Build 31 restore tag created + pushed.
 
 **Branch:** testing `91edeb6` → `d34b05c` (2 code commits; this docs commit follows). main `062d15b` / production `0baff39` UNTOUCHED (ls-remote verified at Step 1 and after every push). Step 1 safety check: testing 0/0 with origin; Candidate A constants verbatim in AutoWhiteBalance.swift; MEASURE_COLOR_MODE 0 hits in App.js; bench intact (10 locked photos, session33_scatter/prepped512 = 52, session34_fix FINDINGS files). **Step 2:** annotated tag **`v1.0.6-build31-testflight`** created on `2a140d5` (the verified Build 31 commit — no tag existed there) and pushed as tag-ref only (tag-object `550b6df`); name deliberately NOT `-appstore-live` (Build 31 was never Apple-approved); production did NOT move.
