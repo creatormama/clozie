@@ -8051,6 +8051,68 @@ function MainAppScreen({ onSignOut, initialTab = 0 }) {
     });
   }, [wardrobeItems]);
 
+  // Blank-photo fix: re-hydrate today's generated outfit items whenever
+  // wardrobeItems changes (e.g. after the foreground signed-URL re-mint below).
+  // Mirrors the saved/worn re-hydration effects above — itemIds (preserved at
+  // the generation resolve) is the source of truth; items is the display layer
+  // re-resolved against the current wardrobeItems. No-ops when nothing is shown.
+  useEffect(() => {
+    setGeneratedOutfits((prev) => {
+      if (!prev || prev.length === 0) return prev;
+      const byId = new Map(wardrobeItems.map((i) => [i.id, i]));
+      return prev.map((outfit) => {
+        const ids = Array.isArray(outfit.itemIds) ? outfit.itemIds : [];
+        const items = ids.map((id) => byId.get(id)).filter(Boolean);
+        return { ...outfit, items };
+      });
+    });
+  }, [wardrobeItems]);
+
+  // Blank-photo fix: on foreground return, re-mint signed photo URLs for the
+  // items already in state, so an expired 1-hour signed URL doesn't leave the
+  // closet (and today's looks) blank. Uses the functional-map setter — no DB
+  // refetch and no hard replace, so it cannot drop an optimistic add. Per item
+  // it is catch-and-keep: on a mint error the item keeps its existing photoUri
+  // (never nulled), so an offline return can't blank a photo. The 45-min guard
+  // avoids a burst of signed-URL calls on quick app-switches. The resulting new
+  // wardrobeItems reference cascades into the saved/worn/generated re-hydration
+  // effects above. This is a SEPARATE listener from the auth AppState listener
+  // below, which is left untouched.
+  const lastMintRef = useRef(Date.now());
+  useEffect(() => {
+    const REMINT_MIN_INTERVAL_MS = 45 * 60 * 1000;
+    const remintPhotoUrls = async () => {
+      const now = Date.now();
+      if (now - lastMintRef.current < REMINT_MIN_INTERVAL_MS) return;
+      lastMintRef.current = now;
+      const withPaths = (wardrobeItemsRef.current || []).filter((it) => it.photoPath);
+      if (withPaths.length === 0) return;
+      const freshById = new Map();
+      await Promise.all(
+        withPaths.map(async (it) => {
+          try {
+            const url = await getSignedPhotoUrl(it.photoPath);
+            if (url) freshById.set(it.id, url);
+          } catch {
+            // Keep the item's existing photoUri — never null it.
+          }
+        })
+      );
+      if (freshById.size === 0) return;
+      setWardrobeItems((prev) =>
+        prev.map((it) =>
+          freshById.has(it.id) ? { ...it, photoUri: freshById.get(it.id) } : it
+        )
+      );
+    };
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        remintPhotoUrls();
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   // Load AI consent flag from auth.user_metadata on mount.
   // consentLoaded becomes true after initial read (success or failure) so the
   // modal trigger in handleGenerate doesn't fire during the load window.
@@ -8122,6 +8184,9 @@ function MainAppScreen({ onSignOut, initialTab = 0 }) {
       const itemsById = new Map(wardrobeItems.map((i) => [i.id, i]));
       const resolved = (response.outfits || []).map((o) => ({
         ...o,
+        // Preserve the raw item-ID array so the [wardrobeItems] re-hydration
+        // effect below can re-resolve photoUri when signed URLs are re-minted.
+        itemIds: (Array.isArray(o.items) ? o.items : []),
         items: (Array.isArray(o.items) ? o.items : [])
           .map((id) => itemsById.get(id))
           .filter(Boolean),

@@ -5,7 +5,7 @@
 import { supabase } from './supabase';
 
 const BUCKET = 'wardrobe-photos';
-const SIGNED_URL_TTL_SECONDS = 3600;
+const SIGNED_URL_TTL_SECONDS = 86400; // 24h — reduces blank-photo window; foreground re-mint (App.js) refreshes on return
 
 function rowToItem(row) {
   return {
