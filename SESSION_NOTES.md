@@ -12,6 +12,37 @@ Session numbering reset to "Update N — Session M" starting 2026-06-21. All leg
 
 ---
 
+## Update 4 — Session 37 — 2026-08-14 — BLANK-PHOTO FIX (closet + Your Looks) SHIPPED to TestFlight as Build 33 / v1.0.7 — tested overnight on device, HOLDING (photos no longer blank). App Store release DEFERRED until Grace is back from vacation; App Store still on Build 32 / v1.0.6.
+
+**Branch:** testing → `9b6e8f7` (1 code commit: the fix). This docs commit (SESSION_NOTES + CLAUDE.md pointer) follows. origin/testing was `138aed1` (advances on push, authorized this session). production `d34b05c` (Build 32) and main `062d15b` UNTOUCHED; no tags. Step-1 safety: testing ahead 1 of origin (= `9b6e8f7`); main/production 0/0 with origin.
+
+**Commits:** 1 app-code commit `9b6e8f7` "Blank-photo fix (closet + Your Looks) + v1.0.7" (4 files, +68/−3). Docs commit follows on testing. production NOT moved.
+
+**Edge Function deploys:** 0. **Cache:** 2,510 (untouched — no Edge work). **EAS builds:** 1 — Build 33 / v1.0.7, profile **preview**, commit `9b6e8f7`, FINISHED first try (server-verified: v1.0.7 | Build 33 | preview | `9b6e8f7` | finished). Delivered to TestFlight via **Transporter** (IPA `rD0vTmy…`); NO `eas submit`.
+
+**Goals:** back up the overnight-tested blank-photo fix + document it. NOT releasing to the App Store this session (deferred to Grace's return).
+
+**The two bugs (from two prior read-only investigation passes):**
+1. **Closet blanks after long background.** Supabase private photo URLs are signed with a 1-hour TTL (`SIGNED_URL_TTL_SECONDS = 3600`, wardrobeItems.js:8), minted only once in the load-once `loadItems` effect (empty deps). Nothing re-mints on foreground return (the existing AppState listener does auth-refresh only). After >1h backgrounded → URLs expire → closet `<Image>` blanks until a full relaunch re-runs `loadItems`.
+2. **Your Looks blanks.** `generatedOutfits` (today's looks) is in-memory only (never persisted) and — unlike `savedOutfits`/`wornOutfits`, which re-hydrate via effects keyed on `[wardrobeItems]` — had NO re-hydration effect. Its item objects (incl. photoUri) were captured once at the generation resolve and never refreshed, so a closet reload didn't heal them.
+
+**The 5-edit fix (all on `9b6e8f7`):**
+1. Version bump 1.0.6 → 1.0.7 in `app.config.js` + `package.json` (v1.0.6 train closed; required or Apple rejects 90062/90186).
+2. Preserve `itemIds` at the generation resolve (App.js ~8187) — keeps the raw ID array so generated looks can be re-resolved.
+3. New `generatedOutfits` re-hydration effect keyed on `[wardrobeItems]` (App.js ~8054), a structural mirror of the saved/worn effects; no-ops when nothing is shown.
+4. New DEDICATED foreground re-mint (App.js ~8081) — its OWN AppState 'active' listener (auth listener untouched): 45-min guard (`lastMintRef`), catch-and-keep per item (mint error keeps existing photoUri, never nulls — offline return can't blank), functional-map setter (no DB refetch, no hard replace — cannot drop an optimistic add). The new `wardrobeItems` reference cascades into all three re-hydration effects.
+5. TTL 3600 → 86400 (wardrobeItems.js:8) — 24h cushion.
+
+**Left untouched:** saved/worn re-hydration effects, `loadItems` + its hard-replace, the auth AppState listener, WardrobeTab, Edge Function, SYSTEM_PROMPT (cache 2,510). main/production not moved; no tags.
+
+**Tests:** App.js babel-parse OK before commit. Build 33 installed via TestFlight; **tested overnight on Grace's phone and HELD — photos no longer blank** (closet + Your Looks). Sanity pass: closet normal, Your Looks normal, generation still works.
+
+**UNVERIFIED / OPEN:** the one deliberate gap — app kept CONTINUOUSLY in the foreground for >1h (never backgrounds) has no trigger to re-mint; the 24h TTL cushion makes this vanishingly rare but it's not fully closed. App Store release of Build 33 / v1.0.7 = deferred decision (after vacation).
+
+**Notes:** App Store still on Build 32 / v1.0.6 — this session does NOT touch the App Store or production. CLAUDE.md kept lean (Last-verified date + Last-updated pointer). This commits to testing, not main.
+
+---
+
 ## Update 4 — Session 36 — 2026-08-11 — Build 32 / v1.0.6 App Store RELEASE + release git bookkeeping. Recognition-veto colour fix RELEASED to all users; production fast-forwarded to the shipped commit; v1.0.6 train CLOSED. (Docs + git only — zero app code.)
 
 **Branch:** testing @ `5d117ef` — this SESSION_NOTES entry + the CLAUDE.md CURRENT STATE update are the only changes this session (no app code). `production` fast-forwarded `0baff39` → `d34b05c` and pushed (earlier this session). main `062d15b` UNTOUCHED. Step-1 safety check: testing 0/0 with origin; production local = origin = `d34b05c`; main local = origin = `062d15b` (all `git rev-parse` / `git ls-remote` verified).
